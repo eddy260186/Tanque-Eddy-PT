@@ -12,7 +12,8 @@ from database.supabase_mgr import init_supabase
 from utils.biometria import calcular_biometria
 from utils.pdf_generator import build_pdf_v60_7
 from data.alimentos import alimentos_db
-from data.ejercicios import ejercicios_db
+# ACÁ ESTÁ EL PRIMER CAMBIO: Importamos rutinas_elite
+from data.ejercicios import ejercicios_db, rutinas_elite
 
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA
@@ -42,14 +43,8 @@ with st.sidebar:
     st.divider()
 
 # ==========================================
-# 2. BASE DE DATOS (ALIMENTOS COMPLETOS)
+# BASE DE DATOS Y CRM 
 # ==========================================
-
-# ==========================================
-# 2.5 BASE DE DATOS DE EJERCICIOS
-# ==========================================
-
-
 DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
 
 # ==========================================
@@ -351,150 +346,31 @@ for nombre_base in mapa_nombres[num_comidas]:
     diccionario_menus[nombre_base.upper()] = opciones_de_esta_comida
 
 # ==========================================
-# 7.5 MOTOR INTELIGENTE: LÓGICA DE SERIES Y REPS POR NIVEL
+# 7.5 MOTOR DE RUTINAS ELITE CON SOPORTE DE VARIANTES
 # ==========================================
-st.subheader(f"🏋️‍♂️ Plan de Entrenamiento Estratégico ({dias_entreno} días | {nivel_experiencia})")
+st.subheader(f"🏋️‍♂️ Plan de Entrenamiento ({nivel_experiencia})")
 
-# ARBOL DE DECISIÓN: Cruzando Nivel con Tipo de Entreno
-if nivel_experiencia == "Principiante":
-    if "Fuerza" in tipo_entreno or "Powerlifting" in tipo_entreno:
-        series_reps = "3 series x 8-10 reps (Enfoque Técnico / RIR 3)"
-    else:
-        series_reps = "3 series x 12-15 reps (Técnica / Carga Moderada)"
+# 1. Obtenemos el contenido del nivel seleccionado en la base de datos
+contenido_nivel = rutinas_elite.get(tipo_entreno, {}).get(nivel_experiencia, [])
 
-elif nivel_experiencia == "Intermedio":
-    if "Fuerza" in tipo_entreno or "Powerlifting" in tipo_entreno:
-        series_reps = "4 series x 4-6 reps (Carga Pesada / RIR 2)"
-    elif "Volumen" in tipo_objetivo or "Hipertrofia" in tipo_entreno:
-        series_reps = "3-4 series x 8-12 reps (Hipertrofia / RIR 1-2)"
-    elif "Definición" in tipo_objetivo or "Resistencia" in tipo_entreno:
-        series_reps = "3 series x 15-20 reps (Resistencia / RIR 1)"
-    else:
-        series_reps = "3 series x 10-12 reps (Carga Equilibrada)"
-
-else: # Avanzado
-    if "Fuerza" in tipo_entreno or "Powerlifting" in tipo_entreno:
-        series_reps = "4-5 series x 3-5 reps (Muy Pesado / RIR 0-1)"
-    elif "Volumen" in tipo_objetivo or "Hipertrofia" in tipo_entreno:
-        series_reps = "4 series x 8-10 reps (Alta Intensidad / Al fallo o RIR 0)"
-    elif "Definición" in tipo_objetivo or "Resistencia" in tipo_entreno:
-        series_reps = "4 series x 12-15 reps (Tensión Continua / Descansos cortos)"
-    else:
-        series_reps = "4 series x 8-12 reps (Máximo Estímulo / RIR 0-1)"
-
-diccionario_rutinas = {}
-
-if dias_entreno == 0 or "Ninguno" in tipo_entreno:
-    diccionario_rutinas["Día 1 - Descanso Activo"] = ["Caminata ligera, estiramientos o movilidad (30-40 min)"]
-
-# LÓGICA EXCLUSIVA: 5 o 6 DÍAS AVANZADO (ÉNFASIS INFERIOR)
-elif dias_entreno >= 5 and nivel_experiencia == "Avanzado":
-    diccionario_rutinas["Día 1 - Cuádriceps (Énfasis Anterior)"] = [
-        f"{ejercicios_db['Cuádriceps'][0]} | {series_reps}",
-        f"{ejercicios_db['Cuádriceps'][1]} | {series_reps}",
-        f"{ejercicios_db['Cuádriceps'][2]} | {series_reps}",
-        f"{ejercicios_db['Pantorrillas'][0]} | {series_reps}",
-        f"{ejercicios_db['Core'][0]} | {series_reps} (Un día sí, un día no)"
-    ]
-    diccionario_rutinas["Día 2 - Espalda y Bíceps (Tracción)"] = [
-        f"{ejercicios_db['Espalda'][0]} | {series_reps}",
-        f"{ejercicios_db['Espalda'][1]} | {series_reps}",
-        f"{ejercicios_db['Espalda'][2]} | {series_reps}",
-        f"{ejercicios_db['Brazos'][0]} | {series_reps}",
-        f"{ejercicios_db['Brazos'][1]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 3 - Glúteos y Femorales (Énfasis Posterior)"] = [
-        f"{ejercicios_db['Glúteos'][0]} | {series_reps}",
-        f"{ejercicios_db['Glúteos'][1]} | {series_reps}",
-        f"{ejercicios_db['Femorales'][0]} | {series_reps}",
-        f"{ejercicios_db['Femorales'][1]} | {series_reps}",
-        f"{ejercicios_db['Pantorrillas'][1]} | {series_reps}",
-        f"{ejercicios_db['Core'][1]} | {series_reps} (Un día sí, un día no)"
-    ]
-    diccionario_rutinas["Día 4 - Pectorales y Hombros (Empuje)"] = [
-        f"{ejercicios_db['Pecho'][0]} | {series_reps}",
-        f"{ejercicios_db['Pecho'][1]} | {series_reps}",
-        f"{ejercicios_db['Pecho'][2]} | {series_reps}",
-        f"{ejercicios_db['Hombros'][0]} | {series_reps}",
-        f"{ejercicios_db['Hombros'][1]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 5 - Pierna Completa (Estímulo Global)"] = [
-        f"{ejercicios_db['Cuádriceps'][3]} | {series_reps}",
-        f"{ejercicios_db['Femorales'][2]} | {series_reps}",
-        f"{ejercicios_db['Glúteos'][2]} | {series_reps}",
-        f"{ejercicios_db['Pantorrillas'][0]} | {series_reps}",
-        f"{ejercicios_db['Core'][3]} | {series_reps} (Un día sí, un día no)"
-    ]
-    if dias_entreno == 6:
-        diccionario_rutinas["Día 6 - Recordatorio Torso o Puntos Débiles"] = [
-            f"{ejercicios_db['Espalda'][3]} | {series_reps}",
-            f"{ejercicios_db['Hombros'][3]} | {series_reps}",
-            f"{ejercicios_db['Brazos'][2]} | {series_reps}"
-        ]
-
-# LÓGICA ESTÁNDAR: Principiantes/Intermedios o menos días
-elif dias_entreno <= 3:
-    for d in range(1, dias_entreno + 1):
-        diccionario_rutinas[f"Día {d} - Full Body (Cuerpo Completo)"] = [
-            f"{ejercicios_db['Cuádriceps'][0]} | {series_reps}",
-            f"{ejercicios_db['Femorales'][0]} | {series_reps}",
-            f"{ejercicios_db['Pecho'][0]} | {series_reps}",
-            f"{ejercicios_db['Espalda'][0]} | {series_reps}",
-            f"{ejercicios_db['Hombros'][1]} | {series_reps}",
-            f"{ejercicios_db['Core'][0]} | {series_reps}"
-        ]
-elif dias_entreno == 4:
-    diccionario_rutinas["Día 1 - Torso (Empuje y Tracción)"] = [
-        f"{ejercicios_db['Pecho'][0]} | {series_reps}",
-        f"{ejercicios_db['Espalda'][0]} | {series_reps}",
-        f"{ejercicios_db['Hombros'][0]} | {series_reps}",
-        f"{ejercicios_db['Brazos'][0]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 2 - Piernas (Enfoque Cuádriceps y Pantorrillas)"] = [
-        f"{ejercicios_db['Cuádriceps'][0]} | {series_reps}",
-        f"{ejercicios_db['Cuádriceps'][1]} | {series_reps}",
-        f"{ejercicios_db['Cuádriceps'][2]} | {series_reps}",
-        f"{ejercicios_db['Pantorrillas'][0]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 3 - Torso (Empuje y Tracción)"] = [
-        f"{ejercicios_db['Pecho'][1]} | {series_reps}",
-        f"{ejercicios_db['Espalda'][1]} | {series_reps}",
-        f"{ejercicios_db['Hombros'][1]} | {series_reps}",
-        f"{ejercicios_db['Brazos'][2]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 4 - Piernas (Enfoque Femorales y Glúteos)"] = [
-        f"{ejercicios_db['Femorales'][0]} | {series_reps}",
-        f"{ejercicios_db['Glúteos'][0]} | {series_reps}",
-        f"{ejercicios_db['Femorales'][1]} | {series_reps}",
-        f"{ejercicios_db['Core'][0]} | {series_reps}"
-    ]
+# 2. Verificamos si hay variantes (Diccionario) o una sola rutina (Lista)
+if isinstance(contenido_nivel, dict):
+    # Si agregaste variantes en el futuro, esto mostrará un menú desplegable nuevo
+    variante = st.selectbox("🔄 Seleccionar Variante de Rutina:", list(contenido_nivel.keys()))
+    rutina_seleccionada = contenido_nivel[variante]
 else:
-    rutinas_ppl = [
-        ("Empuje (Pecho, Hombros, Tríceps)", [
-            f"{ejercicios_db['Pecho'][0]}",
-            f"{ejercicios_db['Hombros'][0]}",
-            f"{ejercicios_db['Pecho'][1]}",
-            f"{ejercicios_db['Brazos'][2]}"
-        ]),
-        ("Tracción (Espalda, Bíceps, Cara Posterior)", [
-            f"{ejercicios_db['Espalda'][0]}",
-            f"{ejercicios_db['Espalda'][1]}",
-            f"{ejercicios_db['Hombros'][2]}",
-            f"{ejercicios_db['Brazos'][0]}"
-        ]),
-        ("Piernas Completas y Pantorrillas", [
-            f"{ejercicios_db['Cuádriceps'][0]}",
-            f"{ejercicios_db['Femorales'][0]}",
-            f"{ejercicios_db['Glúteos'][0]}",
-            f"{ejercicios_db['Pantorrillas'][0]}"
-        ])
-    ]
-    for d in range(1, dias_entreno + 1):
-        nombre_dia, lista_ejs = rutinas_ppl[(d-1) % 3]
-        ejercicios_formateados = []
-        for e in lista_ejs:
-            ejercicios_formateados.append(f"{e} | {series_reps}")
-        diccionario_rutinas[f"Día {d} - {nombre_dia}"] = ejercicios_formateados
+    # Si es una lista directa (como lo tenemos cargado ahora), la usamos directo
+    rutina_seleccionada = contenido_nivel
+
+# 3. Formateamos la rutina para la interfaz y el PDF
+diccionario_rutinas = {}
+if rutina_seleccionada:
+    for bloque in rutina_seleccionada:
+        titulo_dia = bloque[0]
+        ejercicios_dia = bloque[1:]
+        diccionario_rutinas[titulo_dia] = ejercicios_dia
+else:
+    diccionario_rutinas = {"Aviso": ["Rutina en construcción para esta disciplina y nivel."]}
 
 with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
     for dia_nombre, ejercicios in diccionario_rutinas.items():
@@ -505,8 +381,6 @@ with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
 # ==========================================
 # 8. MOTOR PDF BLINDADO 
 # ==========================================
-
-
 st.divider()
 if st.button("🏆 GENERAR PDF ELITE INTEGRAL"):
     if nombre:
@@ -517,6 +391,7 @@ if st.button("🏆 GENERAR PDF ELITE INTEGRAL"):
             "meta": tipo_objetivo, "dt": dieta_tipo,
             "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total, 
             "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
+            # Aquí le pasamos al PDF la rutina inteligente
             "rutina": diccionario_rutinas
         }
         st.download_button("💾 Bajar Reporte Integral", build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), f"Plan_Integral_{nombre}.pdf")

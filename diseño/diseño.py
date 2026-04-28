@@ -1,31 +1,14 @@
-# ==========================================
-# 8. MOTOR PDF BLINDADO 
-# ==========================================
 import streamlit as st
 from weasyprint import HTML
 import base64
 
+# ... aquí abajo sigue tu función def build_pdf_v60_7 ...
+
 def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
-    # ==========================================
-    # LÓGICA DE COLORES: BOCA VS SOFT PINK
-    # ==========================================
     is_f = (gen == "f")
-    
-    if is_f:
-        # --- EDICIÓN FEMENINA ---
-        c_bg = "#1A1A1A"
-        c_card = "#2A2A2A"
-        c_cabecera = "#FD8EC6"   # Rosa fuerte para la franja superior
-        c_accent = "#FFB6C1"     # Rosa claro para textos y bordes
-        nombre_edicion = "EDICIÓN SOFT PINK"
-    else:
-        # --- EDICIÓN MASCULINA (XENEIZE) ---
-        c_bg = "#121212"
-        c_card = "#1a1a1a"
-        c_cabecera = "#0038A8"   # Azul profundo de Boca para la franja superior
-        c_accent = "#FCB000"     # Oro vibrante para textos y bordes
-        nombre_edicion = "EDICIÓN XENEIZE"
-        
+    c_bg = "#1A1A1A" if is_f else "#121212"
+    c_card = "#2A2A2A" if is_f else "#1a1a1a"
+    c_accent = "#FFB6C1" if is_f else "#d4af37"
     c_txt = "#ffffff"
     
     logo_td = ""
@@ -39,8 +22,7 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
         @page {{ size: A4; margin: 15mm; background-color: {c_bg}; }}
         body {{ font-family: 'Helvetica'; color: {c_txt}; background-color: {c_bg}; line-height: 1.5; }}
         
-        /* AQUÍ CAMBIA EL FONDO DE LA CABECERA (Azul o Rosa Fuerte) */
-        .header-table {{ width: 100%; background: {c_cabecera}; border-bottom: 5px solid {c_accent}; border-radius: 10px 10px 0 0; border-collapse: collapse; }}
+        .header-table {{ width: 100%; background: #000000; border-bottom: 5px solid {c_accent}; border-radius: 10px 10px 0 0; border-collapse: collapse; }}
         .header-table td {{ padding: 20px; border-bottom: none; }}
         .header-logo-td {{ text-align: right; vertical-align: middle; width: 120px; }}
         
@@ -60,8 +42,8 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
         <table class="header-table">
             <tr>
                 <td>
-                    <h1 style="margin: 0; color: #ffffff;">EDDY PERSONAL TRAINER</h1>
-                    <p style="margin: 5px 0 0 0; color: {c_accent}; font-weight: bold;">PLAN ELITE INTEGRAL - {nombre_edicion}</p>
+                    <h1 style="margin: 0;">EDDY PERSONAL TRAINER</h1>
+                    <p style="margin: 5px 0 0 0; color: #fff;">PLAN ELITE INTEGRAL - {"EDICIÓN SOFT PINK" if is_f else "EDICIÓN GOLD"}</p>
                 </td>
                 <td class="header-logo-td">{logo_td}</td>
             </tr>
@@ -113,8 +95,8 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
     <table class="header-table">
         <tr>
             <td>
-                <h1 style="margin: 0; color: #ffffff;">🏋️‍♂️ PLAN DE ENTRENAMIENTO</h1>
-                <p style="margin: 5px 0 0 0; color: {c_accent}; font-weight: bold;">DISTRIBUCIÓN {d['nivel'].upper()}</p>
+                <h1 style="margin: 0;">🏋️‍♂️ PLAN DE ENTRENAMIENTO</h1>
+                <p style="margin: 5px 0 0 0; color: #fff;">DISTRIBUCIÓN {d['nivel'].upper()}</p>
             </td>
             <td class="header-logo-td">{logo_td}</td>
         </tr>
@@ -134,8 +116,8 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
     <table class="header-table">
         <tr>
             <td>
-                <h1 style="margin: 0; color: #ffffff;">🛒 TICKET DE COMPRA MENSUAL</h1>
-                <p style="margin: 5px 0 0 0; color: {c_accent}; font-weight: bold;">LISTA AUTOMATIZADA</p>
+                <h1 style="margin: 0;">🛒 TICKET DE COMPRA MENSUAL</h1>
+                <p style="margin: 5px 0 0 0; color: #fff;">LISTA AUTOMATIZADA</p>
             </td>
             <td class="header-logo-td">{logo_td}</td>
         </tr>
