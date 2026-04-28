@@ -1,0 +1,306 @@
+Nombre: eddy jauregui, Genero: hombre, Peso: 120.0 kg, Calorías Objetivo: 189922, Plan Macros: Balanceada, Proteínas: 14244g, Carbs: 18992g, Grasas: 6331g
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-28 22:31:51
+Nombre: Eddy Jauregui
+Género: Hombre
+Edad: 39 años
+Peso: 120.0 kg
+Estatura: 1.95 m
+Días de ejercicio/semana: 5
+Kilos a bajar: 10.0 kg
+TMB Calculada: 2229 kcal
+TDEE Calculado: 3455 kcal
+Calorías Objetivo: 3180 kcal
+Plan de Macronutrientes: Baja en Carbohidratos
+  Proteínas: 318g
+  Carbohidratos: 199g
+  Grasas: 124g
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-28 22:41:18
+Nombre: Marisol Pogonza
+Género: Mujer
+Edad: 25 años
+Peso: 80.0 kg
+Estatura: 166.0 cm
+Días de ejercicio/semana: 5
+Objetivo: Pérdida de Peso
+Kilos a bajar: 10.0 kg
+TMB Calculada: 1552 kcal
+TDEE Calculado: 2405 kcal
+Calorías Objetivo: 1855 kcal
+Plan de Macronutrientes: Baja en Carbohidratos
+  Proteínas: 185g
+  Carbohidratos: 116g
+  Grasas: 72g
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-28 22:46:21
+Nombre: Eddy Jauregui
+Género: Masculino
+Edad: 39 años
+Peso: 120.0 kg
+Estatura: 195.0 cm
+Días de ejercicio/semana: 5
+Objetivo: Pérdida de Peso
+Kilos a bajar: 10.0 kg
+TMB Calculada: 2229 kcal
+TDEE Calculado: 3455 kcal
+Calorías Objetivo: 2905 kcal
+Plan de Macronutrientes: Baja en Carbohidratos
+  Proteínas: 290g
+  Carbohidratos: 182g
+  Grasas: 113g
+
+--- Guía de Alimentación por Comida ---
+Desayuno: 726 kcal | P: 73g | C: 45g | G: 28g
+Almuerzo: 1017 kcal | P: 102g | C: 64g | G: 40g
+Merienda: 436 kcal | P: 44g | C: 27g | G: 17g
+Cena: 726 kcal | P: 73g | C: 45g | G: 28g
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-28 22:51:15
+Nombre: Marisol Pogonza
+Género: Femenino
+Edad: 25 años
+Peso: 85.0 kg
+Estatura: 165.0 cm
+Días de ejercicio/semana: 5
+Objetivo: Pérdida de Peso
+Kilos a bajar: 20.0 kg
+TMB Calculada: 1595 kcal
+TDEE Calculado: 2473 kcal
+Calorías Objetivo: 1923 kcal
+Plan de Macronutrientes: Balanceada
+  Proteínas: 144g
+  Carbohidratos: 192g
+  Grasas: 64g
+
+--- Guía de Alimentación por Comida ---
+Desayuno: 481 kcal | P: 36g | C: 48g | G: 16g
+Almuerzo: 673 kcal | P: 50g | C: 67g | G: 22g
+Merienda: 288 kcal | P: 22g | C: 29g | G: 10g
+Cena: 481 kcal | P: 36g | C: 48g | G: 16g
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-29 18:04:55
+Nombre: Edilberto Jauregui
+Género: Masculino
+Edad: 39 años
+Peso: 120.0 kg
+Estatura: 195.0 cm
+Días de ejercicio/semana: 5
+Objetivo: Pérdida de Peso
+Kilos a bajar: 10.0 kg
+TMB Calculada: 2229 kcal
+TDEE Calculado: 3455 kcal
+Calorías Objetivo: 2905 kcal
+Plan de Macronutrientes: Baja en Carbohidratos
+  Proteínas: 290g
+  Carbohidratos: 182g
+  Grasas: 113g
+
+--- Guía de Alimentación por Comida ---
+Desayuno: 726 kcal | P: 73g | C: 45g | G: 28g
+Almuerzo: 1017 kcal | P: 102g | C: 64g | G: 40g
+Merienda: 436 kcal | P: 44g | C: 27g | G: 17g
+Cena: 726 kcal | P: 73g | C: 45g | G: 28g
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-29 18:11:16
+Nombre: Eddy Jauregui
+Género: Masculino
+Edad: 39 años
+Peso: 120.0 kg
+Estatura: 195.0 cm
+Días de ejercicio/semana: 5
+Objetivo: Pérdida de Peso
+Kilos a bajar: 10.0 kg
+Plazo para bajar peso: 3 mes(es)
+Déficit diario requerido: 843 kcal
+Ritmo semanal estimado: 0.77 kg/semana
+TMB Calculada: 2229 kcal
+TDEE Calculado: 3455 kcal
+Calorías Objetivo: 2611 kcal
+Plan de Macronutrientes: Balanceada
+   Proteínas: 196g
+   Carbohidratos: 261g
+   Grasas: 87g
+
+--- Guía de Alimentación por Comida ---
+Desayuno: 653 kcal | P: 49g | C: 65g | G: 22g
+Almuerzo: 914 kcal | P: 69g | C: 91g | G: 30g
+Merienda: 392 kcal | P: 29g | C: 39g | G: 13g
+Cena: 653 kcal | P: 49g | C: 65g | G: 22g
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-29 18:18:19
+Nombre: Eddy Jauregui
+Género: Masculino
+Edad: 39 años
+Peso: 120.0 kg
+Estatura: 195.0 cm
+Días de ejercicio/semana: 6
+Objetivo: Pérdida de Peso
+Kilos a bajar: 10.0 kg
+Plazo para bajar peso: 5 mes(es)
+Déficit diario requerido: 506 kcal
+Ritmo mensual estimado: 2.00 kg/mes
+TMB Calculada: 2229 kcal
+TDEE Calculado: 3845 kcal
+Calorías Objetivo: 3339 kcal
+Plan de Macronutrientes: Baja en Carbohidratos
+   Proteínas: 334g
+   Carbohidratos: 209g
+   Grasas: 130g
+
+--- Guía de Alimentación por Comida ---
+Desayuno: 835 kcal | P: 83g | C: 52g | G: 32g
+Almuerzo: 1169 kcal | P: 117g | C: 73g | G: 45g
+Merienda: 501 kcal | P: 50g | C: 31g | G: 19g
+Cena: 835 kcal | P: 83g | C: 52g | G: 32g
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-29 18:22:32
+Nombre: Eddy Jaureguiu
+Género: Masculino
+Edad: 39 años
+Peso: 120.0 kg
+Estatura: 195.0 cm
+Días de ejercicio/semana: 5
+Objetivo: Pérdida de Peso
+Kilos a bajar: 10.0 kg
+Plazo para bajar peso: 5 mes(es)
+Déficit diario requerido: 506 kcal
+Ritmo mensual estimado: 2.00 kg/mes
+TMB Calculada: 2229 kcal
+TDEE Calculado: 3455 kcal
+Calorías Objetivo: 2949 kcal
+Plan de Macronutrientes: Baja en Carbohidratos
+   Proteínas: 295g
+   Carbohidratos: 184g
+   Grasas: 115g
+
+--- Guía de Alimentación por Comida (Ejemplos) ---
+Desayuno:
+  Calorías: 737 kcal | P: 74g | C: 46g | G: 29g
+  Ejemplos de Proteínas: Huevos, Yogur griego, Claras de huevo, Batido de proteína, Requesón
+  Ejemplos de Carbohidratos: Avena, Pan integral, Frutas (plátano, bayas), Tortillas de arroz
+  Ejemplos de Grasas Saludables: Palta/Aguacate, Frutos secos (almendras, nueces), Semillas de chía/lino, Mantequilla de maní natural
+-------------------------
+Almuerzo:
+  Calorías: 1032 kcal | P: 103g | C: 65g | G: 40g
+  Ejemplos de Proteínas: Pechuga de pollo/pavo, Pescado (salmón, atún, merluza), Carne magra, Lentejas (vegetariano), Tofu
+  Ejemplos de Carbohidratos: Arroz integral, Batata/Patata, Quinoa, Pasta integral, Verduras de hoja verde
+  Ejemplos de Grasas Saludables: Aceite de oliva (para cocinar/aderezar), Palta/Aguacate, Frutos secos, Semillas, Pescado azul (salmón)
+-------------------------
+Merienda:
+  Calorías: 442 kcal | P: 44g | C: 28g | G: 17g
+  Ejemplos de Proteínas: Yogur griego, Puñado de almendras/nueces, Queso bajo en grasa, Batido de proteína, Edamame
+  Ejemplos de Carbohidratos: Frutas (manzana, pera), Galletas de arroz, Una pieza de pan integral, Verduras crudas (zanahoria, pepino)
+  Ejemplos de Grasas Saludables: Frutos secos, Semillas, Mantequilla de maní natural, Pequeña porción de queso, Olivas
+-------------------------
+Cena:
+  Calorías: 737 kcal | P: 74g | C: 46g | G: 29g
+  Ejemplos de Proteínas: Pescado (salmón, merluza), Pechuga de pollo/pavo, Carne magra, Tofu, Garbanzos
+  Ejemplos de Carbohidratos: Verduras (brócoli, espárragos, zapallo), Una porción pequeña de arroz/batata, Ensalada variada
+  Ejemplos de Grasas Saludables: Aceite de oliva, Pescado azul, Una pequeña porción de palta, Semillas de lino/chía
+-------------------------
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-29 18:29:05
+Nombre: Asfd Eryte
+Género: Masculino
+Edad: 39 años
+Peso: 120.0 kg
+Estatura: 195.0 cm
+Días de ejercicio/semana: 5
+Objetivo: Ganancia de Masa Muscular
+Kilos a ganar: 10.0 kg
+TMB Calculada: 2229 kcal
+TDEE Calculado: 3455 kcal
+Calorías Objetivo: 3705 kcal
+Plan de Macronutrientes: Baja en Carbohidratos
+   Proteínas: 370g
+   Carbohidratos: 232g
+   Grasas: 144g
+
+--- Guía de Alimentación por Comida (Ejemplos) ---
+Desayuno:
+  Calorías: 926 kcal | P: 93g | C: 58g | G: 36g
+  Ejemplos de Proteínas: Huevos, Yogur griego, Claras de huevo, Batido de proteína, Requesón
+  Ejemplos de Carbohidratos: Avena, Pan integral, Frutas (plátano, bayas), Tortillas de arroz
+  Ejemplos de Grasas Saludables: Palta/Aguacate, Frutos secos (almendras, nueces), Semillas de chía/lino, Mantequilla de maní natural
+-------------------------
+Almuerzo:
+  Calorías: 1297 kcal | P: 130g | C: 81g | G: 50g
+  Ejemplos de Proteínas: Pechuga de pollo/pavo, Pescado (salmón, atún, merluza), Carne magra, Lentejas (vegetariano), Tofu
+  Ejemplos de Carbohidratos: Arroz integral, Batata/Patata, Quinoa, Pasta integral, Verduras de hoja verde
+  Ejemplos de Grasas Saludables: Aceite de oliva (para cocinar/aderezar), Palta/Aguacate, Frutos secos, Semillas, Pescado azul (salmón)
+-------------------------
+Merienda:
+  Calorías: 556 kcal | P: 56g | C: 35g | G: 22g
+  Ejemplos de Proteínas: Yogur griego, Puñado de almendras/nueces, Queso bajo en grasa, Batido de proteína, Edamame
+  Ejemplos de Carbohidratos: Frutas (manzana, pera), Galletas de arroz, Una pieza de pan integral, Verduras crudas (zanahoria, pepino)
+  Ejemplos de Grasas Saludables: Frutos secos, Semillas, Mantequilla de maní natural, Pequeña porción de queso, Olivas
+-------------------------
+Cena:
+  Calorías: 926 kcal | P: 93g | C: 58g | G: 36g
+  Ejemplos de Proteínas: Pescado (salmón, merluza), Pechuga de pollo/pavo, Carne magra, Tofu, Garbanzos
+  Ejemplos de Carbohidratos: Verduras (brócoli, espárragos, zapallo), Una porción pequeña de arroz/batata, Ensalada variada
+  Ejemplos de Grasas Saludables: Aceite de oliva, Pescado azul, Una pequeña porción de palta, Semillas de lino/chía
+-------------------------
+------------------------------
+
+--- REGISTRO DE USUARIO ---
+Fecha/Hora: 2025-07-29 23:24:12
+Nombre: Ooouyiouy Ughui
+Género: Masculino
+Edad: 54 años
+Peso: 70.0 kg
+Estatura: 177.0 cm
+Días de ejercicio/semana: 5
+Objetivo: Mantenimiento de Peso
+TMB Calculada: 1541 kcal
+TDEE Calculado: 2389 kcal
+Calorías Objetivo: 2389 kcal
+Plan de Macronutrientes: Baja en Carbohidratos
+   Proteínas: 239g
+   Carbohidratos: 149g
+   Grasas: 93g
+
+--- Guía de Alimentación por Comida (Ejemplos) ---
+Desayuno:
+  Calorías: 597 kcal | P: 60g | C: 37g | G: 23g
+  Ejemplos de Proteínas: Huevos, Yogur griego, Claras de huevo, Batido de proteína, Requesón
+  Ejemplos de Carbohidratos: Avena, Pan integral, Frutas (plátano, bayas), Tortillas de arroz
+  Ejemplos de Grasas Saludables: Palta/Aguacate, Frutos secos (almendras, nueces), Semillas de chía/lino, Mantequilla de maní natural
+-------------------------
+Almuerzo:
+  Calorías: 836 kcal | P: 84g | C: 52g | G: 33g
+  Ejemplos de Proteínas: Pechuga de pollo/pavo, Pescado (salmón, atún, merluza), Carne magra, Lentejas (vegetariano), Tofu
+  Ejemplos de Carbohidratos: Arroz integral, Batata/Patata, Quinoa, Pasta integral, Verduras de hoja verde
+  Ejemplos de Grasas Saludables: Aceite de oliva (para cocinar/aderezar), Palta/Aguacate, Frutos secos, Semillas, Pescado azul (salmón)
+-------------------------
+Merienda:
+  Calorías: 358 kcal | P: 36g | C: 22g | G: 14g
+  Ejemplos de Proteínas: Yogur griego, Puñado de almendras/nueces, Queso bajo en grasa, Batido de proteína, Edamame
+  Ejemplos de Carbohidratos: Frutas (manzana, pera), Galletas de arroz, Una pieza de pan integral, Verduras crudas (zanahoria, pepino)
+  Ejemplos de Grasas Saludables: Frutos secos, Semillas, Mantequilla de maní natural, Pequeña porción de queso, Olivas
+-------------------------
+Cena:
+  Calorías: 597 kcal | P: 60g | C: 37g | G: 23g
+  Ejemplos de Proteínas: Pescado (salmón, merluza), Pechuga de pollo/pavo, Carne magra, Tofu, Garbanzos
+  Ejemplos de Carbohidratos: Verduras (brócoli, espárragos, zapallo), Una porción pequeña de arroz/batata, Ensalada variada
+  Ejemplos de Grasas Saludables: Aceite de oliva, Pescado azul, Una pequeña porción de palta, Semillas de lino/chía
+-------------------------
+------------------------------
+

@@ -1,0 +1,84 @@
+================================================================================
+PLAN NUTRICIONAL PERSONALIZADO
+================================================================================
+
+INFORMACIÓN BÁSICA
+----------------------------------------
+Género: H
+Edad: 40 años
+Peso actual: 111.0 kg
+Altura: 170.0 cm
+País: Brasil
+IMC: 38.4 - Obesidad
+
+OBJETIVO
+----------------------------------------
+Tu objetivo es bajar de peso de 111.0 kg a 10.0 kg
+En 3.0 meses (12.9 semanas)
+
+NECESIDADES CALÓRICAS
+----------------------------------------
+Metabolismo basal: 1977.5 kcal/día
+Calorías de mantenimiento: 3411 kcal/día
+Recomendación diaria: -5230 kcal/día
+Ajuste diario: -8641.111111111111 kcal
+
+MACRONUTRIENTES
+----------------------------------------
+Nutriente       Gramos     Kcal       Porcentaje  
+-----------------------------------------------
+Proteínas       244        976        -19         %
+Carbohidratos   -1225      -4900      94          %
+Grasas          -145       -1305      25          %
+
+PLAN DE ALIMENTACIÓN SELECCIONADO
+----------------------------------------
+Tipo: KETOGENICA
+Descripción: Alta en grasas, baja en carbohidratos. Ideal para quemar grasa rapida.
+Características: Menos de 50g carbohidratos/dia, 70% grasas, 20% proteinas
+
+DETALLE DE COMIDAS
+----------------------------------------
+Desayuno: 3 huevos revueltos con aguacate y tocino
+Almuerzo: 150g salmon al horno + ensalada verde con aceite de oliva
+Snack: 1 puñado de almendras + 1/2 aguacate
+Cena: 120g pollo asado + brócoli al vapor
+Hidratación: 2-3 litros de agua + te verde
+
+RUTINA DE ENTRENAMIENTO
+----------------------------------------
+RUTINA DE GIMNASIO AVANZADA
+Lunes: Pierna y gluteos
+- Sentadillas con barra: 5x5
+- Peso muerto: 5x5
+- Prensa de piernas: 4x10
+- Curl femoral: 4x12
+- Gluteos: 4x15
+
+Miércoles: Tren superior
+- Press de banca: 5x5
+- Press inclinado: 4x8
+- Remo con barra: 5x5
+- Fondos en paralelas: 4x10
+- Curl martillo: 4x12
+
+Viernes: Full body + HIIT
+- Press militar: 4x8
+- Remo con mancuerna: 4x10
+- Curl de biceps: 4x10
+- Extensiones de triceps: 4x10
+- Burpees: 3x15
+- Sprints: 8x30 segundos
+
+Duracion: 75-90 minutos por sesion
+Frecuencia: 4-5 dias/semana
+
+CONSEJOS IMPORTANTES
+----------------------------------------
+• Frecuencia de ejercicio: 3-5 días por semana
+• Duración de sesiones: 45-60 minutos
+• Hidratación: 2-3 litros de agua al día
+• Sueño: 7-9 horas por noche
+• Seguimiento: Mide tu peso semanalmente
+
+Generado el 19/10/2025

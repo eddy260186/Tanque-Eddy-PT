@@ -1,0 +1,1 @@
+Nombre: eddy jauregui jauregui, Genero: hombre, Edad: 39, Peso: 120.0 kg, Estatura: 195.0 m, Dias Ejercicio: 5, Objetivo: Bajar 10.0 kg, Ritmo: Moderado, TMB: 122885, TDEE: 190472, Calorías Objetivo: 189922

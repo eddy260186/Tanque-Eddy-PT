@@ -1,0 +1,1 @@
+Nombre: Marisol , Apellido: Pogonza, Genero: mujer, Edad: 25, Peso: 85.0 kg, Estatura: 1.65 m, Dias Ejercicio: 5, Objetivo: Bajar 20.0 kg en 16 semanas, TMB: 1595, TDEE: 2473, Calorías Objetivo: 1098

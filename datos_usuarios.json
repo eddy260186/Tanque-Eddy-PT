@@ -1,0 +1,32 @@
+{
+    "edilerto jauregui": {
+        "fecha_creacion": "2025-10-18T20:41:04.005326",
+        "historial_medidas": [],
+        "objetivos": [],
+        "recordatorios": []
+    },
+    "eddy": {
+        "fecha_creacion": "2025-10-18T20:42:46.015755",
+        "historial_medidas": [
+            {
+                "fecha": "2025-10-18T20:43:59.000066",
+                "peso": 130.0,
+                "altura": 195.0,
+                "imc": 34.2
+            }
+        ],
+        "objetivos": [
+            {
+                "fecha": "2025-10-18T20:44:34.660679",
+                "peso_actual": 130.0,
+                "peso_objetivo": 10.0,
+                "calorias_diarias": -6545,
+                "tiempo_total": 3.0,
+                "unidad_tiempo": "meses",
+                "semanas_estimadas": 12.857142857142858,
+                "cambio_calorias": -10266.666666666666
+            }
+        ],
+        "recordatorios": []
+    }
+}
