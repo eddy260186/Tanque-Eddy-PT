@@ -3,3 +3,4 @@ weasyprint
 pandas
 matplotlib
 supabase
+requests
