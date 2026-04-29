@@ -2,3 +2,4 @@ streamlit
 weasyprint
 pandas
 matplotlib
+supabase
