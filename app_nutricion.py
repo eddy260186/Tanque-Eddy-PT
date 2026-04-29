@@ -1,3 +1,4 @@
+import requests
 import streamlit as st
 from weasyprint import HTML
 from datetime import datetime, time
@@ -421,25 +422,70 @@ with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
             st.write(f"- {e}")
 
 # ==========================================
-# 8. MOTOR PDF BLINDADO Y MURO DE PAGO ELITE
+# 8. MOTOR PDF Y VALIDADOR DE PAGOS ÚNICOS
 # ==========================================
+
 st.divider()
+st.markdown("### 🔒 Descarga Protegida")
 
-# 1. El "Radar" lee absolutamente cualquier señal de éxito de Mercado Pago
-parametros = st.query_params
-pago_confirmado = (
-    parametros.get("pago") == "aprobado" or 
-    parametros.get("status") == "approved" or 
-    parametros.get("collection_status") == "approved"
-)
+# Inicializamos el estado del pago si no existe
+if "pago_validado" not in st.session_state:
+    st.session_state.pago_validado = False
 
-if pago_confirmado:
-    # SI HAY ÉXITO: El botón de pago desaparece y sale el de DESCARGA
-    st.balloons() # Efecto visual de festejo
-    st.success("✅ ¡Pago acreditado con éxito! Tu Plan Elite ha sido desbloqueado.")
+if not st.session_state.pago_validado:
+    st.info("Para descargar tu Plan Elite, ingresa el número de operación de tu pago.")
+    
+    col_p, col_v = st.columns(2)
+    with col_p:
+        st.link_button("💳 REALIZAR PAGO ($10.000)", "https://mpago.la/27TKbMf", type="primary")
+        st.caption("Al finalizar, busca el '#' seguido de 11 o 12 números en tu comprobante.")
+        
+    with col_v:
+        nro_operacion = st.text_input("Ingresá el # de Operación (Ej: 156877505264):")
+        if st.button("🔓 Validar y Descargar"):
+            if nro_operacion:
+                # 1. Conexión secreta con Mercado Pago
+                token = st.secrets["MERCADO_PAGO_TOKEN"]
+                url_mp = f"https://api.mercadopago.com/v1/payments/{nro_operacion}"
+                headers = {"Authorization": f"Bearer {token}"}
+                
+                try:
+                    res = requests.get(url_mp, headers=headers)
+                    if res.status_code == 200:
+                        datos_pago = res.json()
+                        status = datos_pago.get("status")
+                        
+                        if status == "approved":
+                            # 2. Verificamos en Supabase si este ID ya fue "quemado"
+                            # Buscamos en una tabla llamada 'pagos_verificados'
+                            check = supabase.table("pagos_verificados").select("*").eq("id_pago", nro_operacion).execute()
+                            
+                            if len(check.data) == 0:
+                                # Si no existe, lo registramos para que nadie más lo use
+                                supabase.table("pagos_verificados").insert({
+                                    "id_pago": nro_operacion, 
+                                    "usuario": st.session_state["usuario_actual"]
+                                }).execute()
+                                
+                                st.session_state.pago_validado = True
+                                st.rerun()
+                            else:
+                                st.error("❌ Este comprobante ya fue utilizado por otro usuario.")
+                        else:
+                            st.error(f"❌ El pago figura como: {status}. Debe estar 'approved'.")
+                    else:
+                        st.error("❌ Número de operación no encontrado en Mercado Pago.")
+                except Exception as e:
+                    st.error("Hubo un error al conectar con el validador.")
+            else:
+                st.warning("Por favor, ingresá el número de operación.")
+
+# --- PANTALLA DE DESCARGA LIBERADA ---
+if st.session_state.pago_validado:
+    st.balloons()
+    st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
     
     if nombre:
-        # Preparamos los datos para el PDF
         payload = {
             "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, 
             "cintura": cintura, "cadera": cadera, "rcc": rcc_valor, "rfm": rfm,
@@ -449,28 +495,12 @@ if pago_confirmado:
             "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
             "rutina": diccionario_rutinas
         }
-        
-        # EL BOTÓN QUE BUSCABAS: Aparece solo después del pago
         st.download_button(
             label="📥 DESCARGAR MI PLAN ELITE (PDF)", 
             data=build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), 
             file_name=f"Plan_Elite_{nombre}.pdf",
             mime="application/pdf",
-            type="primary" # Lo ponemos en color resaltado
+            type="primary"
         )
     else:
-        st.warning("⚠️ Completa el nombre del atleta en el menú lateral para descargar.")
-
-else:
-    # SI NO HAY PAGO: Mostramos el acceso restringido
-    st.markdown("### 🔒 Descarga Protegida")
-    st.info("Para obtener tu planificación completa en PDF, debes completar el pago único.")
-    
-    # Tu link oficial
-    link_mp = "https://mpago.la/27TKbMf"
-    
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.link_button("💳 PAGAR Y DESBLOQUEAR", link_mp, type="primary")
-    with col2:
-        st.caption("Al completar el pago, serás redirigido automáticamente para descargar tu archivo.")
+        st.warning("⚠️ Escribe el nombre del atleta para generar el archivo.")
