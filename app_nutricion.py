@@ -423,10 +423,18 @@ with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
 # ==========================================
 # 8. MOTOR PDF BLINDADO Y MURO DE PAGO
 # ==========================================
+
 st.divider()
 
+# 1. El "Radar" mejorado: Lee nuestra llave o los códigos nativos de Mercado Pago
 parametros_url = st.query_params
-pago_exitoso = parametros_url.get("pago") == "aprobado"
+
+# Detectamos si pagó leyendo varios parámetros posibles para no fallar
+pago_exitoso = (
+    parametros_url.get("pago") == "aprobado" or 
+    parametros_url.get("status") == "approved" or 
+    parametros_url.get("collection_status") == "approved"
+)
 
 if pago_exitoso:
     st.success("✅ ¡Pago confirmado! Bienvenido al nivel Elite. Tu plan está listo.")
