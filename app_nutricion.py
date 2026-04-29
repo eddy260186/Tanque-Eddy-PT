@@ -421,25 +421,25 @@ with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
             st.write(f"- {e}")
 
 # ==========================================
-# 8. MOTOR PDF BLINDADO Y MURO DE PAGO
+# 8. MOTOR PDF BLINDADO Y MURO DE PAGO ELITE
 # ==========================================
-
 st.divider()
 
-# 1. El "Radar" mejorado: Lee nuestra llave o los códigos nativos de Mercado Pago
-parametros_url = st.query_params
-
-# Detectamos si pagó leyendo varios parámetros posibles para no fallar
-pago_exitoso = (
-    parametros_url.get("pago") == "aprobado" or 
-    parametros_url.get("status") == "approved" or 
-    parametros_url.get("collection_status") == "approved"
+# 1. El "Radar" lee absolutamente cualquier señal de éxito de Mercado Pago
+parametros = st.query_params
+pago_confirmado = (
+    parametros.get("pago") == "aprobado" or 
+    parametros.get("status") == "approved" or 
+    parametros.get("collection_status") == "approved"
 )
 
-if pago_exitoso:
-    st.success("✅ ¡Pago confirmado! Bienvenido al nivel Elite. Tu plan está listo.")
+if pago_confirmado:
+    # SI HAY ÉXITO: El botón de pago desaparece y sale el de DESCARGA
+    st.balloons() # Efecto visual de festejo
+    st.success("✅ ¡Pago acreditado con éxito! Tu Plan Elite ha sido desbloqueado.")
     
     if nombre:
+        # Preparamos los datos para el PDF
         payload = {
             "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, 
             "cintura": cintura, "cadera": cadera, "rcc": rcc_valor, "rfm": rfm,
@@ -450,16 +450,27 @@ if pago_exitoso:
             "rutina": diccionario_rutinas
         }
         
+        # EL BOTÓN QUE BUSCABAS: Aparece solo después del pago
         st.download_button(
-            label="🏆 DESCARGAR PDF ELITE INTEGRAL", 
+            label="📥 DESCARGAR MI PLAN ELITE (PDF)", 
             data=build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), 
-            file_name=f"Plan_Integral_{nombre}.pdf",
-            mime="application/pdf"
+            file_name=f"Plan_Elite_{nombre}.pdf",
+            mime="application/pdf",
+            type="primary" # Lo ponemos en color resaltado
         )
-    else: 
-        st.warning("⚠️ Escribe el nombre del atleta arriba para habilitar la descarga.")
+    else:
+        st.warning("⚠️ Completa el nombre del atleta en el menú lateral para descargar.")
 
 else:
-    st.info("🔒 Tu Plan Elite ha sido generado. Para desbloquear la descarga, por favor abona la tarifa.")
-    link_mercado_pago = "https://mpago.la/27TKbMf" 
-    st.link_button("💳 Pagar para Desbloquear Plan", link_mercado_pago, type="primary")
+    # SI NO HAY PAGO: Mostramos el acceso restringido
+    st.markdown("### 🔒 Descarga Protegida")
+    st.info("Para obtener tu planificación completa en PDF, debes completar el pago único.")
+    
+    # Tu link oficial
+    link_mp = "https://mpago.la/27TKbMf"
+    
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.link_button("💳 PAGAR Y DESBLOQUEAR", link_mp, type="primary")
+    with col2:
+        st.caption("Al completar el pago, serás redirigido automáticamente para descargar tu archivo.")
