@@ -17,13 +17,53 @@ from data.ejercicios import ejercicios_db, rutinas_elite
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA
 # ==========================================
-st.set_page_config(page_title="Eddy PT - Elite v60.7 Periodización", page_icon="💪", layout="wide")
+st.set_page_config(page_title="Eddy PT - Elite v60.7", page_icon="💪", layout="wide")
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
-st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
 # ==========================================
-# DETECTOR DE LOGO BLINDADO
+# 2. SISTEMA DE USUARIOS (LOGIN / REGISTRO)
 # ==========================================
+supabase = init_supabase()
+
+if "usuario_actual" not in st.session_state:
+    st.session_state["usuario_actual"] = None
+
+# Si NO hay nadie logueado, mostramos solo la pantalla de entrada
+if st.session_state["usuario_actual"] is None:
+    st.title("🏆 Eddy Personal Trainer: Portal Elite")
+    st.subheader("🔐 Acceso Exclusivo")
+    tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
+    
+    with tab_login:
+        email_login = st.text_input("Correo electrónico", key="log_email")
+        pass_login = st.text_input("Contraseña", type="password", key="log_pass")
+        if st.button("Entrar", type="primary"):
+            try:
+                respuesta = supabase.auth.sign_in_with_password({"email": email_login, "password": pass_login})
+                st.session_state["usuario_actual"] = respuesta.user.email
+                st.success("¡Acceso concedido! Cargando tu panel...")
+                st.rerun()
+            except Exception as e:
+                st.error("Error: Correo o contraseña incorrectos.")
+                
+    with tab_registro:
+        st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
+        email_reg = st.text_input("Correo electrónico", key="reg_email")
+        pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
+        if st.button("Registrarme", type="primary"):
+            try:
+                respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
+                st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión en la pestaña de al lado.")
+            except Exception as e:
+                st.error("Error al crear la cuenta. Verifica que la contraseña tenga al menos 6 caracteres.")
+                
+    st.stop() # Frena la app acá si no están logueados
+
+# ==========================================
+# SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
+# ==========================================
+st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
+
 directorio_script = os.path.dirname(os.path.abspath(__file__))
 rutas_logo = [
     os.path.join(directorio_script, "logo.png"),
@@ -40,10 +80,15 @@ with st.sidebar:
     else:
         st.error("❌ Logo NO detectado")
     st.divider()
+    
+    # Botón para cerrar sesión
+    st.success(f"👤 Conectado:\n{st.session_state['usuario_actual']}")
+    if st.button("Cerrar Sesión"):
+        supabase.auth.sign_out()
+        st.session_state["usuario_actual"] = None
+        st.rerun()
+    st.divider()
 
-# ==========================================
-# BASE DE DATOS Y CRM 
-# ==========================================
 DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
 
 # ==========================================
@@ -55,7 +100,6 @@ with st.sidebar:
     pais = st.text_input("País de Residencia:", value="Argentina")
     edad = st.number_input("Edad:", min_value=10, value=30)
     
-    # Manteniendo estricto el pedido del usuario: letras individuales
     genero_seleccion = st.selectbox("Género:", ["m ", "f "])
     genero = genero_seleccion.strip()
     
@@ -112,7 +156,7 @@ with st.sidebar:
     num_opciones = st.slider("¿Cuántas opciones de menú por comida?", min_value=1, max_value=10, value=5)
 
 # ==========================================
-# 4. SALUD Y BIOMETRÍA ELITE (KATCH-MCARDLE)
+# 4. SALUD Y BIOMETRÍA ELITE
 # ==========================================
 st.subheader("📏 Salud y Biometría Elite")
 col_c1, col_c2 = st.columns(2)
@@ -349,25 +393,20 @@ for nombre_base in mapa_nombres[num_comidas]:
 # ==========================================
 st.subheader(f"🏋️‍♂️ Plan de Entrenamiento ({nivel_experiencia})")
 
-# 1. Obtenemos el contenido del nivel seleccionado en la base de datos
 contenido_nivel = rutinas_elite.get(tipo_entreno, {}).get(nivel_experiencia, [])
 
-# 2. Verificamos si hay variantes (Diccionario) o una sola rutina (Lista)
 if isinstance(contenido_nivel, dict):
     variante = st.selectbox("🔄 Seleccionar Variante de Rutina:", list(contenido_nivel.keys()))
     rutina_seleccionada = contenido_nivel[variante]
 else:
     rutina_seleccionada = contenido_nivel
 
-# 3. Formateamos la rutina para la interfaz y el PDF (CORTANDO POR DÍAS ELEGIDOS)
 diccionario_rutinas = {}
 
 if dias_entreno == 0:
     diccionario_rutinas["Descanso Activo"] = ["Día libre. Priorizar hidratación, sueño y caminatas ligeras."]
 elif rutina_seleccionada:
-    # LA MAGIA ESTÁ ACÁ: Corta exactamente los días que marcaste en el slider
     rutina_ajustada = rutina_seleccionada[:dias_entreno]
-    
     for bloque in rutina_ajustada:
         titulo_dia = bloque[0]
         ejercicios_dia = bloque[1:]
@@ -382,10 +421,16 @@ with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
             st.write(f"- {e}")
 
 # ==========================================
-# 8. MOTOR PDF BLINDADO 
+# 8. MOTOR PDF BLINDADO Y MURO DE PAGO
 # ==========================================
 st.divider()
-if st.button("🏆 GENERAR PDF ELITE INTEGRAL"):
+
+parametros_url = st.query_params
+pago_exitoso = parametros_url.get("pago") == "aprobado"
+
+if pago_exitoso:
+    st.success("✅ ¡Pago confirmado! Bienvenido al nivel Elite. Tu plan está listo.")
+    
     if nombre:
         payload = {
             "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, 
@@ -396,6 +441,17 @@ if st.button("🏆 GENERAR PDF ELITE INTEGRAL"):
             "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
             "rutina": diccionario_rutinas
         }
-        st.download_button("💾 Bajar Reporte Integral", build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), f"Plan_Integral_{nombre}.pdf")
+        
+        st.download_button(
+            label="🏆 DESCARGAR PDF ELITE INTEGRAL", 
+            data=build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), 
+            file_name=f"Plan_Integral_{nombre}.pdf",
+            mime="application/pdf"
+        )
     else: 
-        st.error("Por favor, ingresá el nombre del atleta.")
+        st.warning("⚠️ Escribe el nombre del atleta arriba para habilitar la descarga.")
+
+else:
+    st.info("🔒 Tu Plan Elite ha sido generado. Para desbloquear la descarga, por favor abona la tarifa.")
+    link_mercado_pago = "https://mpago.la/27TKbMf" 
+    st.link_button("💳 Pagar para Desbloquear Plan", link_mercado_pago, type="primary")
