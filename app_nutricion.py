@@ -12,7 +12,6 @@ from database.supabase_mgr import init_supabase
 from utils.biometria import calcular_biometria
 from utils.pdf_generator import build_pdf_v60_7
 from data.alimentos import alimentos_db
-# ACÁ ESTÁ EL PRIMER CAMBIO: Importamos rutinas_elite
 from data.ejercicios import ejercicios_db, rutinas_elite
 
 # ==========================================
@@ -355,17 +354,21 @@ contenido_nivel = rutinas_elite.get(tipo_entreno, {}).get(nivel_experiencia, [])
 
 # 2. Verificamos si hay variantes (Diccionario) o una sola rutina (Lista)
 if isinstance(contenido_nivel, dict):
-    # Si agregaste variantes en el futuro, esto mostrará un menú desplegable nuevo
     variante = st.selectbox("🔄 Seleccionar Variante de Rutina:", list(contenido_nivel.keys()))
     rutina_seleccionada = contenido_nivel[variante]
 else:
-    # Si es una lista directa (como lo tenemos cargado ahora), la usamos directo
     rutina_seleccionada = contenido_nivel
 
-# 3. Formateamos la rutina para la interfaz y el PDF
+# 3. Formateamos la rutina para la interfaz y el PDF (CORTANDO POR DÍAS ELEGIDOS)
 diccionario_rutinas = {}
-if rutina_seleccionada:
-    for bloque in rutina_seleccionada:
+
+if dias_entreno == 0:
+    diccionario_rutinas["Descanso Activo"] = ["Día libre. Priorizar hidratación, sueño y caminatas ligeras."]
+elif rutina_seleccionada:
+    # LA MAGIA ESTÁ ACÁ: Corta exactamente los días que marcaste en el slider
+    rutina_ajustada = rutina_seleccionada[:dias_entreno]
+    
+    for bloque in rutina_ajustada:
         titulo_dia = bloque[0]
         ejercicios_dia = bloque[1:]
         diccionario_rutinas[titulo_dia] = ejercicios_dia
@@ -391,7 +394,6 @@ if st.button("🏆 GENERAR PDF ELITE INTEGRAL"):
             "meta": tipo_objetivo, "dt": dieta_tipo,
             "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total, 
             "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
-            # Aquí le pasamos al PDF la rutina inteligente
             "rutina": diccionario_rutinas
         }
         st.download_button("💾 Bajar Reporte Integral", build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), f"Plan_Integral_{nombre}.pdf")
