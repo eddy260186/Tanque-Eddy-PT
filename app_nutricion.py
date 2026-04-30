@@ -444,26 +444,27 @@ if not st.session_state.pago_validado:
         nro_operacion = st.text_input("Ingresá el # de Operación (Ej: 156877505264):")
         if st.button("🔓 Validar y Descargar"):
             if nro_operacion:
-                # 1. Conexión secreta con Mercado Pago
-                token = st.secrets["MERCADO_PAGO_TOKEN"]
-                url_mp = f"https://api.mercadopago.com/v1/payments/{nro_operacion}"
-                headers = {"Authorization": f"Bearer {token}"}
+                # 1. Limpiamos el texto por si el usuario copió el "#" o dejó espacios
+                nro_limpio = nro_operacion.replace("#", "").strip()
                 
                 try:
+                    # 2. Conexión secreta con Mercado Pago
+                    token = st.secrets["MERCADO_PAGO_TOKEN"]
+                    url_mp = f"https://api.mercadopago.com/v1/payments/{nro_limpio}"
+                    headers = {"Authorization": f"Bearer {token}"}
+                    
                     res = requests.get(url_mp, headers=headers)
                     if res.status_code == 200:
                         datos_pago = res.json()
                         status = datos_pago.get("status")
                         
                         if status == "approved":
-                            # 2. Verificamos en Supabase si este ID ya fue "quemado"
-                            # Buscamos en una tabla llamada 'pagos_verificados'
-                            check = supabase.table("pagos_verificados").select("*").eq("id_pago", nro_operacion).execute()
+                            # 3. Verificamos en Supabase si este ID ya fue "quemado"
+                            check = supabase.table("pagos_verificados").select("*").eq("id_pago", nro_limpio).execute()
                             
                             if len(check.data) == 0:
-                                # Si no existe, lo registramos para que nadie más lo use
                                 supabase.table("pagos_verificados").insert({
-                                    "id_pago": nro_operacion, 
+                                    "id_pago": nro_limpio, 
                                     "usuario": st.session_state["usuario_actual"]
                                 }).execute()
                                 
@@ -476,10 +477,11 @@ if not st.session_state.pago_validado:
                     else:
                         st.error("❌ Número de operación no encontrado en Mercado Pago.")
                 except Exception as e:
-                    st.error("Hubo un error al conectar con el validador.")
+                    # 4. AHORA EL ERROR HABLA: Nos dirá exactamente qué se rompió
+                    st.error(f"Hubo un error técnico: {e}")
             else:
                 st.warning("Por favor, ingresá el número de operación.")
-
+                
 # --- PANTALLA DE DESCARGA LIBERADA ---
 if st.session_state.pago_validado:
     st.balloons()
