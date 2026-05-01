@@ -1,3 +1,4 @@
+import requests
 import streamlit as st
 from weasyprint import HTML
 from datetime import datetime, time
@@ -12,18 +13,58 @@ from database.supabase_mgr import init_supabase
 from utils.biometria import calcular_biometria
 from utils.pdf_generator import build_pdf_v60_7
 from data.alimentos import alimentos_db
-from data.ejercicios import ejercicios_db
+from data.ejercicios import ejercicios_db, rutinas_elite
 
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA
 # ==========================================
-st.set_page_config(page_title="Eddy PT - Elite v60.7 Periodización", page_icon="💪", layout="wide")
+st.set_page_config(page_title="Eddy PT - Elite v60.7", page_icon="💪", layout="wide")
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
-st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
 # ==========================================
-# DETECTOR DE LOGO BLINDADO
+# 2. SISTEMA DE USUARIOS (LOGIN / REGISTRO)
 # ==========================================
+supabase = init_supabase()
+
+if "usuario_actual" not in st.session_state:
+    st.session_state["usuario_actual"] = None
+
+# Si NO hay nadie logueado, mostramos solo la pantalla de entrada
+if st.session_state["usuario_actual"] is None:
+    st.title("🏆 Eddy Personal Trainer: Portal Elite")
+    st.subheader("🔐 Acceso Exclusivo")
+    tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
+    
+    with tab_login:
+        email_login = st.text_input("Correo electrónico", key="log_email")
+        pass_login = st.text_input("Contraseña", type="password", key="log_pass")
+        if st.button("Entrar", type="primary"):
+            try:
+                respuesta = supabase.auth.sign_in_with_password({"email": email_login, "password": pass_login})
+                st.session_state["usuario_actual"] = respuesta.user.email
+                st.success("¡Acceso concedido! Cargando tu panel...")
+                st.rerun()
+            except Exception as e:
+                st.error("Error: Correo o contraseña incorrectos.")
+                
+    with tab_registro:
+        st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
+        email_reg = st.text_input("Correo electrónico", key="reg_email")
+        pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
+        if st.button("Registrarme", type="primary"):
+            try:
+                respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
+                st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión en la pestaña de al lado.")
+            except Exception as e:
+                st.error("Error al crear la cuenta. Verifica que la contraseña tenga al menos 6 caracteres.")
+                
+    st.stop() # Frena la app acá si no están logueados
+
+# ==========================================
+# SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
+# ==========================================
+st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
+
 directorio_script = os.path.dirname(os.path.abspath(__file__))
 rutas_logo = [
     os.path.join(directorio_script, "logo.png"),
@@ -40,15 +81,14 @@ with st.sidebar:
     else:
         st.error("❌ Logo NO detectado")
     st.divider()
-
-# ==========================================
-# 2. BASE DE DATOS (ALIMENTOS COMPLETOS)
-# ==========================================
-
-# ==========================================
-# 2.5 BASE DE DATOS DE EJERCICIOS
-# ==========================================
-
+    
+    # Botón para cerrar sesión
+    st.success(f"👤 Conectado:\n{st.session_state['usuario_actual']}")
+    if st.button("Cerrar Sesión"):
+        supabase.auth.sign_out()
+        st.session_state["usuario_actual"] = None
+        st.rerun()
+    st.divider()
 
 DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
 
@@ -61,7 +101,6 @@ with st.sidebar:
     pais = st.text_input("País de Residencia:", value="Argentina")
     edad = st.number_input("Edad:", min_value=10, value=30)
     
-    # Manteniendo estricto el pedido del usuario: letras individuales
     genero_seleccion = st.selectbox("Género:", ["m ", "f "])
     genero = genero_seleccion.strip()
     
@@ -118,7 +157,7 @@ with st.sidebar:
     num_opciones = st.slider("¿Cuántas opciones de menú por comida?", min_value=1, max_value=10, value=5)
 
 # ==========================================
-# 4. SALUD Y BIOMETRÍA ELITE (KATCH-MCARDLE)
+# 4. SALUD Y BIOMETRÍA ELITE
 # ==========================================
 st.subheader("📏 Salud y Biometría Elite")
 col_c1, col_c2 = st.columns(2)
@@ -351,150 +390,30 @@ for nombre_base in mapa_nombres[num_comidas]:
     diccionario_menus[nombre_base.upper()] = opciones_de_esta_comida
 
 # ==========================================
-# 7.5 MOTOR INTELIGENTE: LÓGICA DE SERIES Y REPS POR NIVEL
+# 7.5 MOTOR DE RUTINAS ELITE CON SOPORTE DE VARIANTES
 # ==========================================
-st.subheader(f"🏋️‍♂️ Plan de Entrenamiento Estratégico ({dias_entreno} días | {nivel_experiencia})")
+st.subheader(f"🏋️‍♂️ Plan de Entrenamiento ({nivel_experiencia})")
 
-# ARBOL DE DECISIÓN: Cruzando Nivel con Tipo de Entreno
-if nivel_experiencia == "Principiante":
-    if "Fuerza" in tipo_entreno or "Powerlifting" in tipo_entreno:
-        series_reps = "3 series x 8-10 reps (Enfoque Técnico / RIR 3)"
-    else:
-        series_reps = "3 series x 12-15 reps (Técnica / Carga Moderada)"
+contenido_nivel = rutinas_elite.get(tipo_entreno, {}).get(nivel_experiencia, [])
 
-elif nivel_experiencia == "Intermedio":
-    if "Fuerza" in tipo_entreno or "Powerlifting" in tipo_entreno:
-        series_reps = "4 series x 4-6 reps (Carga Pesada / RIR 2)"
-    elif "Volumen" in tipo_objetivo or "Hipertrofia" in tipo_entreno:
-        series_reps = "3-4 series x 8-12 reps (Hipertrofia / RIR 1-2)"
-    elif "Definición" in tipo_objetivo or "Resistencia" in tipo_entreno:
-        series_reps = "3 series x 15-20 reps (Resistencia / RIR 1)"
-    else:
-        series_reps = "3 series x 10-12 reps (Carga Equilibrada)"
-
-else: # Avanzado
-    if "Fuerza" in tipo_entreno or "Powerlifting" in tipo_entreno:
-        series_reps = "4-5 series x 3-5 reps (Muy Pesado / RIR 0-1)"
-    elif "Volumen" in tipo_objetivo or "Hipertrofia" in tipo_entreno:
-        series_reps = "4 series x 8-10 reps (Alta Intensidad / Al fallo o RIR 0)"
-    elif "Definición" in tipo_objetivo or "Resistencia" in tipo_entreno:
-        series_reps = "4 series x 12-15 reps (Tensión Continua / Descansos cortos)"
-    else:
-        series_reps = "4 series x 8-12 reps (Máximo Estímulo / RIR 0-1)"
+if isinstance(contenido_nivel, dict):
+    variante = st.selectbox("🔄 Seleccionar Variante de Rutina:", list(contenido_nivel.keys()))
+    rutina_seleccionada = contenido_nivel[variante]
+else:
+    rutina_seleccionada = contenido_nivel
 
 diccionario_rutinas = {}
 
-if dias_entreno == 0 or "Ninguno" in tipo_entreno:
-    diccionario_rutinas["Día 1 - Descanso Activo"] = ["Caminata ligera, estiramientos o movilidad (30-40 min)"]
-
-# LÓGICA EXCLUSIVA: 5 o 6 DÍAS AVANZADO (ÉNFASIS INFERIOR)
-elif dias_entreno >= 5 and nivel_experiencia == "Avanzado":
-    diccionario_rutinas["Día 1 - Cuádriceps (Énfasis Anterior)"] = [
-        f"{ejercicios_db['Cuádriceps'][0]} | {series_reps}",
-        f"{ejercicios_db['Cuádriceps'][1]} | {series_reps}",
-        f"{ejercicios_db['Cuádriceps'][2]} | {series_reps}",
-        f"{ejercicios_db['Pantorrillas'][0]} | {series_reps}",
-        f"{ejercicios_db['Core'][0]} | {series_reps} (Un día sí, un día no)"
-    ]
-    diccionario_rutinas["Día 2 - Espalda y Bíceps (Tracción)"] = [
-        f"{ejercicios_db['Espalda'][0]} | {series_reps}",
-        f"{ejercicios_db['Espalda'][1]} | {series_reps}",
-        f"{ejercicios_db['Espalda'][2]} | {series_reps}",
-        f"{ejercicios_db['Brazos'][0]} | {series_reps}",
-        f"{ejercicios_db['Brazos'][1]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 3 - Glúteos y Femorales (Énfasis Posterior)"] = [
-        f"{ejercicios_db['Glúteos'][0]} | {series_reps}",
-        f"{ejercicios_db['Glúteos'][1]} | {series_reps}",
-        f"{ejercicios_db['Femorales'][0]} | {series_reps}",
-        f"{ejercicios_db['Femorales'][1]} | {series_reps}",
-        f"{ejercicios_db['Pantorrillas'][1]} | {series_reps}",
-        f"{ejercicios_db['Core'][1]} | {series_reps} (Un día sí, un día no)"
-    ]
-    diccionario_rutinas["Día 4 - Pectorales y Hombros (Empuje)"] = [
-        f"{ejercicios_db['Pecho'][0]} | {series_reps}",
-        f"{ejercicios_db['Pecho'][1]} | {series_reps}",
-        f"{ejercicios_db['Pecho'][2]} | {series_reps}",
-        f"{ejercicios_db['Hombros'][0]} | {series_reps}",
-        f"{ejercicios_db['Hombros'][1]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 5 - Pierna Completa (Estímulo Global)"] = [
-        f"{ejercicios_db['Cuádriceps'][3]} | {series_reps}",
-        f"{ejercicios_db['Femorales'][2]} | {series_reps}",
-        f"{ejercicios_db['Glúteos'][2]} | {series_reps}",
-        f"{ejercicios_db['Pantorrillas'][0]} | {series_reps}",
-        f"{ejercicios_db['Core'][3]} | {series_reps} (Un día sí, un día no)"
-    ]
-    if dias_entreno == 6:
-        diccionario_rutinas["Día 6 - Recordatorio Torso o Puntos Débiles"] = [
-            f"{ejercicios_db['Espalda'][3]} | {series_reps}",
-            f"{ejercicios_db['Hombros'][3]} | {series_reps}",
-            f"{ejercicios_db['Brazos'][2]} | {series_reps}"
-        ]
-
-# LÓGICA ESTÁNDAR: Principiantes/Intermedios o menos días
-elif dias_entreno <= 3:
-    for d in range(1, dias_entreno + 1):
-        diccionario_rutinas[f"Día {d} - Full Body (Cuerpo Completo)"] = [
-            f"{ejercicios_db['Cuádriceps'][0]} | {series_reps}",
-            f"{ejercicios_db['Femorales'][0]} | {series_reps}",
-            f"{ejercicios_db['Pecho'][0]} | {series_reps}",
-            f"{ejercicios_db['Espalda'][0]} | {series_reps}",
-            f"{ejercicios_db['Hombros'][1]} | {series_reps}",
-            f"{ejercicios_db['Core'][0]} | {series_reps}"
-        ]
-elif dias_entreno == 4:
-    diccionario_rutinas["Día 1 - Torso (Empuje y Tracción)"] = [
-        f"{ejercicios_db['Pecho'][0]} | {series_reps}",
-        f"{ejercicios_db['Espalda'][0]} | {series_reps}",
-        f"{ejercicios_db['Hombros'][0]} | {series_reps}",
-        f"{ejercicios_db['Brazos'][0]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 2 - Piernas (Enfoque Cuádriceps y Pantorrillas)"] = [
-        f"{ejercicios_db['Cuádriceps'][0]} | {series_reps}",
-        f"{ejercicios_db['Cuádriceps'][1]} | {series_reps}",
-        f"{ejercicios_db['Cuádriceps'][2]} | {series_reps}",
-        f"{ejercicios_db['Pantorrillas'][0]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 3 - Torso (Empuje y Tracción)"] = [
-        f"{ejercicios_db['Pecho'][1]} | {series_reps}",
-        f"{ejercicios_db['Espalda'][1]} | {series_reps}",
-        f"{ejercicios_db['Hombros'][1]} | {series_reps}",
-        f"{ejercicios_db['Brazos'][2]} | {series_reps}"
-    ]
-    diccionario_rutinas["Día 4 - Piernas (Enfoque Femorales y Glúteos)"] = [
-        f"{ejercicios_db['Femorales'][0]} | {series_reps}",
-        f"{ejercicios_db['Glúteos'][0]} | {series_reps}",
-        f"{ejercicios_db['Femorales'][1]} | {series_reps}",
-        f"{ejercicios_db['Core'][0]} | {series_reps}"
-    ]
+if dias_entreno == 0:
+    diccionario_rutinas["Descanso Activo"] = ["Día libre. Priorizar hidratación, sueño y caminatas ligeras."]
+elif rutina_seleccionada:
+    rutina_ajustada = rutina_seleccionada[:dias_entreno]
+    for bloque in rutina_ajustada:
+        titulo_dia = bloque[0]
+        ejercicios_dia = bloque[1:]
+        diccionario_rutinas[titulo_dia] = ejercicios_dia
 else:
-    rutinas_ppl = [
-        ("Empuje (Pecho, Hombros, Tríceps)", [
-            f"{ejercicios_db['Pecho'][0]}",
-            f"{ejercicios_db['Hombros'][0]}",
-            f"{ejercicios_db['Pecho'][1]}",
-            f"{ejercicios_db['Brazos'][2]}"
-        ]),
-        ("Tracción (Espalda, Bíceps, Cara Posterior)", [
-            f"{ejercicios_db['Espalda'][0]}",
-            f"{ejercicios_db['Espalda'][1]}",
-            f"{ejercicios_db['Hombros'][2]}",
-            f"{ejercicios_db['Brazos'][0]}"
-        ]),
-        ("Piernas Completas y Pantorrillas", [
-            f"{ejercicios_db['Cuádriceps'][0]}",
-            f"{ejercicios_db['Femorales'][0]}",
-            f"{ejercicios_db['Glúteos'][0]}",
-            f"{ejercicios_db['Pantorrillas'][0]}"
-        ])
-    ]
-    for d in range(1, dias_entreno + 1):
-        nombre_dia, lista_ejs = rutinas_ppl[(d-1) % 3]
-        ejercicios_formateados = []
-        for e in lista_ejs:
-            ejercicios_formateados.append(f"{e} | {series_reps}")
-        diccionario_rutinas[f"Día {d} - {nombre_dia}"] = ejercicios_formateados
+    diccionario_rutinas = {"Aviso": ["Rutina en construcción para esta disciplina y nivel."]}
 
 with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
     for dia_nombre, ejercicios in diccionario_rutinas.items():
@@ -503,12 +422,78 @@ with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
             st.write(f"- {e}")
 
 # ==========================================
-# 8. MOTOR PDF BLINDADO 
+# 8. MOTOR PDF Y VALIDADOR DE PAGOS ÚNICOS
 # ==========================================
 
-
 st.divider()
-if st.button("🏆 GENERAR PDF ELITE INTEGRAL"):
+st.markdown("### 🔒 Descarga Protegida")
+
+# Inicializamos el estado del pago si no existe
+
+if "pago_validado" not in st.session_state:
+    st.session_state.pago_validado = False
+
+if not st.session_state.pago_validado:
+    st.info("Para descargar tu Plan Elite, ingresa el número de operación de tu pago.")
+    
+    col_p, col_v = st.columns(2)
+    with col_p:
+        st.link_button("💳 REALIZAR PAGO ($10.000)", "https://mpago.la/27TKbMf", type="primary")
+        st.caption("Al finalizar, busca el '#' seguido de 11 o 12 números en tu comprobante.")
+        
+    with col_v:
+        nro_operacion = st.text_input("Ingresá el # de Operación (Ej: 156877505264):")
+        if st.button("🔓 Validar y Descargar"):
+            if nro_operacion:
+                # 1. Limpiamos el texto por si el usuario copió el "#" o dejó espacios
+                nro_limpio = nro_operacion.replace("#", "").strip()
+
+                # --- LLAVE MAESTRA VIP ---
+                if nro_limpio == "TANQUEVIP":
+                    st.session_state.pago_validado = True
+                    st.rerun()
+                # -------------------------
+              
+                try:
+                    # 2. Conexión secreta con Mercado Pago
+                    token = st.secrets["MERCADO_PAGO_TOKEN"]
+                    url_mp = f"https://api.mercadopago.com/v1/payments/{nro_limpio}"
+                    headers = {"Authorization": f"Bearer {token}"}
+                    
+                    res = requests.get(url_mp, headers=headers)
+                    if res.status_code == 200:
+                        datos_pago = res.json()
+                        status = datos_pago.get("status")
+                        
+                        if status == "approved":
+                            # 3. Verificamos en Supabase si este ID ya fue "quemado"
+                            check = supabase.table("pagos_verificados").select("*").eq("id_pago", nro_limpio).execute()
+                            
+                            if len(check.data) == 0:
+                                supabase.table("pagos_verificados").insert({
+                                    "id_pago": nro_limpio, 
+                                    "usuario": st.session_state["usuario_actual"]
+                                }).execute()
+                                
+                                st.session_state.pago_validado = True
+                                st.rerun()
+                            else:
+                                st.error("❌ Este comprobante ya fue utilizado por otro usuario.")
+                        else:
+                            st.error(f"❌ El pago figura como: {status}. Debe estar 'approved'.")
+                    else:
+                        st.error("❌ Número de operación no encontrado en Mercado Pago.")
+                except Exception as e:
+                    # 4. AHORA EL ERROR HABLA: Nos dirá exactamente qué se rompió
+                    st.error(f"Hubo un error técnico: {e}")
+            else:
+                st.warning("Por favor, ingresá el número de operación.")
+
+# --- PANTALLA DE DESCARGA LIBERADA ---
+if st.session_state.pago_validado:
+    st.balloons()
+    st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
+    
     if nombre:
         payload = {
             "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, 
@@ -519,6 +504,12 @@ if st.button("🏆 GENERAR PDF ELITE INTEGRAL"):
             "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
             "rutina": diccionario_rutinas
         }
-        st.download_button("💾 Bajar Reporte Integral", build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), f"Plan_Integral_{nombre}.pdf")
-    else: 
-        st.error("Por favor, ingresá el nombre del atleta.")
+        st.download_button(
+            label="📥 DESCARGAR MI PLAN ELITE (PDF)", 
+            data=build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), 
+            file_name=f"Plan_Elite_{nombre}.pdf",
+            mime="application/pdf",
+            type="primary"
+        )
+    else:
+        st.warning("⚠️ Escribe el nombre del atleta para generar el archivo.")
