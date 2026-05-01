@@ -38,7 +38,7 @@ if st.session_state["usuario_actual"] is None:
     
     with col_centro:
         # 1. Acá va tu logo (asegurate de haberlo guardado con este nombre)
-        st.image("logo_tanque.png", use_container_width=True)
+        st.image("logo_tanque.png", width=180)
         
         st.markdown("<h2 style='text-align: center;'>🏆 Portal Elite</h2>", unsafe_allow_html=True)
         st.markdown("---")
