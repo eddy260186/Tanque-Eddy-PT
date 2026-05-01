@@ -429,6 +429,7 @@ st.divider()
 st.markdown("### 🔒 Descarga Protegida")
 
 # Inicializamos el estado del pago si no existe
+
 if "pago_validado" not in st.session_state:
     st.session_state.pago_validado = False
 
@@ -446,7 +447,13 @@ if not st.session_state.pago_validado:
             if nro_operacion:
                 # 1. Limpiamos el texto por si el usuario copió el "#" o dejó espacios
                 nro_limpio = nro_operacion.replace("#", "").strip()
-                
+
+                # --- LLAVE MAESTRA VIP ---
+                if nro_limpio == "TANQUEVIP":
+                    st.session_state.pago_validado = True
+                    st.rerun()
+                # -------------------------
+              
                 try:
                     # 2. Conexión secreta con Mercado Pago
                     token = st.secrets["MERCADO_PAGO_TOKEN"]
@@ -481,7 +488,7 @@ if not st.session_state.pago_validado:
                     st.error(f"Hubo un error técnico: {e}")
             else:
                 st.warning("Por favor, ingresá el número de operación.")
-                
+
 # --- PANTALLA DE DESCARGA LIBERADA ---
 if st.session_state.pago_validado:
     st.balloons()
