@@ -33,46 +33,45 @@ if "usuario_actual" not in st.session_state:
 
 if st.session_state["usuario_actual"] is None:
     
-    # --- DISEÑO PREMIUM CENTRADO ---
-    col_izq, col_centro, col_der = st.columns([1, 2, 1])
+    # --- SOLO EL LOGO CENTRADO Y MÁS CHICO ---
+    col1, col_logo, col3 = st.columns([1, 1, 1]) 
+    with col_logo:
+        st.image("logo_tanque.png", use_container_width=True)
+        
+    st.markdown("<h2 style='text-align: center;'>🏆 Portal Elite</h2>", unsafe_allow_html=True)
+    st.markdown("---")
     
-    with col_centro:
-        # 1. Acá va tu logo (asegurate de haberlo guardado con este nombre)
-        st.image("logo_tanque.png", width=180)
+    # --- EL RESTO VUELVE A LA NORMALIDAD (ANCHO COMPLETO COMO LO QUERÍAS) ---
+    tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
+    
+    with tab_login:
+        email_login = st.text_input("Correo electrónico", key="log_email")
+        pass_login = st.text_input("Contraseña", type="password", key="log_pass")
         
-        st.markdown("<h2 style='text-align: center;'>🏆 Portal Elite</h2>", unsafe_allow_html=True)
-        st.markdown("---")
+        # Botón ancho premium
+        if st.button("Entrar", type="primary", use_container_width=True):
+            try:
+                respuesta = supabase.auth.sign_in_with_password({"email": email_login, "password": pass_login})
+                st.session_state["usuario_actual"] = respuesta.user.email
+                st.success("¡Acceso concedido! Cargando tu panel...")
+                st.rerun()
+            except Exception as e:
+                st.error("Error: Correo o contraseña incorrectos.")
+                
+    with tab_registro:
+        st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
+        email_reg = st.text_input("Correo electrónico", key="reg_email")
+        pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
         
-        tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
-        
-        with tab_login:
-            email_login = st.text_input("Correo electrónico", key="log_email")
-            pass_login = st.text_input("Contraseña", type="password", key="log_pass")
-            
-            # Botón ancho premium
-            if st.button("Entrar", type="primary", use_container_width=True):
-                try:
-                    respuesta = supabase.auth.sign_in_with_password({"email": email_login, "password": pass_login})
-                    st.session_state["usuario_actual"] = respuesta.user.email
-                    st.success("¡Acceso concedido! Cargando tu panel...")
-                    st.rerun()
-                except Exception as e:
-                    st.error("Error: Correo o contraseña incorrectos.")
-                    
-        with tab_registro:
-            st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
-            email_reg = st.text_input("Correo electrónico", key="reg_email")
-            pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
-            
-            # Botón ancho premium
-            if st.button("Registrarme", type="primary", use_container_width=True):
-                try:
-                    respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
-                    st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.")
-                except Exception as e:
-                    st.error("Error al crear la cuenta. Verifica que la contraseña tenga al menos 6 caracteres.")
-                    
-    st.stop() # Frena la app acá si no están logueados
+        # Botón ancho premium
+        if st.button("Registrarme", type="primary", use_container_width=True):
+            try:
+                respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
+                st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.")
+            except Exception as e:
+                st.error("Error al crear la cuenta. Verifica que la contraseña tenga al menos 6 caracteres.")
+
+st.stop() # Frena la app acá si no están logueados
 
 # ==========================================
 # SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
