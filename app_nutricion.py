@@ -367,7 +367,8 @@ mapa_nombres = {
 
 for nombre_base in mapa_nombres[num_comidas]:
     opciones_de_esta_comida = []
-    with st.expander(f"✨ {nombre_base.upper()}", expanded=True):
+    st.button(f"› ✨ {nombre_base.upper()}", use_container_width=True, disabled=True)
+    if True:
         es_mt = any(x in nombre_base for x in ["Desayuno", "Merienda", "Mañana"])
         for i in range(num_opciones):
             
@@ -410,7 +411,7 @@ for nombre_base in mapa_nombres[num_comidas]:
                 bebida = alimentos_db["Bebidas_Gral"][i % len(alimentos_db["Bebidas_Gral"])]
             
             txt_op = f"Opcion {i+1}: {gramos_p}g {fp} + {texto_carbo} {fc} + {gramos_g}g {fg} | Infusion: {bebida}"
-            st.write(txt_op)
+            #st.write(txt_op)
             opciones_de_esta_comida.append(txt_op)
 
             dias_por_opcion = 30 / num_opciones
@@ -448,11 +449,13 @@ elif rutina_seleccionada:
 else:
     diccionario_rutinas = {"Aviso": ["Rutina en construcción para esta disciplina y nivel."]}
 
-with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
-    for dia_nombre, ejercicios in diccionario_rutinas.items():
-        st.markdown(f"**{dia_nombre}**")
-        for e in ejercicios:
-            st.write(f"- {e}")
+st.button("› 👁️ VER RUTINA GENERADA", use_container_width=True, disabled=True)
+if True:
+        for dia_nombre, ejercicios in diccionario_rutinas.items():
+            # st.markdown(f"**{dia_nombre}**")
+            for e in ejercicios:
+                # st.write(f"- {e}")
+                pass
 
 # ==========================================
 # 8. MOTOR PDF Y VALIDADOR DE PAGOS ÚNICOS
