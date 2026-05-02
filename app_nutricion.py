@@ -104,7 +104,17 @@ with st.sidebar:
     else:
         st.error("❌ Logo NO detectado")
     st.divider()
-    
+
+# --- BOTÓN DE SOPORTE WHATSAPP EN EL MENÚ LATERAL ---
+    st.markdown("<p style='text-align: center; color: #888888; font-size: 14px; margin-bottom: 0px;'>¿Dudas con tu plan?</p>", unsafe_allow_html=True)
+        
+    num_wa_interno = "5491164788719" 
+    msg_interno = "Hola%20Eddy.%20Tengo%20una%20consulta%20desde%20mi%20panel."
+    link_wa_int = f"https://wa.me/{num_wa_interno}?text={msg_interno}"
+        
+    st.markdown(f"<div style='text-align: center;'><a href='{link_wa_int}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 16px;'>💬 <b>Contactar Soporte</b></a></div>", unsafe_allow_html=True)
+    st.divider() # Ponemos otra rayita para separarlo del botón de cerrar sesión    
+
     # Botón para cerrar sesión
     st.success(f"👤 Conectado:\n{st.session_state['usuario_actual']}")
     if st.button("Cerrar Sesión"):
