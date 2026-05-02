@@ -81,7 +81,7 @@ if st.session_state["usuario_actual"] is None:
         link_wa = f"https://wa.me/{numero_whatsapp}?text={mensaje}"
         
         st.markdown(f"<div style='text-align: center;'><a href='{link_wa}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 15px;'>💬 <b>¿Problemas para ingresar? Contactá al Soporte</b></a></div>", unsafe_allow_html=True)
-st.stop() # Frena la app acá si no están logueados
+    st.stop() # Frena la app acá si no están logueados
 
 # ==========================================
 # SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
