@@ -72,6 +72,15 @@ if st.session_state["usuario_actual"] is None:
             except Exception as e:
                 st.error("Error al crear la cuenta. Verifica que la contraseña tenga al menos 6 caracteres.")
 
+# --- BOTÓN DE SOPORTE WHATSAPP ---
+        st.markdown("<br>", unsafe_allow_html=True) 
+        
+        # ACÁ PONÉS TU NÚMERO (ej: 54911... o 549237... si es de tu zona)
+        numero_whatsapp = "5491164788719" 
+        mensaje = "Hola%20Soporte.%20Necesito%20ayuda%20con%20el%20Portal%20Elite."
+        link_wa = f"https://wa.me/{numero_whatsapp}?text={mensaje}"
+        
+        st.markdown(f"<div style='text-align: center;'><a href='{link_wa}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 15px;'>💬 <b>¿Problemas para ingresar? Contactá al Soporte</b></a></div>", unsafe_allow_html=True)
 st.stop() # Frena la app acá si no están logueados
 
 # ==========================================
