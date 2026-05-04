@@ -65,13 +65,23 @@ if st.session_state["usuario_actual"] is None:
         email_reg = st.text_input("Correo electrónico", key="reg_email")
         pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
         
-        # Botón ancho premium REGISTRO
+        # EL TOQUE MAESTRO: Pedimos la fecha acá
+        from datetime import date
+        fecha_nac_reg = st.date_input("Fecha de Nacimiento:", min_value=date(1940, 1, 1), max_value=date.today(), key="reg_fecha")
+        
         if st.button("Registrarme", type="primary", use_container_width=True):
             try:
+                # 1. Creamos la cuenta en el sistema de seguridad
                 respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
+                
+                # 2. AUTOMATIZACIÓN: Le creamos su perfil inicial con la fecha de nacimiento al instante
+                supabase.table("perfiles_atletas").insert({
+                    "email": email_reg,
+                    "fecha_nacimiento": str(fecha_nac_reg)
+                }).execute()
+                
                 st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.")
             except Exception as e:
-                # ACÁ ESTÁ EL CAMBIO: Ahora el error nos dice la verdad
                 st.error(f"Error real de Supabase: {e}")
 
 # --- BOTÓN DE SOPORTE WHATSAPP ---
@@ -128,40 +138,54 @@ with st.sidebar:
 
 DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
 
+from datetime import date, datetime
+
 # ==========================================
-# 3. PERFIL DEL ATLETA (INTELIGENTE)
+# 3. PERFIL DEL ATLETA (INTELIGENTE Y AUTOMÁTICO)
 # ==========================================
-# Vamos a buscar a la base de datos si este usuario ya existe
 email_usuario = st.session_state["usuario_actual"]
 res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_usuario).execute()
 
-# Lógica para autocompletar si ya tiene perfil
 if len(res_perfil.data) > 0:
     perfil_db = res_perfil.data[0]
-    nombre_default = perfil_db["nombre_completo"]
-    pais_default = perfil_db["pais"]
-    genero_idx = 0 if perfil_db["genero"].strip() == "m" else 1
-    es_nuevo = False
+    nombre_default = perfil_db.get("nombre_completo", "")
+    pais_default = perfil_db.get("pais", "Argentina")
+    
+    # Manejo seguro del género
+    genero_db = perfil_db.get("genero")
+    genero_idx = 0 if (genero_db and genero_db.strip() == "m") else 1
+    
+    # Rescatamos la fecha de nacimiento que puso al registrarse
+    fecha_str = perfil_db.get("fecha_nacimiento")
+    if fecha_str:
+        fecha_nac_atleta = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+    else:
+        fecha_nac_atleta = date(1990, 1, 1) # Fecha por defecto por si falta
+        
+    es_nuevo = False if nombre_default else True
 else:
     nombre_default = ""
     pais_default = "Argentina"
     genero_idx = 0
+    fecha_nac_atleta = date(1990, 1, 1)
     es_nuevo = True
 
 with st.sidebar:
     st.header("👤 Perfil del Atleta")
     
     if not es_nuevo:
-        st.success(f"👋 Perfil verificado: {nombre_default}")
+        st.success(f"👋 Hola de nuevo, {nombre_default}")
         
-    # Los campos se bloquean (disabled) si el perfil ya existe en la base de datos
     nombre = st.text_input("Nombre Completo:", value=nombre_default, disabled=not es_nuevo)
     pais = st.text_input("País de Residencia:", value=pais_default, disabled=not es_nuevo)
-    
-    edad = st.number_input("Edad:", min_value=10, value=30)
-    
     genero_seleccion = st.selectbox("Género:", ["m ", "f "], index=genero_idx, disabled=not es_nuevo)
     genero = genero_seleccion.strip()
+    
+    # CÁLCULO INVISIBLE: Calculamos la edad sin pedirle nada
+    hoy = date.today()
+    edad = hoy.year - fecha_nac_atleta.year - ((hoy.month, hoy.day) < (fecha_nac_atleta.month, fecha_nac_atleta.day))
+    
+    st.info(f"🎂 Edad registrada: {edad} años")
     embarazada_bool = False
     if genero == "f": 
         embarazada_bool = st.checkbox("¿Está embarazada?")
