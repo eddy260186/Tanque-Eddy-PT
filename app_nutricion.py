@@ -62,27 +62,39 @@ if st.session_state["usuario_actual"] is None:
                 
     with tab_registro:
         st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
+        
+        # EL NUEVO CAMPO: Pedimos el nombre desde el arranque
+        nombre_reg = st.text_input("Nombre Completo", key="reg_nombre")
         email_reg = st.text_input("Correo electrónico", key="reg_email")
         pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
         
-        # EL TOQUE MAESTRO: Pedimos la fecha acá
         from datetime import date
         fecha_nac_reg = st.date_input("Fecha de Nacimiento:", min_value=date(1940, 1, 1), max_value=date.today(), key="reg_fecha")
         
         if st.button("Registrarme", type="primary", use_container_width=True):
-            try:
-                # 1. Creamos la cuenta en el sistema de seguridad
-                respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
-                
-                # 2. AUTOMATIZACIÓN: Le creamos su perfil inicial con la fecha de nacimiento al instante
-                supabase.table("perfiles_atletas").insert({
-                    "email": email_reg,
-                    "fecha_nacimiento": str(fecha_nac_reg)
-                }).execute()
-                
-                st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.")
-            except Exception as e:
-                st.error(f"Error real de Supabase: {e}")
+            # Pequeña validación: evitamos que dejen el nombre en blanco
+            if not nombre_reg.strip():
+                st.warning("⚠️ Por favor, ingresa tu nombre completo antes de registrarte.")
+            else:
+                try:
+                    # 1. Creamos la cuenta de seguridad
+                    respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
+                    
+                    # 2. Guardamos el perfil inicial CON EL NOMBRE REAL
+                    try:
+                        supabase.table("perfiles_atletas").insert({
+                            "email": email_reg,
+                            "nombre_completo": nombre_reg,
+                            "pais": "Argentina", 
+                            "genero": "m", 
+                            "fecha_nacimiento": str(fecha_nac_reg)
+                        }).execute()
+                        st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.")
+                    except Exception as db_error:
+                        st.warning(f"Cuenta creada, pero hubo un error al guardar el perfil inicial: {db_error}")
+                        
+                except Exception as auth_error:
+                    st.error(f"Error de registro: {auth_error}")
 
 # --- BOTÓN DE SOPORTE WHATSAPP ---
 
