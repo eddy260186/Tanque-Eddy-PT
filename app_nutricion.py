@@ -153,10 +153,19 @@ DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
 from datetime import date, datetime
 
 # ==========================================
-# 3. PERFIL DEL ATLETA (INTELIGENTE Y AUTOMÁTICO)
+# 3. PERFIL DEL ATLETA (SOLUCIÓN FINAL TESTEADA)
 # ==========================================
-# Verificamos que el email exista antes de intentar limpiarlo
-email_limpio = email_usuario.lower().strip() if email_usuario else ""
+
+# Definimos la variable antes de usarla para evitar el NameError
+email_usuario = st.session_state.get("usuario_actual", "")
+
+# Limpiamos el email solo si existe, de lo contrario queda vacío
+if email_usuario:
+    email_limpio = email_usuario.lower().strip()
+else:
+    email_limpio = ""
+
+# Consulta a Supabase con el email verificado
 res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_limpio).execute()
 
 if len(res_perfil.data) > 0:
