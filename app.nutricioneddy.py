@@ -30,15 +30,27 @@ if "usuario_actual" not in st.session_state:
     st.session_state["usuario_actual"] = None
 
 # Si NO hay nadie logueado, mostramos solo la pantalla de entrada
+
 if st.session_state["usuario_actual"] is None:
-    st.title("🏆 Eddy Personal Trainer: Portal Elite")
-    st.subheader("🔐 Acceso Exclusivo")
+    
+    # --- SOLO EL LOGO CENTRADO Y MÁS CHICO ---
+    col1, col_logo, col3 = st.columns([1, 1, 1]) 
+    with col_logo:
+        st.image("logo_tanque.png", use_container_width=True)
+        
+    st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🏆 Portal Elite Fitness</h2>", unsafe_allow_html=True)
+    st.markdown("<h5 style='text-align: center; color: #888888; font-style: italic; margin-top: 0px;'>🚫 No apto para escarbadientes🚫</h5>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # --- EL RESTO VUELVE A LA NORMALIDAD (ANCHO COMPLETO COMO LO QUERÍAS) ---
     tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
     
     with tab_login:
         email_login = st.text_input("Correo electrónico", key="log_email")
         pass_login = st.text_input("Contraseña", type="password", key="log_pass")
-        if st.button("Entrar", type="primary"):
+        
+        # Botón ancho premium
+        if st.button("Entrar", type="primary", use_container_width=True):
             try:
                 respuesta = supabase.auth.sign_in_with_password({"email": email_login, "password": pass_login})
                 st.session_state["usuario_actual"] = respuesta.user.email
@@ -51,13 +63,24 @@ if st.session_state["usuario_actual"] is None:
         st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
         email_reg = st.text_input("Correo electrónico", key="reg_email")
         pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
-        if st.button("Registrarme", type="primary"):
+        
+        # Botón ancho premium
+        if st.button("Registrarme", type="primary", use_container_width=True):
             try:
                 respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
-                st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión en la pestaña de al lado.")
+                st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.")
             except Exception as e:
                 st.error("Error al crear la cuenta. Verifica que la contraseña tenga al menos 6 caracteres.")
-                
+
+# --- BOTÓN DE SOPORTE WHATSAPP ---
+        st.markdown("<br>", unsafe_allow_html=True) 
+        
+        # ACÁ PONÉS TU NÚMERO (ej: 54911... o 549237... si es de tu zona)
+        numero_whatsapp = "5491164788719" 
+        mensaje = "Hola%20Soporte.%20Necesito%20ayuda%20con%20el%20Portal%20Elite."
+        link_wa = f"https://wa.me/{numero_whatsapp}?text={mensaje}"
+        
+        st.markdown(f"<div style='text-align: center;'><a href='{link_wa}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 15px;'>💬 <b>¿Problemas para ingresar? Contactá al Soporte</b></a></div>", unsafe_allow_html=True)
     st.stop() # Frena la app acá si no están logueados
 
 # ==========================================
@@ -81,7 +104,17 @@ with st.sidebar:
     else:
         st.error("❌ Logo NO detectado")
     st.divider()
-    
+
+# --- BOTÓN DE SOPORTE WHATSAPP EN EL MENÚ LATERAL ---
+    st.markdown("<p style='text-align: center; color: #888888; font-size: 14px; margin-bottom: 0px;'>¿Dudas con tu plan?</p>", unsafe_allow_html=True)
+        
+    num_wa_interno = "5491164788719" 
+    msg_interno = "Hola%20Eddy.%20Tengo%20una%20consulta%20desde%20mi%20panel."
+    link_wa_int = f"https://wa.me/{num_wa_interno}?text={msg_interno}"
+        
+    st.markdown(f"<div style='text-align: center;'><a href='{link_wa_int}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 16px;'>💬 <b>Contactar Soporte</b></a></div>", unsafe_allow_html=True)
+    st.divider() # Ponemos otra rayita para separarlo del botón de cerrar sesión    
+
     # Botón para cerrar sesión
     st.success(f"👤 Conectado:\n{st.session_state['usuario_actual']}")
     if st.button("Cerrar Sesión"):
@@ -334,7 +367,8 @@ mapa_nombres = {
 
 for nombre_base in mapa_nombres[num_comidas]:
     opciones_de_esta_comida = []
-    with st.expander(f"✨ {nombre_base.upper()}", expanded=True):
+    st.button(f"› ✨ {nombre_base.upper()}", use_container_width=True, disabled=True)
+    if True:
         es_mt = any(x in nombre_base for x in ["Desayuno", "Merienda", "Mañana"])
         for i in range(num_opciones):
             
@@ -377,7 +411,7 @@ for nombre_base in mapa_nombres[num_comidas]:
                 bebida = alimentos_db["Bebidas_Gral"][i % len(alimentos_db["Bebidas_Gral"])]
             
             txt_op = f"Opcion {i+1}: {gramos_p}g {fp} + {texto_carbo} {fc} + {gramos_g}g {fg} | Infusion: {bebida}"
-            st.write(txt_op)
+            #st.write(txt_op)
             opciones_de_esta_comida.append(txt_op)
 
             dias_por_opcion = 30 / num_opciones
@@ -415,11 +449,13 @@ elif rutina_seleccionada:
 else:
     diccionario_rutinas = {"Aviso": ["Rutina en construcción para esta disciplina y nivel."]}
 
-with st.expander("👁️ VER RUTINA GENERADA", expanded=True):
-    for dia_nombre, ejercicios in diccionario_rutinas.items():
-        st.markdown(f"**{dia_nombre}**")
-        for e in ejercicios:
-            st.write(f"- {e}")
+st.button("› 👁️ VER RUTINA GENERADA", use_container_width=True, disabled=True)
+if True:
+        for dia_nombre, ejercicios in diccionario_rutinas.items():
+            # st.markdown(f"**{dia_nombre}**")
+            for e in ejercicios:
+                # st.write(f"- {e}")
+                pass
 
 # ==========================================
 # 8. MOTOR PDF Y VALIDADOR DE PAGOS ÚNICOS

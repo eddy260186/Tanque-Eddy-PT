@@ -267,28 +267,64 @@ bg_plot = "#1A1A1A" if genero == "f" else "#1a1a1a"
 
 with st.sidebar:
     st.divider()
-    if st.button("💾 Guardar Atleta (CRM)"):
+    if st.button("💾 Guardar Progreso en Supabase", type="primary", use_container_width=True):
         if nombre:
-            nuevo_dato = pd.DataFrame([{
-                "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"), 
-                "Nombre": nombre, 
-                "Pais": pais, 
-                "Peso Actual (kg)": peso_actual, 
-                "Grasa Est. (%)": rfm, 
-                "Nivel": nivel_experiencia,
-                "Meta": tipo_objetivo, 
-                "Dieta": dieta_tipo, 
-                "Entrenamiento": tipo_entreno, 
-                "Dias/Semana": dias_entreno, 
-                "Kcal Objetivo": int(cal_obj)
-            }])
-            if os.path.exists(DB_FILE): 
-                historico = pd.read_csv(DB_FILE)
-                historico_actualizado = pd.concat([historico, nuevo_dato], ignore_index=True)
-                historico_actualizado.to_csv(DB_FILE, index=False)
-            else: 
-                nuevo_dato.to_csv(DB_FILE, index=False)
-            st.success("¡Atleta guardado!")
+            try:
+                # 1. Identificamos al usuario logueado
+                email_usuario = st.session_state["usuario_actual"]
+                
+                # 2. PERFIL: Acá guardamos si es masculino/femenino (genero)
+                res_perfil = supabase.table("perfiles_atletas").select("id").eq("email", email_usuario).execute()
+                if len(res_perfil.data) > 0:
+                    perfil_id = res_perfil.data[0]["id"]
+                else:
+                    nuevo_perfil = supabase.table("perfiles_atletas").insert({
+                        "email": email_usuario,
+                        "nombre_completo": nombre,
+                        "pais": pais,
+                        "genero": genero, # <--- ACÁ ESTÁ EL GÉNERO
+                        "objetivo_principal": tipo_objetivo
+                    }).execute()
+                    perfil_id = nuevo_perfil.data[0]["id"]
+                
+                # 3. BIOMETRÍA: Acá guardamos la edad, peso, entrenamiento...
+                supabase.table("evaluaciones_biometricas").insert({
+                    "perfil_id": perfil_id,
+                    "edad": edad,                 # <--- ACÁ ESTÁ LA EDAD
+                    "estatura": estatura,
+                    "peso": peso_actual,          # <--- ACÁ ESTÁ EL PESO
+                    "cintura": cintura,
+                    "cadera": cadera,
+                    "rfm": rfm,
+                    "nivel_experiencia": nivel_experiencia,
+                    "meta": tipo_objetivo,
+                    "kcal_objetivo": int(cal_obj),
+                    "tipo_entrenamiento": tipo_entreno, # <--- TIPO DE ENTRENAMIENTO
+                    "dias_entreno": dias_entreno
+                }).execute()
+                
+                # 4. LA CAJA FUERTE (JSON): Acá metemos el embarazo, el agua y la TMB
+                info_extra_json = {
+                    "macros": {"proteina": round(p_g_total, 1), "carbos": round(c_g_total, 1), "grasas": round(g_g_total, 1)},
+                    "biometria_extra": {"masa_magra": round(masa_magra, 1), "tmb": round(tmb, 1), "rcc": rcc_valor},
+                    "metas_tiempo": {"kg_a_cambiar": kg_a_cambiar, "meses_plazo": meses_plazo},
+                    "habitos": {"hora_entreno": str(hora_entreno), "comidas_dia": num_comidas, "agua_litros": agua_total},
+                    "embarazo": {"es_embarazada": embarazada_bool, "meses_gestacion": meses_gestacion if embarazada_bool else 0} # <--- CÁLCULO DE EMBARAZO
+                }
+
+                # 5. PLAN HISTÓRICO: Mandamos la caja fuerte a Supabase
+                supabase.table("historial_planes").insert({
+                    "perfil_id": perfil_id,
+                    "tipo_plan": dieta_tipo,
+                    "detalle_macros": info_extra_json,
+                    "rutina_asignada": f"Rutina de {tipo_entreno} ({dias_entreno} días)"
+                }).execute()
+                
+                st.success("✅ ¡Evolución y Plan guardados al 100% en la base de datos!")
+            except Exception as e:
+                st.error(f"❌ Error al guardar en la nube: {e}")
+        else:
+            st.warning("⚠️ Escribe el nombre del atleta primero.")
 
 st.info(f"Atleta: **{nombre if nombre else 'Eddy PT'}** | RCC: {rcc_valor} | **Grasa Est. (RFM): {rfm}%** | Nivel: {nivel_experiencia}")
 col_r1, col_r2, col_r3, col_r4 = st.columns(4)
