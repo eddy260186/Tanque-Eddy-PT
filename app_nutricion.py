@@ -52,7 +52,7 @@ if st.session_state["usuario_actual"] is None:
         # Botón ancho premium LOGIN
         if st.button("Entrar", type="primary", use_container_width=True):
             try:
-                respuesta = supabase.auth.sign_in_with_password({"email": email_login, "password": pass_login})
+                respuesta = supabase.auth.sign_in_with_password({"email": email_login.lower().strip(), "password": pass_login})
                 st.session_state["usuario_actual"] = respuesta.user.email
                 st.success("¡Acceso concedido! Cargando tu panel...")
                 st.rerun()
@@ -78,12 +78,12 @@ if st.session_state["usuario_actual"] is None:
             else:
                 try:
                     # 1. Creamos la cuenta de seguridad
-                    respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
+                    respuesta = supabase.auth.sign_up({"email": email_reg.lower().strip(), "password": pass_reg})
                     
                     # 2. Guardamos el perfil inicial CON EL NOMBRE REAL
                     try:
                         supabase.table("perfiles_atletas").insert({
-                            "email": email_reg,
+                            "email": email_reg.lower().strip(),
                             "nombre_completo": nombre_reg,
                             "pais": "Argentina", 
                             "genero": "m", 
@@ -155,7 +155,7 @@ from datetime import date, datetime
 # ==========================================
 # 3. PERFIL DEL ATLETA (INTELIGENTE Y AUTOMÁTICO)
 # ==========================================
-email_usuario = st.session_state["usuario_actual"]
+res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_usuario.lower().strip()).execute()
 res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_usuario).execute()
 
 if len(res_perfil.data) > 0:
