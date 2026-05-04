@@ -155,8 +155,9 @@ from datetime import date, datetime
 # ==========================================
 # 3. PERFIL DEL ATLETA (INTELIGENTE Y AUTOMÁTICO)
 # ==========================================
-res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_usuario.lower().strip()).execute()
-res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_usuario).execute()
+# Verificamos que el email exista antes de intentar limpiarlo
+email_limpio = email_usuario.lower().strip() if email_usuario else ""
+res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_limpio).execute()
 
 if len(res_perfil.data) > 0:
     perfil_db = res_perfil.data[0]
