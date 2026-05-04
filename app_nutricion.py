@@ -49,7 +49,7 @@ if st.session_state["usuario_actual"] is None:
         email_login = st.text_input("Correo electrónico", key="log_email")
         pass_login = st.text_input("Contraseña", type="password", key="log_pass")
         
-        # Botón ancho premium
+        # Botón ancho premium LOGIN
         if st.button("Entrar", type="primary", use_container_width=True):
             try:
                 respuesta = supabase.auth.sign_in_with_password({"email": email_login, "password": pass_login})
@@ -57,22 +57,25 @@ if st.session_state["usuario_actual"] is None:
                 st.success("¡Acceso concedido! Cargando tu panel...")
                 st.rerun()
             except Exception as e:
-                st.error("Error: Correo o contraseña incorrectos.")
+                # ACÁ ESTÁ EL CAMBIO: Ahora el error nos dice la verdad
+                st.error(f"Error al iniciar sesión: {e}")
                 
     with tab_registro:
         st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
         email_reg = st.text_input("Correo electrónico", key="reg_email")
         pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
         
-        # Botón ancho premium
+        # Botón ancho premium REGISTRO
         if st.button("Registrarme", type="primary", use_container_width=True):
             try:
                 respuesta = supabase.auth.sign_up({"email": email_reg, "password": pass_reg})
                 st.success("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.")
             except Exception as e:
-                st.error("Error al crear la cuenta. Verifica que la contraseña tenga al menos 6 caracteres.")
+                # ACÁ ESTÁ EL CAMBIO: Ahora el error nos dice la verdad
+                st.error(f"Error real de Supabase: {e}")
 
 # --- BOTÓN DE SOPORTE WHATSAPP ---
+
         st.markdown("<br>", unsafe_allow_html=True) 
         
         # ACÁ PONÉS TU NÚMERO (ej: 54911... o 549237... si es de tu zona)
