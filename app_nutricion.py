@@ -126,17 +126,39 @@ with st.sidebar:
 DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
 
 # ==========================================
-# 3. PERFIL DEL ATLETA 
+# 3. PERFIL DEL ATLETA (INTELIGENTE)
 # ==========================================
+# Vamos a buscar a la base de datos si este usuario ya existe
+email_usuario = st.session_state["usuario_actual"]
+res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_usuario).execute()
+
+# Lógica para autocompletar si ya tiene perfil
+if len(res_perfil.data) > 0:
+    perfil_db = res_perfil.data[0]
+    nombre_default = perfil_db["nombre_completo"]
+    pais_default = perfil_db["pais"]
+    genero_idx = 0 if perfil_db["genero"].strip() == "m" else 1
+    es_nuevo = False
+else:
+    nombre_default = ""
+    pais_default = "Argentina"
+    genero_idx = 0
+    es_nuevo = True
+
 with st.sidebar:
     st.header("👤 Perfil del Atleta")
-    nombre = st.text_input("Nombre Completo:")
-    pais = st.text_input("País de Residencia:", value="Argentina")
+    
+    if not es_nuevo:
+        st.success(f"👋 Perfil verificado: {nombre_default}")
+        
+    # Los campos se bloquean (disabled) si el perfil ya existe en la base de datos
+    nombre = st.text_input("Nombre Completo:", value=nombre_default, disabled=not es_nuevo)
+    pais = st.text_input("País de Residencia:", value=pais_default, disabled=not es_nuevo)
+    
     edad = st.number_input("Edad:", min_value=10, value=30)
     
-    genero_seleccion = st.selectbox("Género:", ["m ", "f "])
+    genero_seleccion = st.selectbox("Género:", ["m ", "f "], index=genero_idx, disabled=not es_nuevo)
     genero = genero_seleccion.strip()
-    
     embarazada_bool = False
     if genero == "f": 
         embarazada_bool = st.checkbox("¿Está embarazada?")
