@@ -4,6 +4,7 @@ from weasyprint import HTML
 from datetime import datetime, time
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import os
 from collections import defaultdict
 import io
@@ -411,6 +412,7 @@ kg_mes_real = (dif * 30) / 7000
 fechas_reales = [(datetime.now() + pd.DateOffset(months=i)).strftime("%d/%m/%Y") for i in range(int(meses_plazo) + 1)]
 pesos_prog = [peso_actual + (kg_mes_real * i) for i in range(len(fechas_reales))]
 
+# --- 1. GRÁFICO INVISIBLE PARA EL PDF (Sigue funcionando por detrás) ---
 fig, ax = plt.subplots(figsize=(10, 3))
 fig.patch.set_facecolor(bg_plot)
 ax.set_facecolor(bg_plot)
@@ -420,12 +422,42 @@ for spine in ax.spines.values():
     spine.set_color(accent_color)
 for i, v in enumerate(pesos_prog): 
     ax.text(i, v + 0.5, f"{round(v,1)}kg", ha='center', fontsize=10, fontweight='bold', color='#ffffff')
-st.pyplot(fig)
 
+# Guardamos la imagen en secreto para el PDF (Acá ya NO usamos st.pyplot)
 buf = io.BytesIO()
 fig.savefig(buf, format="png", bbox_inches="tight", facecolor=bg_plot)
 buf.seek(0)
 grafico_base64 = base64.b64encode(buf.read()).decode("utf-8")
+plt.close(fig) # Cerramos el gráfico viejo de la memoria
+
+
+# --- 2. NUEVO GRÁFICO INTERACTIVO PLOTLY (El que ve el usuario) ---
+fig_plotly = go.Figure()
+
+# Creamos las barras interactivas
+fig_plotly.add_trace(go.Bar(
+    x=fechas_reales,
+    y=pesos_prog,
+    marker_color=accent_color, # <--- ACÁ LEE TU VARIABLE MÁGICA (Dorado o Rosa)
+    text=[f"{round(v,1)} kg" for v in pesos_prog],
+    textposition='auto',
+    hoverinfo='x+y', 
+    hovertemplate='<b>Fecha:</b> %{x}<br><b>Peso Proyectado:</b> %{y} kg<extra></extra>'
+))
+
+# Le damos el diseño oscuro y neón, respetando tu color
+fig_plotly.update_layout(
+    title=dict(text="Proyección de Evolución Corporal", font=dict(color=accent_color, size=18)),
+    plot_bgcolor='rgba(0,0,0,0)', # Fondo transparente
+    paper_bgcolor='rgba(0,0,0,0)', # Fondo transparente
+    font=dict(color='#ffffff'),
+    xaxis=dict(showgrid=False, linecolor=accent_color),
+    yaxis=dict(showgrid=True, gridcolor='#333333', linecolor=accent_color, zeroline=False),
+    margin=dict(l=20, r=20, t=50, b=20)
+)
+
+# Lo mostramos en la aplicación
+st.plotly_chart(fig_plotly, use_container_width=True)
 
 # ==========================================
 # 6. SUPLEMENTACIÓN
