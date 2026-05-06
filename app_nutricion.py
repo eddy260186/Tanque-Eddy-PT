@@ -14,11 +14,13 @@ from utils.biometria import calcular_biometria
 from utils.pdf_generator import build_pdf_v60_7
 from data.alimentos import alimentos_db
 from data.ejercicios import ejercicios_db, rutinas_elite
+from styles import aplicar_diseno_elite
 
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA
 # ==========================================
 st.set_page_config(page_title="Eddy PT - Elite v60.7", page_icon="💪", layout="wide")
+aplicar_diseno_elite()
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
 # ==========================================
