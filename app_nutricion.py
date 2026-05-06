@@ -127,25 +127,33 @@ ruta_logo_final = next((r for r in rutas_logo if os.path.exists(r)), None)
 
 with st.sidebar:
     st.header("🏢 Branding")
+    # Paso 1: Mostrar el logo limpio
     if ruta_logo_final:
-        st.success("✅ Logo DETECTADO")
-        st.image(ruta_logo_final, width=150)
-    else:
-        st.error("❌ Logo NO detectado")
+        st.image(ruta_logo_final, use_container_width=True)
     st.divider()
 
-# --- BOTÓN DE SOPORTE WHATSAPP EN EL MENÚ LATERAL ---
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 14px; margin-bottom: 0px;'>¿Dudas con tu plan?</p>", unsafe_allow_html=True)
-        
-    num_wa_interno = "5491164788719" 
+    # --- BOTÓN DE SOPORTE WHATSAPP EN EL MENÚ LATERAL ---
+    # Paso 2: Título en Dorado Premium
+    st.markdown("<p style='text-align: center; color: #d4af37; font-weight: bold; font-size: 14px; margin-bottom: 0px; letter-spacing: 1px;'>¿Dudas con tu plan?</p>", unsafe_allow_html=True)
+
+    num_wa_interno = "5491164788719"
     msg_interno = "Hola%20Eddy.%20Tengo%20una%20consulta%20desde%20mi%20panel."
     link_wa_int = f"https://wa.me/{num_wa_interno}?text={msg_interno}"
-        
-    st.markdown(f"<div style='text-align: center;'><a href='{link_wa_int}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 16px;'>💬 <b>Contactar Soporte</b></a></div>", unsafe_allow_html=True)
-    st.divider() # Ponemos otra rayita para separarlo del botón de cerrar sesión    
 
-    # Botón para cerrar sesión
-    st.success(f"👤 Conectado:\n{st.session_state['usuario_actual']}")
+    # Botón WhatsApp con el paréntesis corregido
+    st.markdown(f"<div style='text-align: center;'><a href='{link_wa_int}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 16px;'>💬 <b>Contactar Soporte</b></a></div>", unsafe_allow_html=True)
+    st.divider()
+
+    # Paso 3: Caja VIP de usuario conectado
+    st.markdown(
+        f"""
+        <div style="background-color: #151a26; border: 1px solid #d4af37; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+            <span style="color: #d4af37; font-weight: bold; font-size: 16px;">👤 Conectado</span><br>
+            <span style="color: #ffffff; font-size: 14px; font-family: monospace;">{st.session_state['usuario_actual']}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     if st.button("Cerrar Sesión"):
         supabase.auth.sign_out()
         st.session_state["usuario_actual"] = None
