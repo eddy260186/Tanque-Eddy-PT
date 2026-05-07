@@ -5,3 +5,5 @@ matplotlib
 supabase
 requests
 plotly
+openai
+google-generativeai

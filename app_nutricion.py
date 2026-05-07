@@ -9,6 +9,11 @@ import os
 from collections import defaultdict
 import io
 import base64
+import google.generativeai as genai
+
+# Configuramos la IA con tu llave secreta de la bóveda
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 from database.supabase_mgr import init_supabase
 from utils.biometria import calcular_biometria
@@ -28,6 +33,19 @@ st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True
 # 2. SISTEMA DE USUARIOS (LOGIN / REGISTRO)
 # ==========================================
 supabase = init_supabase()
+
+def gestionar_ia_con_creditos(email_usuario):
+    res = supabase.table("usuarios").select("creditos_ia").eq("email", email_usuario).execute()
+    if res.data:
+        creditos_actuales = res.data[0].get('creditos_ia', 0)
+        if creditos_actuales > 0:
+            return True, creditos_actuales
+    return False, 0
+
+def descontar_credito(email_usuario, creditos_actuales):
+    nuevo_saldo = creditos_actuales - 1
+    supabase.table("usuarios").update({"creditos_ia": nuevo_saldo}).eq("email", email_usuario).execute()
+    return nuevo_saldo
 
 if "usuario_actual" not in st.session_state:
     st.session_state["usuario_actual"] = None
@@ -572,6 +590,42 @@ for nombre_base in mapa_nombres[num_comidas]:
             lista_compras[bebida] += dias_por_opcion
             
     diccionario_menus[nombre_base.upper()] = opciones_de_esta_comida
+
+# --- PANEL DE INTELIGENCIA ARTIFICIAL ---
+st.divider()
+st.subheader("🤖 Asistente de Nutrición IA")
+
+# Verificamos créditos antes de mostrar nada
+puede_usar, total_creditos = gestionar_ia_con_creditos(st.session_state['usuario_actual'])
+
+if puede_usar:
+    st.info(f"Tienes **{total_creditos}** créditos IA disponibles.")
+    
+    if st.button("✨ Generar Menú del Día Personalizado (IA)", use_container_width=True):
+        with st.spinner("La IA está diseñando tu menú ideal..."):
+            prompt = f"""
+            Actúa como un nutricionista deportivo de élite. 
+            Genera un menú de un día (Desayuno, Almuerzo, Merienda, Cena) para un atleta con estos objetivos:
+            - Calorías: {int(cal_obj)} kcal
+            - Proteínas: {int(p_g_total)}g
+            - Carbohidratos: {int(c_g_total)}g
+            - Grasas: {int(g_g_total)}g
+            Usa alimentos comunes en Argentina. Sé breve y motivador.
+            """
+            
+            try:
+                response = model.generate_content(prompt)
+                st.success("¡Menú Generado!")
+                st.markdown(response.text)
+                
+                # Descontamos el crédito después de mostrar el menú
+                nuevo_saldo = descontar_credito(st.session_state['usuario_actual'], total_creditos)
+                st.warning(f"Te quedan {nuevo_saldo} créditos.")
+            except Exception as e:
+                st.error(f"Error al conectar con la IA: {e}")
+else:
+    st.error("🚫 Te quedaste sin créditos IA.")
+    st.write("Contactá a Eddy para adquirir el Plan VIP y tener acceso ilimitado.")
 
 # ==========================================
 # 7.5 MOTOR DE RUTINAS ELITE CON SOPORTE DE VARIANTES
