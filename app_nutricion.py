@@ -11,9 +11,10 @@ import io
 import base64
 import google.generativeai as genai
 
-# Configuramos la IA con tu llave secreta de la bóveda
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-pro')
+# Configuramos la IA limpiando espacios invisibles por seguridad
+llave_limpia = st.secrets["GEMINI_API_KEY"].strip()
+genai.configure(api_key=llave_limpia)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 from database.supabase_mgr import init_supabase
 from utils.biometria import calcular_biometria
