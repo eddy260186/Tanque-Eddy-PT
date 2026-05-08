@@ -6,4 +6,4 @@ supabase
 requests
 plotly
 openai
-google-generativeai
+google-generativeai>=0.5.2
