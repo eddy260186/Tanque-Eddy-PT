@@ -14,7 +14,7 @@ import google.generativeai as genai
 # Configuramos la IA limpiando espacios invisibles por seguridad
 llave_limpia = st.secrets["GEMINI_API_KEY"].strip()
 genai.configure(api_key=llave_limpia)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 from database.supabase_mgr import init_supabase
 from utils.biometria import calcular_biometria
