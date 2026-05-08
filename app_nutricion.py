@@ -37,7 +37,11 @@ supabase = init_supabase()
 def gestionar_ia_con_creditos(email_usuario):
     res = supabase.table("perfiles_atletas").select("creditos_ia").eq("email", email_usuario).execute()
     if res.data:
-        creditos_actuales = res.data[0].get('creditos_ia', 0)
+        # Extraemos el valor de la base de datos
+        valor_db = res.data[0].get('creditos_ia')
+        # Si está vacío (None), le asignamos 0. Si no, lo convertimos a número entero.
+        creditos_actuales = 0 if valor_db is None else int(valor_db)
+        
         if creditos_actuales > 0:
             return True, creditos_actuales
     return False, 0
