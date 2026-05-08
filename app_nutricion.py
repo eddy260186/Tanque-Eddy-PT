@@ -1,8 +1,7 @@
 import requests
 import streamlit as st
 from weasyprint import HTML
-from datetime import datetime, time
-import datetime
+from datetime import datetime, date, time
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -37,7 +36,9 @@ st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True
 supabase = init_supabase()
 
 def gestionar_ia_con_creditos(email_usuario):
-    # Pedimos créditos, si compró la guía y la fecha de última recarga
+    # ESCUDO: Importamos internamente con alias 'dt' para que nada lo rompa
+    import datetime as dt
+    
     res = supabase.table("perfiles_atletas").select("creditos_ia, guia_comprada, fecha_ultima_recarga").eq("email", email_usuario).execute()
     
     if res.data:
@@ -47,16 +48,13 @@ def gestionar_ia_con_creditos(email_usuario):
         creditos_actuales = 0 if valor_db is None else int(valor_db)
         ultima_recarga_str = perfil.get('fecha_ultima_recarga')
 
-        # --- LÓGICA DE RECARGA MENSUAL TEAM EDDY ---
         if compro_guia:
-            hoy = datetime.date.today()
-            # Convertimos el texto de la base a fecha real para poder restar los días
+            hoy = dt.date.today()
             try:
-                ultima_recarga = datetime.datetime.strptime(ultima_recarga_str, '%Y-%m-%d').date() if ultima_recarga_str else None
+                ultima_recarga = dt.datetime.strptime(ultima_recarga_str, '%Y-%m-%d').date() if ultima_recarga_str else None
             except:
                 ultima_recarga = None
 
-            # Si nunca se recargó O si ya pasaron 30 días desde la última vez
             if ultima_recarga is None or (hoy - ultima_recarga).days >= 30:
                 creditos_actuales = 30
                 supabase.table("perfiles_atletas").update({
@@ -656,7 +654,7 @@ if puedo_usar:
                     
                     # Descontamos el crédito usando tu función de la línea 50
                     descontar_credito(st.session_state['usuario_actual'], total_creditos)
-                    st.rerun()
+                   
                 except Exception as e:
                     st.error(f"Se cortó la conexión con el servidor, Tanque. Probá de nuevo: {e}")
         else:
