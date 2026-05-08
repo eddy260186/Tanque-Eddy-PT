@@ -35,7 +35,7 @@ st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True
 supabase = init_supabase()
 
 def gestionar_ia_con_creditos(email_usuario):
-    res = supabase.table("usuarios").select("creditos_ia").eq("email", email_usuario).execute()
+    res = supabase.table("perfiles_atletas").select("creditos_ia").eq("email", email_usuario).execute()
     if res.data:
         creditos_actuales = res.data[0].get('creditos_ia', 0)
         if creditos_actuales > 0:
@@ -44,7 +44,7 @@ def gestionar_ia_con_creditos(email_usuario):
 
 def descontar_credito(email_usuario, creditos_actuales):
     nuevo_saldo = creditos_actuales - 1
-    supabase.table("usuarios").update({"creditos_ia": nuevo_saldo}).eq("email", email_usuario).execute()
+    supabase.table("perfiles_atletas").update({"creditos_ia": nuevo_saldo}).eq("email", email_usuario).execute()
     return nuevo_saldo
 
 if "usuario_actual" not in st.session_state:
