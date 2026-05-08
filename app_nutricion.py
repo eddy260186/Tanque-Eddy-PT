@@ -2,6 +2,7 @@ import requests
 import streamlit as st
 from weasyprint import HTML
 from datetime import datetime, time
+import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -36,15 +37,37 @@ st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True
 supabase = init_supabase()
 
 def gestionar_ia_con_creditos(email_usuario):
-    res = supabase.table("perfiles_atletas").select("creditos_ia").eq("email", email_usuario).execute()
+    # Pedimos créditos, si compró la guía y la fecha de última recarga
+    res = supabase.table("perfiles_atletas").select("creditos_ia, guia_comprada, fecha_ultima_recarga").eq("email", email_usuario).execute()
+    
     if res.data:
-        # Extraemos el valor de la base de datos
-        valor_db = res.data[0].get('creditos_ia')
-        # Si está vacío (None), le asignamos 0. Si no, lo convertimos a número entero.
+        perfil = res.data[0]
+        compro_guia = perfil.get('guia_comprada', False)
+        valor_db = perfil.get('creditos_ia')
         creditos_actuales = 0 if valor_db is None else int(valor_db)
-        
+        ultima_recarga_str = perfil.get('fecha_ultima_recarga')
+
+        # --- LÓGICA DE RECARGA MENSUAL TEAM EDDY ---
+        if compro_guia:
+            hoy = datetime.date.today()
+            # Convertimos el texto de la base a fecha real para poder restar los días
+            try:
+                ultima_recarga = datetime.datetime.strptime(ultima_recarga_str, '%Y-%m-%d').date() if ultima_recarga_str else None
+            except:
+                ultima_recarga = None
+
+            # Si nunca se recargó O si ya pasaron 30 días desde la última vez
+            if ultima_recarga is None or (hoy - ultima_recarga).days >= 30:
+                creditos_actuales = 30
+                supabase.table("perfiles_atletas").update({
+                    "creditos_ia": 30,
+                    "fecha_ultima_recarga": str(hoy)
+                }).eq("email", email_usuario).execute()
+                st.success("¡Vamooo Tanque! Tu acceso mensual se renovó. Tenés 30 consultas nuevas.")
+
         if creditos_actuales > 0:
             return True, creditos_actuales
+            
     return False, 0
 
 def descontar_credito(email_usuario, creditos_actuales):
@@ -596,41 +619,51 @@ for nombre_base in mapa_nombres[num_comidas]:
             
     diccionario_menus[nombre_base.upper()] = opciones_de_esta_comida
 
-# --- PANEL DE INTELIGENCIA ARTIFICIAL ---
+# --- PANEL DE CONSULTORÍA EXCLUSIVA TEAM EDDY ---
 st.divider()
-st.subheader("🤖 Asistente de Nutrición IA")
+st.subheader("🏆 Consultoría Directa con Eddy Personal Trainer")
 
-# Verificamos créditos antes de mostrar nada
-puede_usar, total_creditos = gestionar_ia_con_creditos(st.session_state['usuario_actual'])
+# Verificamos créditos con la lógica de recarga mensual que ya pusimos en el Paso 2
+puedo_usar, total_creditos = gestionar_ia_con_creditos(st.session_state['usuario_actual'])
 
-if puede_usar:
-    st.info(f"Tienes **{total_creditos}** créditos IA disponibles.")
+if puedo_usar:
+    st.info(f"Hola Tanque, hoy tenés **{total_creditos}** consultas disponibles con el equipo.")
     
-    if st.button("✨ Generar Menú del Día Personalizado (IA)", use_container_width=True):
-        with st.spinner("La IA está diseñando tu menú ideal..."):
-            prompt = f"""
-            Actúa como un nutricionista deportivo de élite. 
-            Genera un menú de un día (Desayuno, Almuerzo, Merienda, Cena) para un atleta con estos objetivos:
-            - Calorías: {int(cal_obj)} kcal
-            - Proteínas: {int(p_g_total)}g
-            - Carbohidratos: {int(c_g_total)}g
-            - Grasas: {int(g_g_total)}g
-            Usa alimentos comunes en Argentina. Sé breve y motivador.
-            """
-            
-            try:
-                response = model.generate_content(prompt)
-                st.success("¡Menú Generado!")
-                st.markdown(response.text)
+    # Cuadro para que el atleta te escriba su duda real
+    pregunta_atleta = st.text_area("¿Qué duda tenés hoy para el equipo, Tanque?", 
+                                   placeholder="Ej: Eddy, ¿qué puedo cenar hoy para recuperar después de hacer piernas?")
+
+    if st.button("💬 ENVIAR CONSULTA AL TEAM EDDY", use_container_width=True):
+        if pregunta_atleta:
+            with st.spinner("Bancame un toque que estoy analizando lo mejor para vos..."):
+                # PROMPT HUMANIZADO: Le damos tu "alma" y estilo a la IA
+                prompt_eddy = f"""
+                Actuá como Eddy, un Personal Trainer de Élite argentino. 
+                Tu estilo es motivador, directo y profesional, usando modismos como 'Tanque', 'Dale con todo', 'viste', 'metele mecha'.
+                No seas un robot, hablá como un coach que cuida a su equipo de atletas. 
+                Si te piden un menú o consejo, hacelo efectivo y con alimentos comunes en Argentina.
                 
-                # Descontamos el crédito después de mostrar el menú
-                nuevo_saldo = descontar_credito(st.session_state['usuario_actual'], total_creditos)
-                st.warning(f"Te quedan {nuevo_saldo} créditos.")
-            except Exception as e:
-                st.error(f"Error al conectar con la IA: {e}")
+                Pregunta del atleta: {pregunta_atleta}
+                
+                Firmá siempre al final: Team Eddy - Software Elite.
+                """
+                
+                try:
+                    # Usamos el motor gemini-2.5-flash que ya confirmamos que te arranca
+                    response = model.generate_content(prompt_eddy)
+                    st.markdown(f"### 📢 Respuesta de Eddy:")
+                    st.write(response.text)
+                    
+                    # Descontamos el crédito usando tu función de la línea 50
+                    descontar_credito(st.session_state['usuario_actual'], total_creditos)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Se cortó la conexión con el servidor, Tanque. Probá de nuevo: {e}")
+        else:
+            st.warning("Escribime algo antes de enviar, Tanque. ¡Metele pilas!")
 else:
-    st.error("🚫 Te quedaste sin créditos IA.")
-    st.write("Contactá a Eddy para adquirir el Plan VIP y tener acceso ilimitado.")
+    st.error("🚫 Ya agotaste tus consultas de prueba.")
+    st.write("Para tener **30 consultas mensuales** y soporte constante del equipo, descargá tu Guía de Entrenamiento Elite.")
 
 # ==========================================
 # 7.5 MOTOR DE RUTINAS ELITE CON SOPORTE DE VARIANTES
