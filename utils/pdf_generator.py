@@ -1,165 +1,191 @@
-# ==========================================
-# 8. MOTOR PDF BLINDADO 
-# ==========================================
 import streamlit as st
 from weasyprint import HTML
 import base64
 
 def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
-    # ==========================================
-    # LÓGICA DE COLORES: BOCA VS SOFT PINK
-    # ==========================================
+    # ==========================================\
+    # LÓGICA DE EDICIONES LUXURY: ALPHA vs RUBY
+    # ==========================================\
+    # Tu sistema reconoce 'f' (femenino) y 'm' (masculino)
     is_f = (gen == "f")
     
+    # --- PALETA BASE PREMIUM (Común para ambos) ---
+    c_bg = "#050505"         # Negro Ébano (Fondo absoluto)
+    c_card = "#0B0B0B"       # Negro Secundario (Profundidad para tarjetas)
+    c_txt = "#F5F5F5"        # Blanco Humo (Texto principal, elegante y no cansa a la vista)
+    c_titanio = "#878681"    # Plata Titanio (Para subtítulos y detalles sutiles)
+    
     if is_f:
-        # --- EDICIÓN FEMENINA ---
-        c_bg = "#1A1A1A"
-        c_card = "#2A2A2A"
-        c_cabecera = "#FD8EC6"   # Rosa fuerte para la franja superior
-        c_accent = "#FFB6C1"     # Rosa claro para textos y bordes
-        nombre_edicion = "EDICIÓN SOFT PINK"
+        # --- EDICIÓN RUBY BLACK ELITE (Femenina) ---
+        c_accent = "#C0104A"     # Rubí Oscuro Metálico (Elegante, profundo)
+        c_bright = "#E0115F"     # Rubí Brillante (Para resaltar números y glow)
+        nombre_edicion = "RUBY BLACK ELITE"
     else:
-        # --- EDICIÓN MASCULINA (XENEIZE) ---
-        c_bg = "#121212"
-        c_card = "#1a1a1a"
-        c_cabecera = "#0038A8"   # Azul profundo de Boca para la franja superior
-        c_accent = "#FCB000"     # Oro vibrante para textos y bordes
-        nombre_edicion = "EDICIÓN XENEIZE"
-        
-    c_txt = "#ffffff"
+        # --- EDICIÓN BLACK GOLD ALPHA (Masculina) ---
+        c_accent = "#D4AF37"     # Dorado Metálico Premium
+        c_bright = "#FFD700"     # Dorado Brillante
+        nombre_edicion = "BLACK GOLD ALPHA"
     
-    logo_td = ""
+    # --- LOGO DINÁMICO CON GLOW ---
+    logo_img_html = ""
     if ruta_img:
-        with open(ruta_img, "rb") as image_file:
-            logo_base64 = base64.b64encode(image_file.read()).decode("utf-8")
-            logo_td = f'<img src="data:image/png;base64,{logo_base64}" style="height: 70px; border: 2px solid {c_accent}; border-radius: 8px; padding: 5px; background: #000;">'
+        with open(ruta_img, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode("utf-8")
+            # El glow toma el color de la edición (Rubí o Dorado)
+            logo_img_html = f'<img src="data:image/png;base64,{b64}" style="height: 100px; filter: drop-shadow(0 0 12px {c_accent});">'
 
+    # --- MAQUETADO HTML Y CSS DE LUJO ---
     html = f"""
-    <html><head><style>
-        @page {{ size: A4; margin: 15mm; background-color: {c_bg}; }}
-        body {{ font-family: 'Helvetica'; color: {c_txt}; background-color: {c_bg}; line-height: 1.5; }}
-        
-        /* AQUÍ CAMBIA EL FONDO DE LA CABECERA (Azul o Rosa Fuerte) */
-        .header-table {{ width: 100%; background: {c_cabecera}; border-bottom: 5px solid {c_accent}; border-radius: 10px 10px 0 0; border-collapse: collapse; }}
-        .header-table td {{ padding: 20px; border-bottom: none; }}
-        .header-logo-td {{ text-align: right; vertical-align: middle; width: 120px; }}
-        
-        .profile-box {{ background: {c_card}; padding: 15px; margin: 20px 0; border: 2px solid {c_accent}; border-radius: 8px; color: {c_txt}; }}
-        .stats-box {{ background: {c_card}; padding: 15px; margin: 20px 0; border-left: 10px solid {c_accent}; color: {c_txt}; border-radius: 4px; }}
-        .graph-box {{ text-align: center; margin: 20px 0; padding: 10px; border: 2px solid {c_accent}; background: #000000; border-radius: 8px; }}
-        .water-box {{ background: #000000; padding: 10px; border: 2px dashed {c_accent}; border-radius: 5px; color: {c_accent}; font-weight: bold; margin-top: 10px; text-align: center; font-size: 14px; }}
-        
-        table.data-table {{ width: 100%; border-collapse: collapse; margin-top: 10px; background-color: {c_card}; }}
-        table.data-table td {{ padding: 10px; border-bottom: 1px dashed {c_accent}; font-size: 11px; color: {c_txt}; }}
-        
-        h1, h2, h3 {{ color: {c_accent}; }}
-        b, strong {{ color: {c_accent}; }}
-        li {{ color: {c_txt}; margin-bottom: 5px; }}
-    </style></head>
+    <html>
+    <head>
+        <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+        <style>
+            @page {{ size: A4; margin: 0; background-color: {c_bg}; }}
+            body {{ 
+                font-family: 'Montserrat', sans-serif; 
+                color: {c_txt}; 
+                background-color: {c_bg}; 
+                margin: 0; padding: 0; 
+            }}
+            
+            /* --- PORTADA CINEMATOGRÁFICA --- */
+            .cover {{
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                background: radial-gradient(circle at center, #111 0%, {c_bg} 100%);
+                border-bottom: 2px solid {c_accent};
+            }}
+            .cover h1 {{ 
+                font-family: 'Bebas Neue', cursive; 
+                font-size: 65px; 
+                letter-spacing: 10px; 
+                color: {c_accent};
+                margin: 20px 0;
+                text-shadow: 0px 4px 15px rgba(0,0,0,0.8);
+            }}
+            .cover-subtitle {{ letter-spacing: 5px; font-weight: 300; color: {c_titanio}; }}
+            .edicion-badge {{ 
+                background-color: transparent; 
+                color: {c_txt}; 
+                border: 1px solid {c_accent};
+                padding: 8px 20px; 
+                border-radius: 30px; 
+                font-family: 'Montserrat', sans-serif;
+                font-weight: 700; 
+                font-size: 14px;
+                letter-spacing: 3px;
+                margin-top: -5px;
+                box-shadow: 0 0 10px {c_accent}40;
+            }}
+            
+            /* --- CONTENEDORES PREMIUM (CARDS) --- */
+            .section {{ padding: 40px; page-break-after: always; }}
+            .card-elite {{
+                background: {c_card};
+                border: 1px solid #1A1A1A;
+                border-left: 4px solid {c_accent};
+                border-radius: 12px;
+                padding: 25px;
+                margin-bottom: 25px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            }}
+            
+            /* --- TABLAS ESTILO DASHBOARD --- */
+            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+            th {{ 
+                background: {c_accent}; 
+                color: {c_bg}; 
+                font-family: 'Bebas Neue'; 
+                padding: 12px; 
+                font-size: 18px;
+                text-align: left;
+                letter-spacing: 1px;
+            }}
+            td {{ 
+                padding: 15px; 
+                border-bottom: 1px solid #1a1a1a; 
+                background: #080808;
+                font-size: 13px;
+                color: {c_txt};
+            }}
+
+            .accent-text {{ color: {c_accent}; font-weight: bold; }}
+            .bright-text {{ color: {c_bright}; font-size: 26px; font-family: 'Bebas Neue'; letter-spacing: 2px; }}
+            .glow-border {{ border: 1px solid {c_accent}; box-shadow: 0 0 20px {c_accent}30; }} 
+        </style>
+    </head>
     <body>
-        <table class="header-table">
-            <tr>
-                <td>
-                    <h1 style="margin: 0; color: #ffffff;">EDDY PERSONAL TRAINER</h1>
-                    <p style="margin: 5px 0 0 0; color: {c_accent}; font-weight: bold;">PLAN ELITE INTEGRAL - {nombre_edicion}</p>
-                </td>
-                <td class="header-logo-td">{logo_td}</td>
-            </tr>
-        </table>
-        
-        <div class="profile-box">
-            <h2 style="margin-top: 0;">👤 PERFIL FÍSICO Y BIOMÉTRICO</h2>
-            <p><b>NOMBRE:</b> {d['n'].upper()} | <b>NIVEL:</b> {d['nivel'].upper()}</p>
-            <p><b>EDAD:</b> {d['edad']} años | <b>ESTATURA:</b> {d['estatura']} cm | <b>PESO ACTUAL:</b> {d['peso']} kg</p>
-            <p><b>CINTURA:</b> {d['cintura']} cm | <b>CADERA:</b> {d['cadera']} cm | <b>ÍNDICE RCC:</b> {d['rcc']} | <b>GRASA EST.:</b> {d['rfm']}%</p>
-            <hr style="border-color: {c_accent};">
-            <p><b>ENTRENAMIENTO:</b> {d['entreno']} | <b>FRECUENCIA:</b> {d['dias']} días/sem.</p>
-            <p><b>META PRINCIPAL:</b> {d['meta']} | <b>ESTILO DE DIETA:</b> {d['dt']}</p>
+        <div class="cover">
+            {logo_img_html}
+            <h1>PLAN INTEGRAL ELITE</h1>
+            <div class="edicion-badge">{nombre_edicion}</div>
+            <p class="cover-subtitle" style="margin-top: 35px;">INGENIERÍA CORPORAL PARA ATLETAS DE ALTO VALOR</p>
+            <div style="margin-top: 60px; border-top: 1px solid {c_titanio}; padding-top: 20px; width: 350px;">
+                <p style="font-size: 14px; color: {c_titanio};">ATLETA</p>
+                <p style="font-size: 22px; margin-top: -10px;" class="accent-text">{d['n'].upper()}</p>
+                <p style="font-size: 12px; color: {c_titanio}; margin-top: 15px;">FECHA DE EMISIÓN: {d.get('fecha', '08/05/2026')}</p>
+            </div>
         </div>
 
-        <div class="stats-box">
-            <h2>📊 BALANCE NUTRICIONAL KATCH-MCARDLE</h2>
-            <p><b>CALORÍAS OBJETIVO:</b> {d['k']:.0f} kcal</p>
-            <p><b>SUMATORIA TOTAL DEL MENÚ:</b> {d['k']:.0f} kcal ✅</p>
-            <p>Macros Diarios: <b>Proteína:</b> {d['p']:.0f}g | <b>Carbohidratos:</b> {d['c']:.0f}g | <b>Grasas:</b> {d['g']:.0f}g</p>
-            <div class="water-box">💧 OBJETIVO DE HIDRATACIÓN DIARIA: {d['w']} LITROS</div>
+        <div class="section">
+            <h2 style="font-family: 'Bebas Neue'; font-size: 35px; color: {c_accent}; letter-spacing: 2px;">📈 ANALÍTICA BIOMÉTRICA</h2>
+            <div class="card-elite">
+                <table style="border: none;">
+                    <tr>
+                        <td><span style="color: {c_titanio}; font-size: 11px;">ESTATURA</span><br><span class="accent-text" style="font-size: 18px;">{d['estatura']} cm</span></td>
+                        <td><span style="color: {c_titanio}; font-size: 11px;">PESO ACTUAL</span><br><span class="accent-text" style="font-size: 18px;">{d['peso']} kg</span></td>
+                        <td><span style="color: {c_titanio}; font-size: 11px;">ÍNDICE GRASA</span><br><span class="accent-text" style="font-size: 18px;">{d['rfm']}%</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="card-elite glow-border">
+                <h3 style="margin-top:0; color:{c_titanio}; font-size: 12px; letter-spacing: 2px;">OBJETIVO ESTRATÉGICO</h3>
+                <p style="font-family: 'Bebas Neue'; font-size: 28px; color: {c_bright}; margin-top: -5px;">{d['meta'].upper()}</p>
+                
+                <table style="border: none; margin-top: 20px;">
+                    <tr>
+                        <td style="background: transparent; border: none; padding: 0;">
+                            <span style="color: {c_titanio}; font-size: 11px;">ENERGÍA DIARIA</span><br>
+                            <span class="bright-text">{d['k']:.0f} KCAL</span>
+                        </td>
+                        <td style="background: transparent; border: none; padding: 0;">
+                            <span style="color: {c_titanio}; font-size: 11px;">HIDRATACIÓN ÓPTIMA</span><br>
+                            <span class="bright-text">{d['w']} LTS</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="text-align:center; margin-top:40px;">
+                <h3 style="font-family: 'Bebas Neue'; color:{c_accent}; letter-spacing: 2px;">PROYECCIÓN DE EVOLUCIÓN</h3>
+                <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 12px; border: 1px solid #1A1A1A; box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
+            </div>
         </div>
 
-        <div class="graph-box">
-            <h3 style="margin-top: 0;">📈 PROYECCIÓN DE PESO ESTIMADA</h3>
-            <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; max-width: 600px; border-radius: 5px;">
-        </div>
+        <div class="section">
+             <h2 style="font-family: 'Bebas Neue'; font-size: 35px; color: {c_accent}; letter-spacing: 2px;">🥗 ESTRATEGIA NUTRICIONAL</h2>
+             """
+    for comida, opciones in d['m'].items():
+        html += f"""
+        <div class="card-elite">
+            <h4 style="margin:0; font-family: 'Bebas Neue'; font-size: 22px; color:{c_bright}; letter-spacing: 1px;">{comida.upper()}</h4>
+            <table style="margin-top: 10px;">"""
+        for op in opciones:
+            html += f"<tr><td>{op}</td></tr>"
+        html += "</table></div>"
 
-        <h2 style="margin-top: 20px; text-transform: uppercase; letter-spacing: 2px; border: 1px solid {c_accent}; padding: 10px; background: #000; text-align: center;">📢 MENÚ DE LAS COMIDAS</h2>
-    """
-    for c, ops in d['m'].items():
-        html += f"<h3>🍴 {c}</h3><table class='data-table'>"
-        for o in ops:
-            html += f"<tr><td>{o}</td></tr>"
-        html += "</table>"
-    
     html += f"""
-    <div class="stats-box" style="margin-top: 30px;">
-        <h2 style="margin-top: 0;">💊 SUPLEMENTACIÓN Y MICRONUTRIENTES</h2>
-        <ul>"""
-    for s in d['s']:
-        html += f"<li>{s}</li>"
-        
-    html += f"""</ul>
-    </div>
-    
-    <div style="page-break-before: always;"></div>
-    
-    <table class="header-table">
-        <tr>
-            <td>
-                <h1 style="margin: 0; color: #ffffff;">🏋️‍♂️ PLAN DE ENTRENAMIENTO</h1>
-                <p style="margin: 5px 0 0 0; color: {c_accent}; font-weight: bold;">DISTRIBUCIÓN {d['nivel'].upper()}</p>
-            </td>
-            <td class="header-logo-td">{logo_td}</td>
-        </tr>
-    </table>
-    <br>
-    """
-    
-    for dia, ejercicios in d['rutina'].items():
-        html += f"<h3>📅 {dia}</h3><table class='data-table'>"
-        for e in ejercicios:
-            html += f"<tr><td>{e}</td></tr>"
-        html += "</table>"
-        
-    html += f"""
-    <div style="page-break-before: always;"></div>
-    
-    <table class="header-table">
-        <tr>
-            <td>
-                <h1 style="margin: 0; color: #ffffff;">🛒 TICKET DE COMPRA MENSUAL</h1>
-                <p style="margin: 5px 0 0 0; color: {c_accent}; font-weight: bold;">LISTA AUTOMATIZADA</p>
-            </td>
-            <td class="header-logo-td">{logo_td}</td>
-        </tr>
-    </table>
-    <p style="text-align: center; color: {c_accent}; margin-top: 20px;"><i>Cantidades estimadas para 30 días de rotación completa del menú.</i></p>
-    <table class='data-table'>"""
-    
-    for item, cant in d['compras'].items():
-        if "Huevo" in item or "Claras" in item:
-            unidades = int(cant / 50)
-            res = f"{unidades} Unidades (~{round(unidades/12, 1)} Docenas)"
-        elif any(x in item for x in ["Café", "Mate", "Té", "Infusión"]):
-            res = f"{int(cant)} Porciones/Tazas"
-        else:
-            if cant >= 1000:
-                res = f"{round(cant/1000, 2)} KG"
-            else:
-                res = f"{int(cant)} g"
-        html += f"<tr><td><b>{item}</b></td><td style='text-align: right;'>{res}</td></tr>"
-    
-    html += f"""</table>
-        <div style="margin-top: 40px; text-align: center; font-size: 10px; color: {c_accent};">
-            Diseñado por Eddy Personal Trainer - Instagram: @eddy_personal_trainer | Moreno, Buenos Aires
+        <div style="margin-top: 60px; text-align: center; border-top: 1px solid {c_accent}; padding-top: 30px;">
+            <p style="font-family: 'Bebas Neue'; font-size: 24px; color: {c_txt}; letter-spacing: 4px; margin: 0;">EDDY PERSONAL TRAINER ELITE</p>
+            <p style="font-size: 11px; color: {c_titanio}; letter-spacing: 1px; margin-top: 5px;">SOFTWARE DE INGENIERÍA CORPORAL • {nombre_edicion}</p>
         </div>
-    </body></html>"""
-    
+        </div>
+    </body>
+    </html>
+    """
     return HTML(string=html).write_pdf()
