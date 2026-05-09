@@ -203,7 +203,7 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             </table>
     """
 
-    # --- BUCLE INTACTO DE COMIDAS (Para que NO falte nada) ---
+    # --- BUCLE INTACTO DE COMIDAS (Comillas corregidas) ---
     for comida, opciones in d['m'].items():
         html += f"""
             <div class="list-card">
@@ -211,19 +211,19 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <table class="data-table">
         """
         for op in opciones:
-            html += f"<tr><td style="width: 10px; color: {c_accent};">•</td><td>{op}</td></tr>"
+            html += f"<tr><td style='width: 10px; color: {c_accent};'>•</td><td>{op}</td></tr>"
         html += "</table></div>"
 
-    # --- BUCLE INTACTO DE SUPLEMENTACIÓN ---
+    # --- BUCLE INTACTO DE SUPLEMENTACIÓN (Comillas corregidas) ---
     html += f"""
             <div class="list-card" style="border-left-color: #00BFFF;">
                 <h3 style="color: #00BFFF;">💊 SUPLEMENTACIÓN Y MICRONUTRIENTES</h3>
                 <table class="data-table">
     """
     for suplemento in d['s']:
-        html += f'<tr><td style="width: 10px; color: #00BFFF;">•</td><td>{suplemento}</td></tr>'
+        html += f"<tr><td style='width: 10px; color: #00BFFF;'>•</td><td>{suplemento}</td></tr>"
         
-    html += """
+    html += f"""
                 </table>
             </div>
             
@@ -237,7 +237,7 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
     """
 
     # ==========================================\
-    # PÁGINA 4: ENTRENAMIENTO (Bucle Completo)
+    # PÁGINA 4: ENTRENAMIENTO
     # ==========================================\
     html += f"""
         <div class="page-content">
@@ -248,7 +248,7 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             <div style="font-size: 10px; color: {c_titanio}; margin-bottom: 15px;">TIPO: {d['entreno'].upper()} | {d['dias']} DÍAS/SEM</div>
     """
 
-    # --- BUCLE INTACTO DE RUTINAS ---
+    # --- BUCLE INTACTO DE RUTINAS (Comillas corregidas) ---
     for dia, ejercicios in d['rutina'].items():
         html += f"""
             <div class="list-card">
@@ -256,7 +256,7 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <table class="data-table">
         """
         for ej in ejercicios:
-            html += f"<tr><td style="width: 10px; color: {c_accent};">•</td><td>{ej}</td></tr>"
+            html += f"<tr><td style='width: 10px; color: {c_accent};'>•</td><td>{ej}</td></tr>"
         html += "</table></div>"
 
     html += f"""
@@ -270,7 +270,7 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
     """
 
     # ==========================================\
-    # PÁGINA 5: TICKET DE COMPRAS (Bucle Completo)
+    # PÁGINA 5: TICKET DE COMPRAS
     # ==========================================\
     html += f"""
         <div class="page-content">
