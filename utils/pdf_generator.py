@@ -2,343 +2,901 @@ import os
 import base64
 from weasyprint import HTML
 
+# ==========================================================
+# FUNCIÓN PRINCIPAL
+# ==========================================================
+
 def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
-    # ==========================================\
-    # 1. LÓGICA DE EDICIONES LUXURY Y LOGOS
-    # ==========================================\
+
+    # ======================================================
+    # 1. DETECCIÓN DE GÉNERO / EDICIÓN
+    # ======================================================
+
     is_f = (gen == "f")
-    
-    # Colores Base (Ébano absoluto y Blanco)
-    c_bg = "#070707"         
-    c_card = "#111111"       
-    c_txt = "#F5F5F5"        
-    c_titanio = "#A0A0A0"    
-    
+
+    # ======================================================
+    # 2. PALETA ULTRA PREMIUM
+    # ======================================================
+
+    c_bg = "#030303"
+    c_bg2 = "#090909"
+
+    c_card = "#111111"
+    c_card2 = "#191919"
+
+    c_txt = "#F5F5F5"
+
+    c_soft = "#8C8C8C"
+
     if is_f:
-        # RUBY BLACK ELITE (Femenino)
-        c_accent = "#FF0055"     
-        c_dark = "rgba(255, 0, 85, 0.3)" 
-        nombre_edicion = "RUBY BLACK ELITE"
-        ruta_logo_exacta = "logo_rosa.png" 
-    else:
-        # BLACK GOLD ALPHA (Masculino)
-        c_accent = "#FFD700"     
-        c_dark = "rgba(255, 215, 0, 0.3)" 
-        nombre_edicion = "BLACK GOLD ALPHA"
-        ruta_logo_exacta = "logo_dorado.png"
 
-    # ==========================================\
-    # 2. PROCESAMIENTO DE IMÁGENES Y QR REAL
-    # ==========================================\
-    logo_portada = ""
-    logo_chico = ""
-    
-    # Lógica Logo Principal
-    ruta_final = ruta_logo_exacta if os.path.exists(ruta_logo_exacta) else ruta_img
+        c_accent = "#C2185B"
+        c_bright = "#FF4D8D"
+
+        c_dark = "rgba(194,24,91,0.35)"
+
+        edition = "RUBY BLACK ELITE"
+
+        ruta_logo = "logo_rosa.png"
+
+    else:
+
+        c_accent = "#D4AF37"
+        c_bright = "#FFD700"
+
+        c_dark = "rgba(212,175,55,0.35)"
+
+        edition = "BLACK GOLD ALPHA"
+
+        ruta_logo = "logo_dorado.png"
+
+    # ======================================================
+    # 3. LOGO PRINCIPAL
+    # ======================================================
+
+    logo_html = ""
+    logo_chico_html = ""
+
+    ruta_final = ruta_logo if os.path.exists(ruta_logo) else ruta_img
+
     if ruta_final and os.path.exists(ruta_final):
+
         with open(ruta_final, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode("utf-8")
-            logo_chico = f'<img src="data:image/png;base64,{b64}" class="img-chica">'
-            logo_portada = f"""
-            <div style="display: inline-block; background: radial-gradient(circle, {c_dark} 0%, transparent 65%); padding: 40px; border-radius: 50%;">
-                <img src="data:image/png;base64,{b64}" class="img-portada">
-            </div>
-            """
 
-    # Lógica Código QR Real
-    ruta_qr = "qr_code.png"
-    qr_html = ""
-    if os.path.exists(ruta_qr):
-        with open(ruta_qr, "rb") as f:
-            qr_b64 = base64.b64encode(f.read()).decode("utf-8")
-            qr_html = f'<img src="data:image/png;base64,{qr_b64}" style="width: 50px; height: 50px; border: 2px solid {c_accent}; border-radius: 4px; padding: 2px; background: #fff;">'
-    else:
-        # Placeholder por si falta el archivo
-        qr_html = f'<div style="width: 50px; height: 50px; border: 2px solid {c_accent}; background: #111; color: {c_accent}; font-size: 8px; text-align: center; line-height: 50px; border-radius: 4px;">FALTA QR</div>'
+            logo_b64 = base64.b64encode(
+                f.read()
+            ).decode("utf-8")
 
-    # ==========================================\
-    # 3. MAQUETADO CSS EXTREMO
-    # ==========================================\
-    html = f"""
-    <html>
-    <head>
-        <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;700&family=Great+Vibes&display=swap" rel="stylesheet">
-        <style>
-            @page {{ size: A4; margin: 0; background-color: {c_bg}; }}
-            body {{ font-family: 'Montserrat', sans-serif; color: {c_txt}; background-color: {c_bg}; margin: 0; padding: 0; font-size: 10px; }}
-            
-            /* --- PORTADA --- */
-            .page-cover {{ text-align: center; height: 100vh; box-sizing: border-box; padding: 60px 30px; position: relative; }}
-            .img-portada {{ height: 350px; position: relative; z-index: 10; }}
-            .cover-title {{ font-family: 'Bebas Neue', cursive; font-size: 65px; letter-spacing: 7px; color: {c_accent}; margin: -20px 0 0 0; text-shadow: 2px 2px 5px #000; }}
-            .cover-subtitle {{ font-family: 'Montserrat', sans-serif; font-size: 12px; letter-spacing: 5px; color: {c_titanio}; margin-top: 5px; text-transform: uppercase; }}
-            
-            .badge-edicion {{ border: 1px solid {c_accent}; color: {c_txt}; padding: 8px 30px; border-radius: 40px; font-weight: bold; font-size: 13px; letter-spacing: 4px; display: inline-block; margin: 30px 0; background-color: #000; box-shadow: 0 0 10px rgba(0,0,0,0.5); }}
-            
-            .atleta-box {{ margin-top: 20px; border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 20px 0; width: 70%; margin-left: auto; margin-right: auto; }}
-            .atleta-name {{ font-family: 'Bebas Neue', cursive; font-size: 45px; color: {c_accent}; margin: 0; letter-spacing: 2px; }}
-            
-            .footer-portada {{ position: absolute; bottom: 50px; left: 40px; right: 40px; display: table; width: calc(100% - 80px); border-top: 1px solid #333; padding-top: 15px; }}
-            .signature {{ font-family: 'Great Vibes', cursive; font-size: 30px; color: {c_titanio}; }}
-            
-            /* --- INTERIORES Y CABECERAS LIMPIAS (SIN EMOJIS) --- */
-            .page-content {{ padding: 40px; page-break-before: always; }}
-            .header-interior {{ border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 25px; display: table; width: 100%; }}
-            .header-left {{ display: table-cell; vertical-align: bottom; width: 80%; border-left: 5px solid {c_accent}; padding-left: 15px; }}
-            .header-right {{ display: table-cell; vertical-align: bottom; text-align: right; width: 20%; }}
-            .header-left h1 {{ font-family: 'Bebas Neue'; font-size: 32px; color: {c_accent}; margin: 0; letter-spacing: 2px; text-transform: uppercase; }}
-            .img-chica {{ height: 50px; }}
-            
-            /* TARJETAS DE CRISTAL INDIVIDUALES (BIEN DESGLOSADAS) */
-            .grid-container {{ width: 100%; border-collapse: separate; border-spacing: 12px; margin-left: -12px; }}
-            .glass-card {{ background-color: {c_card}; border: 1px solid #1a1a1a; border-top: 3px solid {c_accent}; border-radius: 8px; padding: 15px; text-align: center; }}
-            
-            .metric-label {{ color: {c_titanio}; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }}
-            .metric-value {{ font-family: 'Bebas Neue'; font-size: 26px; color: {c_txt}; display: block; }}
-            .metric-highlight {{ color: {c_accent}; font-family: 'Bebas Neue'; font-size: 32px; display: block; text-shadow: 0 0 5px rgba(0,0,0,0.5); }}
-            
-            .bar-bg {{ width: 100%; background: #222; height: 4px; border-radius: 2px; margin-top: 10px; overflow: hidden; }}
-            .bar-fill {{ background-color: {c_accent}; height: 100%; }}
-            
-            /* LISTAS Y TABLAS */
-            .list-card {{ background-color: {c_card}; border: 1px solid #1a1a1a; border-left: 3px solid {c_accent}; padding: 18px; margin-bottom: 15px; border-radius: 6px; }}
-            .list-card h3 {{ font-family: 'Bebas Neue'; color: {c_accent}; font-size: 20px; margin: 0 0 10px 0; letter-spacing: 1px; text-transform: uppercase; }}
-            .data-table {{ width: 100%; border-collapse: collapse; }}
-            .data-table td {{ padding: 10px 5px; border-bottom: 1px solid #1a1a1a; font-size: 11px; color: #ddd; vertical-align: top; line-height: 1.4; }}
-            
-            .footer-interior {{ margin-top: 40px; border-top: 1px solid #222; padding-top: 15px; display: table; width: 100%; }}
-        </style>
-    </head>
-    <body>
+        logo_html = f"""
+        <img src="data:image/png;base64,{logo_b64}"
+        class="logo-main">
+        """
         
-        <div class="page-cover">
-            {logo_portada}
-            <h1 class="cover-title">PLAN INTEGRAL ELITE</h1>
-            <div class="cover-subtitle">INGENIERÍA CORPORAL DE ALTO VALOR</div>
-            
-            <div class="badge-edicion">{nombre_edicion}</div>
-            
-            <div class="atleta-box">
-                <div style="font-size: 11px; color: {c_titanio}; letter-spacing: 3px; margin-bottom: 5px;">ATLETA DE ÉLITE</div>
-                <h2 class="atleta-name">{d['n'].upper()}</h2>
-                <div style="font-size: 10px; color: {c_titanio}; letter-spacing: 2px; margin-top: 8px;">NIVEL DE ENTRENAMIENTO: {d['nivel'].upper()}</div>
-            </div>
-            
-            <table class="footer-portada">
-                <tr>
-                    <td style="text-align: left; width: 33%; vertical-align: bottom;">{qr_html}</td>
-                    <td style="text-align: center; width: 33%; vertical-align: bottom; font-size: 9px; color: #666; letter-spacing: 2px;">POWERED BY EDDY PT ELITE<br>FECHA: {d.get('fecha', 'ACTUAL')}</td>
-                    <td style="text-align: right; width: 33%; vertical-align: bottom;"><div class="signature">Eddy Personal Trainer</div></td>
-                </tr>
-            </table>
+        logo_chico_html = f"""
+        <img src="data:image/png;base64,{logo_b64}"
+        class="logo-small">
+        """
+
+    # ======================================================
+    # 4. QR
+    # ======================================================
+
+    qr_html = ""
+
+    if os.path.exists("qr_code.png"):
+
+        with open("qr_code.png", "rb") as f:
+
+            qr_b64 = base64.b64encode(
+                f.read()
+            ).decode("utf-8")
+
+        qr_html = f"""
+        <img src="data:image/png;base64,{qr_b64}"
+        class="qr">
+        """
+    else:
+        # Placeholder elegante si no está el QR
+        qr_html = f"""
+        <div class="qr" style="background:#111; color:{c_accent}; font-size:8px; display:flex; align-items:center; justify-content:center;">QR</div>
+        """
+
+    # ======================================================
+    # 5. HTML PRINCIPAL
+    # ======================================================
+
+    html = f"""
+
+    <html>
+
+    <head>
+
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;500;700;900&family=Great+Vibes&display=swap" rel="stylesheet">
+
+    <style>
+
+    @page {{
+
+        size:A4;
+        margin:0;
+        background:{c_bg};
+    }}
+
+    *{{
+        box-sizing:border-box;
+    }}
+
+    body{{
+
+        margin:0;
+        padding:0;
+
+        background:
+        radial-gradient(
+        rgba(255,255,255,0.02) 1px,
+        transparent 1px),
+
+        linear-gradient(
+        180deg,
+        {c_bg2},
+        {c_bg});
+
+        background-size:30px 30px;
+
+        font-family:'Montserrat',sans-serif;
+
+        color:{c_txt};
+    }}
+
+    body:before{{
+
+        content:'';
+
+        position:fixed;
+
+        width:800px;
+        height:800px;
+
+        top:-300px;
+        left:-200px;
+
+        background:
+        radial-gradient(
+        circle,
+        {c_dark},
+        transparent 70%);
+
+        filter:blur(90px);
+
+        z-index:-1;
+    }}
+
+    /* ================================================== */
+    /* PORTADA */
+    /* ================================================== */
+
+    .cover{{
+
+        height:100vh;
+
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        align-items:center;
+
+        text-align:center;
+
+        padding:40px;
+
+        position:relative;
+
+        overflow:hidden;
+
+        background:
+        radial-gradient(
+        circle at top,
+        {c_dark},
+        transparent 40%);
+    }}
+
+    .logo-main{{
+
+        height:360px;
+
+        filter:
+        drop-shadow(0 0 15px {c_accent})
+        drop-shadow(0 0 35px {c_dark})
+
+        brightness(1.08)
+        contrast(1.08);
+    }}
+
+    .cover-title{{
+
+        font-family:'Bebas Neue';
+
+        font-size:74px;
+
+        letter-spacing:8px;
+
+        margin-top:-15px;
+
+        background:
+        linear-gradient(
+        180deg,
+        #FFF3B0 0%,
+        {c_bright} 25%,
+        {c_accent} 55%,
+        #6B4E00 100%);
+
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+
+        text-shadow:
+        0 2px 0 #000,
+        0 10px 25px rgba(0,0,0,0.8),
+        0 0 18px {c_dark};
+    }}
+
+    .cover-sub{{
+
+        color:{c_soft};
+
+        letter-spacing:4px;
+
+        font-size:11px;
+
+        margin-top:-10px;
+    }}
+
+    .badge{{
+
+        margin-top:30px;
+
+        padding:12px 35px;
+
+        border-radius:50px;
+
+        background:
+        linear-gradient(
+        145deg,
+        rgba(255,255,255,0.05),
+        rgba(255,255,255,0.01));
+
+        border:
+        1px solid rgba(255,255,255,0.08);
+
+        backdrop-filter:blur(10px);
+
+        box-shadow:
+        0 0 20px {c_dark};
+
+        font-weight:700;
+
+        letter-spacing:4px;
+    }}
+
+    .athlete{{
+
+        margin-top:40px;
+
+        width:70%;
+
+        border-top:
+        1px solid rgba(255,255,255,0.08);
+
+        border-bottom:
+        1px solid rgba(255,255,255,0.08);
+
+        padding:25px 0;
+    }}
+
+    .athlete-name{{
+
+        font-family:'Bebas Neue';
+
+        font-size:52px;
+
+        letter-spacing:3px;
+
+        margin:0;
+
+        background:
+        linear-gradient(
+        180deg,
+        #FFF3B0,
+        {c_bright},
+        {c_accent});
+
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+    }}
+
+    /* ================================================== */
+    /* INTERIORES */
+    /* ================================================== */
+
+    .page{{
+
+        padding:40px;
+
+        page-break-before:always;
+    }}
+
+    .header{{
+
+        display:flex;
+        justify-content:space-between;
+        align-items:end;
+
+        border-bottom:
+        1px solid rgba(255,255,255,0.08);
+
+        padding-bottom:15px;
+
+        margin-bottom:25px;
+    }}
+
+    .header-title{{
+
+        font-family:'Bebas Neue';
+
+        font-size:34px;
+
+        letter-spacing:3px;
+
+        background:
+        linear-gradient(
+        180deg,
+        #FFF3B0,
+        {c_bright},
+        {c_accent});
+
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+    }}
+
+    .logo-small{{
+
+        height:60px;
+
+        filter:
+        drop-shadow(0 0 10px {c_dark});
+    }}
+
+    /* ================================================== */
+    /* CARDS */
+    /* ================================================== */
+
+    .grid{{
+
+        display:grid;
+
+        grid-template-columns:
+        repeat(4,1fr);
+
+        gap:18px;
+
+        margin-bottom:20px;
+    }}
+
+    .card{{
+
+        background:
+        linear-gradient(
+        145deg,
+        rgba(255,255,255,0.04),
+        rgba(255,255,255,0.01));
+
+        backdrop-filter:blur(14px);
+
+        border:
+        1px solid rgba(255,255,255,0.06);
+
+        border-top:
+        3px solid {c_accent};
+
+        border-radius:18px;
+
+        padding:22px;
+
+        box-shadow:
+        0 10px 25px rgba(0,0,0,0.8),
+        0 0 18px {c_dark};
+
+        position:relative;
+
+        overflow:hidden;
+    }}
+
+    .card:before{{
+
+        content:'';
+
+        position:absolute;
+
+        width:200px;
+        height:200px;
+
+        background:
+        radial-gradient(
+        circle,
+        rgba(255,255,255,0.05),
+        transparent 70%);
+
+        top:-120px;
+        right:-100px;
+    }}
+
+    .label{{
+
+        font-size:10px;
+
+        letter-spacing:2px;
+
+        color:{c_soft};
+
+        margin-bottom:8px;
+
+        text-transform:uppercase;
+    }}
+
+    .value{{
+
+        font-family:'Bebas Neue';
+
+        font-size:34px;
+
+        letter-spacing:2px;
+
+        background:
+        linear-gradient(
+        180deg,
+        #FFF3B0,
+        {c_bright},
+        {c_accent},
+        #7A5A00);
+
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+
+        text-shadow:
+        0 4px 12px rgba(0,0,0,0.7);
+    }}
+
+    .bar-bg{{
+
+        width:100%;
+
+        height:6px;
+
+        background:#1A1A1A;
+
+        border-radius:20px;
+
+        margin-top:15px;
+
+        overflow:hidden;
+    }}
+
+    .bar-fill{{
+
+        height:100%;
+
+        border-radius:20px;
+
+        background:
+        linear-gradient(
+        90deg,
+        #FFF6CC,
+        {c_bright},
+        {c_accent},
+        #7A5A00);
+
+        box-shadow:
+        0 0 15px {c_dark};
+    }}
+
+    /* ================================================== */
+    /* LISTAS Y TABLAS */
+    /* ================================================== */
+
+    .list-card{{
+
+        background:
+        linear-gradient(
+        145deg,
+        rgba(255,255,255,0.03),
+        rgba(255,255,255,0.01));
+
+        border-left:
+        4px solid {c_accent};
+
+        border-radius:16px;
+
+        padding:22px;
+
+        margin-bottom:18px;
+
+        box-shadow:
+        0 8px 20px rgba(0,0,0,0.8);
+    }}
+
+    .list-title{{
+
+        font-family:'Bebas Neue';
+
+        font-size:24px;
+
+        letter-spacing:2px;
+
+        margin-bottom:12px;
+
+        color:{c_bright};
+    }}
+
+    .item{{
+
+        padding:10px 0;
+
+        border-bottom:
+        1px solid rgba(255,255,255,0.04);
+
+        font-size:11px;
+        color: #E0E0E0;
+    }}
+    
+    /* Tabla para alinear perfectamente la lista de compras */
+    .data-table {{
+        width: 100%;
+        border-collapse: collapse;
+    }}
+    .data-table td {{
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        font-size: 11px;
+        color: #E0E0E0;
+    }}
+
+    /* ================================================== */
+    /* GRAFICO */
+    /* ================================================== */
+
+    .graph{{
+
+        width:100%;
+
+        border-radius:16px;
+
+        border:
+        1px solid rgba(255,255,255,0.08);
+
+        box-shadow:
+        0 0 25px rgba(0,0,0,0.8);
+    }}
+
+    /* ================================================== */
+    /* FOOTER */
+    /* ================================================== */
+
+    .footer{{
+
+        margin-top:40px;
+
+        display:flex;
+        justify-content:space-between;
+        align-items:end;
+
+        border-top:
+        1px solid rgba(255,255,255,0.08);
+
+        padding-top:18px;
+    }}
+
+    .signature{{
+
+        font-family:'Great Vibes';
+
+        font-size:34px;
+
+        color:{c_soft};
+    }}
+
+    .qr{{
+
+        width:60px;
+        height:60px;
+
+        background:white;
+
+        padding:3px;
+
+        border-radius:6px;
+
+        border:
+        1px solid {c_accent};
+
+        box-shadow:
+        0 0 18px rgba(0,0,0,0.7);
+    }}
+
+    </style>
+
+    </head>
+
+    <body>
+
+    <div class="cover">
+
+        {logo_html}
+
+        <div class="cover-title">
+        PLAN INTEGRAL ELITE
         </div>
 
-        <div class="page-content">
-            <div class="header-interior">
-                <div class="header-left"><h1>ANALÍTICA FÍSICA Y MÉTRICAS</h1></div>
-                <div class="header-right">{logo_chico}</div>
-            </div>
-
-            <table class="grid-container">
-                <tr>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">EDAD REGISTRADA</span>
-                        <span class="metric-value">{d['edad']} AÑOS</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 100%;"></div></div>
-                    </td>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">ESTATURA</span>
-                        <span class="metric-value">{d['estatura']} CM</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 80%;"></div></div>
-                    </td>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">PESO ACTUAL</span>
-                        <span class="metric-value">{d['peso']} KG</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 70%;"></div></div>
-                    </td>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">GRASA ESTIMADA</span>
-                        <span class="metric-highlight">{d['rfm']}%</span>
-                    </td>
-                </tr>
-            </table>
-
-            <table class="grid-container">
-                <tr>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">CINTURA</span>
-                        <span class="metric-value">{d['cintura']} CM</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 60%;"></div></div>
-                    </td>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">CADERA</span>
-                        <span class="metric-value">{d['cadera']} CM</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 60%;"></div></div>
-                    </td>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">ÍNDICE RCC</span>
-                        <span class="metric-value">{d['rcc']}</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 50%;"></div></div>
-                    </td>
-                    <td class="glass-card" style="width: 25%; border-top-color: #00BFFF;">
-                        <span class="metric-label" style="color: #00BFFF;">HIDRATACIÓN</span>
-                        <span class="metric-value" style="color: #00BFFF;">{d['w']} LTS</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 100%; background-color: #00BFFF;"></div></div>
-                    </td>
-                </tr>
-            </table>
-
-            <table class="grid-container">
-                <tr>
-                    <td class="glass-card" style="width: 75%; border-top-color: #fff; text-align: left; padding-left: 25px;">
-                        <span class="metric-label" style="color: #fff;">OBJETIVO PRINCIPAL</span>
-                        <span class="metric-highlight" style="font-size: 34px;">{d['meta'].upper()}</span>
-                        <span style="font-size: 10px; color: {c_titanio}; margin-top: 5px; display: block;">TIPO DE DIETA ELEGIDA: {d['dt'].upper()}</span>
-                    </td>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">KCAL DIARIAS</span>
-                        <span class="metric-value">{d['k']:.0f}</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 100%;"></div></div>
-                    </td>
-                </tr>
-            </table>
-
-            <div class="glass-card" style="margin-top: 10px; padding: 15px; text-align: left;">
-                <span class="metric-label">PROYECCIÓN DE EVOLUCIÓN CORPORAL</span>
-                <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 6px; border: 1px solid #1a1a1a; margin-top: 10px;">
-            </div>
+        <div class="cover-sub">
+        INGENIERÍA CORPORAL DE ALTO VALOR
         </div>
 
-        <div class="page-content">
-            <div class="header-interior">
-                <div class="header-left"><h1>ESTRATEGIA NUTRICIONAL</h1></div>
-                <div class="header-right">{logo_chico}</div>
+        <div class="badge">
+        {edition}
+        </div>
+
+        <div class="athlete">
+
+            <div class="label">
+            ATLETA DE ÉLITE
             </div>
 
-            <table class="grid-container" style="margin-bottom: 15px;">
-                <tr>
-                    <td class="glass-card" style="padding: 12px;">
-                        <span class="metric-label">Proteína Total</span>
-                        <span class="metric-value" style="font-size: 24px;">P: {d['p']:.0f}g</span>
-                    </td>
-                    <td class="glass-card" style="padding: 12px;">
-                        <span class="metric-label">Carbohidratos</span>
-                        <span class="metric-value" style="font-size: 24px;">C: {d['c']:.0f}g</span>
-                    </td>
-                    <td class="glass-card" style="padding: 12px;">
-                        <span class="metric-label">Grasas Totales</span>
-                        <span class="metric-value" style="font-size: 24px;">G: {d['g']:.0f}g</span>
-                    </td>
-                </tr>
-            </table>
-    """
+            <div class="athlete-name">
+            {d['n'].upper()}
+            </div>
+            
+            <div class="label" style="margin-top:15px; margin-bottom:0;">
+            NIVEL: {d['nivel'].upper()}
+            </div>
 
+        </div>
+        
+        <div style="position: absolute; bottom: 40px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; align-items: end;">
+            {qr_html}
+            <div style="font-size: 9px; color: {c_soft}; letter-spacing: 2px;">POWERED BY EDDY PT ELITE</div>
+            <div class="signature">Eddy Personal Trainer</div>
+        </div>
+
+    </div>
+
+    <div class="page">
+
+        <div class="header">
+
+            <div class="header-title">
+            ANALÍTICA FÍSICA
+            </div>
+
+            {logo_chico_html}
+
+        </div>
+
+        <div class="grid">
+
+            <div class="card">
+                <div class="label">EDAD</div>
+                <div class="value">{d['edad']}</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:100%;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">ESTATURA</div>
+                <div class="value">{d['estatura']}CM</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:80%;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">PESO</div>
+                <div class="value">{d['peso']}KG</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:70%;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">GRASA</div>
+                <div class="value">{d['rfm']}%</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:65%;"></div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="grid">
+
+            <div class="card">
+                <div class="label">CINTURA</div>
+                <div class="value">{d['cintura']}CM</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:60%;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">CADERA</div>
+                <div class="value">{d['cadera']}CM</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:60%;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">ÍNDICE RCC</div>
+                <div class="value">{d['rcc']}</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:50%;"></div>
+                </div>
+            </div>
+
+            <div class="card" style="border-top-color: #00BFFF;">
+                <div class="label" style="color: #00BFFF;">HIDRATACIÓN</div>
+                <div class="value" style="background: none; -webkit-text-fill-color: #00BFFF; text-shadow: none;">{d['w']}L</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:100%; background: #00BFFF; box-shadow: 0 0 15px #00BFFF;"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="label">OBJETIVO ESTRATÉGICO</div>
+            <div class="value" style="font-size: 40px;">{d['meta'].upper()}</div>
+            <div class="label" style="margin-top: 5px;">DIETA ASIGNADA: {d['dt'].upper()}</div>
+        </div>
+
+        <div class="card">
+
+            <div class="label">
+            PROYECCIÓN CORPORAL
+            </div>
+
+            <img src="data:image/png;base64,{grafico_b64}"
+            class="graph">
+
+        </div>
+
+    </div>
+
+    <div class="page">
+
+        <div class="header">
+            <div class="header-title">ESTRATEGIA NUTRICIONAL</div>
+            {logo_chico_html}
+        </div>
+        
+        <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="card">
+                <div class="label">KCAL DIARIAS</div>
+                <div class="value">{d['k']:.0f}</div>
+            </div>
+            <div class="card">
+                <div class="label">PROTEÍNAS</div>
+                <div class="value">{d['p']:.0f}g</div>
+            </div>
+            <div class="card">
+                <div class="label">CARBOS / GRASAS</div>
+                <div class="value">{d['c']:.0f}g / {d['g']:.0f}g</div>
+            </div>
+        </div>
+        """
+
+    # Bucle de Comidas
     for comida, opciones in d['m'].items():
         html += f"""
-            <div class="list-card">
-                <h3>{comida}</h3>
-                <table class="data-table">
+        <div class="list-card">
+            <div class="list-title">{comida}</div>
         """
         for op in opciones:
-            html += f"<tr><td style='width: 15px; color: {c_accent}; font-weight: bold;'>&rsaquo;</td><td>{op}</td></tr>"
-        html += "</table></div>"
+            html += f'<div class="item"><span style="color:{c_accent}; margin-right:8px;">&rsaquo;</span>{op}</div>'
+        html += "</div>"
 
+    # Bucle de Suplementación
     html += f"""
-            <div class="list-card" style="border-left-color: #00BFFF;">
-                <h3 style="color: #00BFFF;">SUPLEMENTACIÓN Y MICRONUTRIENTES</h3>
-                <table class="data-table">
+        <div class="list-card" style="border-left-color: #00BFFF;">
+            <div class="list-title" style="color: #00BFFF;">SUPLEMENTACIÓN</div>
     """
     for suplemento in d['s']:
-        html += f"<tr><td style='width: 15px; color: #00BFFF; font-weight: bold;'>&rsaquo;</td><td>{suplemento}</td></tr>"
-        
+        html += f'<div class="item"><span style="color:#00BFFF; margin-right:8px;">&rsaquo;</span>{suplemento}</div>'
+    
     html += f"""
-                </table>
-            </div>
-            
-            <table class="footer-interior">
-                <tr>
-                    <td style="text-align: right;"><div class="signature">Eddy Personal Trainer</div><div style="font-size: 9px; color: #666; letter-spacing: 1px;">FIRMA DIGITAL AUTORIZADA</div></td>
-                    <td style="width: 60px; text-align: right; vertical-align: bottom;">{qr_html}</td>
-                </tr>
-            </table>
+        </div>
+        
+        <div class="footer">
+            {qr_html}
+            <div class="signature">Eddy Personal Trainer</div>
+        </div>
+    </div>
+    """
+
+    # =================================================
+    # ENTRENAMIENTO
+    # =================================================
+    html += f"""
+    <div class="page">
+        <div class="header">
+            <div class="header-title">PLAN DE ENTRENAMIENTO</div>
+            {logo_chico_html}
+        </div>
+        
+        <div class="card" style="margin-bottom: 20px; text-align: center;">
+            <span class="label" style="display:inline-block; margin-right:20px;">TIPO DE RUTINA: <span style="color:{c_txt}; font-size:12px;">{d['entreno'].upper()}</span></span>
+            <span class="label" style="display:inline-block;">FRECUENCIA: <span style="color:{c_txt}; font-size:12px;">{d['dias']} DÍAS/SEM</span></span>
         </div>
     """
 
-    # ==========================================\
-    # PÁGINA 4: ENTRENAMIENTO
-    # ==========================================\
-    html += f"""
-        <div class="page-content">
-            <div class="header-interior">
-                <div class="header-left"><h1>PLAN DE ENTRENAMIENTO</h1></div>
-                <div class="header-right">{logo_chico}</div>
-            </div>
-            <div style="font-size: 11px; color: {c_titanio}; margin-top: -10px; margin-bottom: 20px; letter-spacing: 2px; text-transform: uppercase;">
-                TIPO: <span style="color: {c_txt};">{d['entreno']}</span> | FRECUENCIA: <span style="color: {c_txt};">{d['dias']} DÍAS/SEM</span>
-            </div>
-    """
-
+    # Bucle de Rutinas
     for dia, ejercicios in d['rutina'].items():
         html += f"""
-            <div class="list-card">
-                <h3>{dia}</h3>
-                <table class="data-table">
+        <div class="list-card">
+            <div class="list-title">{dia}</div>
         """
         for ej in ejercicios:
-            html += f"<tr><td style='width: 15px; color: {c_accent}; font-weight: bold;'>&rsaquo;</td><td>{ej}</td></tr>"
-        html += "</table></div>"
+            html += f'<div class="item"><span style="color:{c_accent}; margin-right:8px;">&rsaquo;</span>{ej}</div>'
+        html += "</div>"
 
     html += f"""
-            <table class="footer-interior">
-                <tr>
-                    <td style="text-align: right;"><div class="signature">Eddy Personal Trainer</div><div style="font-size: 9px; color: #666; letter-spacing: 1px;">FIRMA DIGITAL AUTORIZADA</div></td>
-                    <td style="width: 60px; text-align: right; vertical-align: bottom;">{qr_html}</td>
-                </tr>
-            </table>
+        <div class="footer">
+            {qr_html}
+            <div class="signature">Eddy Personal Trainer</div>
         </div>
+    </div>
     """
 
-    # ==========================================\
-    # PÁGINA 5: TICKET DE COMPRAS
-    # ==========================================\
+    # =================================================
+    # COMPRAS
+    # =================================================
     html += f"""
-        <div class="page-content">
-            <div class="header-interior">
-                <div class="header-left"><h1>TICKET DE COMPRA MENSUAL</h1></div>
-                <div class="header-right">{logo_chico}</div>
-            </div>
-            
-            <div class="list-card">
-                <table class="data-table">
+    <div class="page">
+        <div class="header">
+            <div class="header-title">TICKET DE COMPRA MENSUAL</div>
+            {logo_chico_html}
+        </div>
+        
+        <div class="list-card">
+            <table class="data-table">
     """
     
+    # Bucle de Compras con cálculos
     for item, cant in d['compras'].items():
         if "Huevo" in item or "Claras" in item:
             unidades = int(cant / 50)
-            res = f"<span style='color:{c_accent}; font-weight: bold; font-size: 12px;'>{unidades} Uni.</span> <span style='color: #888;'>(~{round(unidades/12, 1)} Doc.)</span>"
+            res = f"<span style='color:{c_accent}; font-weight:bold;'>{unidades} Uni.</span> <span style='color:{c_soft};'>(~{round(unidades/12, 1)} Doc.)</span>"
         elif any(x in item for x in ["Café", "Mate", "Té", "Infusión"]):
-            res = f"<span style='color:{c_accent}; font-weight: bold; font-size: 12px;'>{int(cant)} Tazas</span>"
+            res = f"<span style='color:{c_accent}; font-weight:bold;'>{int(cant)} Tazas</span>"
         else:
             if cant >= 1000:
-                res = f"<span style='color:{c_accent}; font-weight: bold; font-size: 12px;'>{round(cant/1000, 2)} KG</span>"
+                res = f"<span style='color:{c_accent}; font-weight:bold;'>{round(cant/1000, 2)} KG</span>"
             else:
-                res = f"<span style='color:{c_accent}; font-weight: bold; font-size: 12px;'>{int(cant)} g</span>"
+                res = f"<span style='color:{c_accent}; font-weight:bold;'>{int(cant)} g</span>"
                 
-        html += f"<tr><td style='width: 75%; font-weight: bold; font-size: 11px;'>{item}</td><td style='width: 25%; text-align: right;'>{res}</td></tr>"
-    
+        html += f"<tr><td style='width:70%; font-weight:600;'>{item}</td><td style='width:30%; text-align:right;'>{res}</td></tr>"
+
     html += f"""
-                </table>
-            </div>
-            
-            <table class="footer-interior" style="margin-top: 50px;">
-                <tr>
-                    <td style="text-align: left; font-family: 'Bebas Neue'; font-size: 22px; color: {c_accent}; letter-spacing: 4px;">EDDY PERSONAL TRAINER ELITE</td>
-                    <td style="text-align: right;"><div class="signature">Eddy Personal Trainer</div></td>
-                    <td style="width: 60px; text-align: right; vertical-align: bottom;">{qr_html}</td>
-                </tr>
             </table>
         </div>
-    </body></html>
-    """
+        
+        <div class="footer">
+            {qr_html}
+            <div class="signature">Eddy Personal Trainer</div>
+        </div>
+    </div>
     
-    return HTML(string=html).write_pdf()
+    </body>
+    </html>
+    """
+
+    return HTML(
+        string=html
+    ).write_pdf()
