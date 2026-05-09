@@ -9,48 +9,55 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
     is_f = (gen == "f")
     
     # Colores Base (Ébano absoluto y Blanco)
-    c_bg = "#050505"         
-    c_card = "#121212"       
+    c_bg = "#070707"         
+    c_card = "#111111"       
     c_txt = "#F5F5F5"        
     c_titanio = "#A0A0A0"    
     
     if is_f:
         # RUBY BLACK ELITE (Femenino)
-        c_accent = "#FF0055"     # Rosa Neón/Rubí de la foto
-        c_dark = "rgba(255, 0, 85, 0.3)" # Para el glow radial
+        c_accent = "#FF0055"     
+        c_dark = "rgba(255, 0, 85, 0.3)" 
         nombre_edicion = "RUBY BLACK ELITE"
         ruta_logo_exacta = "logo_rosa.png" 
     else:
         # BLACK GOLD ALPHA (Masculino)
-        c_accent = "#FFD700"     # Dorado Metálico de la foto
-        c_dark = "rgba(255, 215, 0, 0.3)" # Para el glow radial
+        c_accent = "#FFD700"     
+        c_dark = "rgba(255, 215, 0, 0.3)" 
         nombre_edicion = "BLACK GOLD ALPHA"
         ruta_logo_exacta = "logo_dorado.png"
 
     # ==========================================\
-    # 2. PROCESAMIENTO DE IMÁGENES (CON GLOW HACK)
+    # 2. PROCESAMIENTO DE IMÁGENES Y QR REAL
     # ==========================================\
     logo_portada = ""
     logo_chico = ""
+    
+    # Lógica Logo Principal
     ruta_final = ruta_logo_exacta if os.path.exists(ruta_logo_exacta) else ruta_img
-
     if ruta_final and os.path.exists(ruta_final):
         with open(ruta_final, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
-            # Logo chico normal
             logo_chico = f'<img src="data:image/png;base64,{b64}" class="img-chica">'
-            # HACK WEASYPRINT: Glow radial detrás de la imagen (porque WeasyPrint no lee drop-shadow)
             logo_portada = f"""
             <div style="display: inline-block; background: radial-gradient(circle, {c_dark} 0%, transparent 65%); padding: 40px; border-radius: 50%;">
                 <img src="data:image/png;base64,{b64}" class="img-portada">
             </div>
             """
 
-    # Simulador de Código QR para el pie de página
-    qr_placeholder = """<div style="border: 2px solid #fff; padding: 2px; width: 45px; height: 45px; display: inline-block; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');"></div>"""
+    # Lógica Código QR Real
+    ruta_qr = "qr_code.png"
+    qr_html = ""
+    if os.path.exists(ruta_qr):
+        with open(ruta_qr, "rb") as f:
+            qr_b64 = base64.b64encode(f.read()).decode("utf-8")
+            qr_html = f'<img src="data:image/png;base64,{qr_b64}" style="width: 50px; height: 50px; border: 2px solid {c_accent}; border-radius: 4px; padding: 2px; background: #fff;">'
+    else:
+        # Placeholder por si falta el archivo
+        qr_html = f'<div style="width: 50px; height: 50px; border: 2px solid {c_accent}; background: #111; color: {c_accent}; font-size: 8px; text-align: center; line-height: 50px; border-radius: 4px;">FALTA QR</div>'
 
     # ==========================================\
-    # 3. MAQUETADO CSS EXTREMO (ESTILO DASHBOARD)
+    # 3. MAQUETADO CSS EXTREMO
     # ==========================================\
     html = f"""
     <html>
@@ -60,47 +67,45 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             @page {{ size: A4; margin: 0; background-color: {c_bg}; }}
             body {{ font-family: 'Montserrat', sans-serif; color: {c_txt}; background-color: {c_bg}; margin: 0; padding: 0; font-size: 10px; }}
             
-            /* --- PORTADA CALCADA A LA FOTO --- */
+            /* --- PORTADA --- */
             .page-cover {{ text-align: center; height: 100vh; box-sizing: border-box; padding: 60px 30px; position: relative; }}
             .img-portada {{ height: 350px; position: relative; z-index: 10; }}
             .cover-title {{ font-family: 'Bebas Neue', cursive; font-size: 65px; letter-spacing: 7px; color: {c_accent}; margin: -20px 0 0 0; text-shadow: 2px 2px 5px #000; }}
             .cover-subtitle {{ font-family: 'Montserrat', sans-serif; font-size: 12px; letter-spacing: 5px; color: {c_titanio}; margin-top: 5px; text-transform: uppercase; }}
             
-            .badge-edicion {{ border: 1px solid {c_accent}; color: {c_txt}; padding: 8px 30px; border-radius: 40px; font-weight: bold; font-size: 13px; letter-spacing: 4px; display: inline-block; margin: 30px 0; background-color: #000; box-shadow: 0 0 10px rgba(255,255,255,0.1); }}
+            .badge-edicion {{ border: 1px solid {c_accent}; color: {c_txt}; padding: 8px 30px; border-radius: 40px; font-weight: bold; font-size: 13px; letter-spacing: 4px; display: inline-block; margin: 30px 0; background-color: #000; box-shadow: 0 0 10px rgba(0,0,0,0.5); }}
             
             .atleta-box {{ margin-top: 20px; border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 20px 0; width: 70%; margin-left: auto; margin-right: auto; }}
-            .atleta-name {{ font-family: 'Bebas Neue', cursive; font-size: 50px; color: {c_accent}; margin: 0; letter-spacing: 2px; }}
+            .atleta-name {{ font-family: 'Bebas Neue', cursive; font-size: 45px; color: {c_accent}; margin: 0; letter-spacing: 2px; }}
             
             .footer-portada {{ position: absolute; bottom: 50px; left: 40px; right: 40px; display: table; width: calc(100% - 80px); border-top: 1px solid #333; padding-top: 15px; }}
-            .signature {{ font-family: 'Great Vibes', cursive; font-size: 32px; color: {c_titanio}; }}
+            .signature {{ font-family: 'Great Vibes', cursive; font-size: 30px; color: {c_titanio}; }}
             
-            /* --- INTERIORES (EL DASHBOARD) --- */
+            /* --- INTERIORES Y CABECERAS LIMPIAS (SIN EMOJIS) --- */
             .page-content {{ padding: 40px; page-break-before: always; }}
             .header-interior {{ border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 25px; display: table; width: 100%; }}
-            .header-left {{ display: table-cell; vertical-align: bottom; width: 80%; }}
+            .header-left {{ display: table-cell; vertical-align: bottom; width: 80%; border-left: 5px solid {c_accent}; padding-left: 15px; }}
             .header-right {{ display: table-cell; vertical-align: bottom; text-align: right; width: 20%; }}
-            .header-left h1 {{ font-family: 'Bebas Neue'; font-size: 35px; color: {c_accent}; margin: 0; letter-spacing: 2px; }}
-            .img-chica {{ height: 55px; }}
+            .header-left h1 {{ font-family: 'Bebas Neue'; font-size: 32px; color: {c_accent}; margin: 0; letter-spacing: 2px; text-transform: uppercase; }}
+            .img-chica {{ height: 50px; }}
             
-            /* TARJETAS DE CRISTAL (Gauges simulados) */
+            /* TARJETAS DE CRISTAL INDIVIDUALES (BIEN DESGLOSADAS) */
             .grid-container {{ width: 100%; border-collapse: separate; border-spacing: 12px; margin-left: -12px; }}
-            .glass-card {{ background-color: {c_card}; border: 1px solid #1a1a1a; border-top: 3px solid {c_accent}; border-radius: 8px; padding: 18px; text-align: center; }}
+            .glass-card {{ background-color: {c_card}; border: 1px solid #1a1a1a; border-top: 3px solid {c_accent}; border-radius: 8px; padding: 15px; text-align: center; }}
             
             .metric-label {{ color: {c_titanio}; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }}
-            .metric-value {{ font-family: 'Bebas Neue'; font-size: 30px; color: {c_txt}; display: block; }}
-            .metric-highlight {{ color: {c_accent}; font-family: 'Bebas Neue'; font-size: 38px; display: block; text-shadow: 0 0 10px rgba(0,0,0,0.5); }}
+            .metric-value {{ font-family: 'Bebas Neue'; font-size: 26px; color: {c_txt}; display: block; }}
+            .metric-highlight {{ color: {c_accent}; font-family: 'Bebas Neue'; font-size: 32px; display: block; text-shadow: 0 0 5px rgba(0,0,0,0.5); }}
             
-            /* BARRAS DE PROGRESO NEÓN */
-            .bar-bg {{ width: 100%; background: #222; height: 5px; border-radius: 3px; margin-top: 12px; overflow: hidden; }}
+            .bar-bg {{ width: 100%; background: #222; height: 4px; border-radius: 2px; margin-top: 10px; overflow: hidden; }}
             .bar-fill {{ background-color: {c_accent}; height: 100%; }}
             
-            /* LISTAS Y TABLAS (Para que no se corte nada) */
-            .list-card {{ background-color: {c_card}; border: 1px solid #1a1a1a; border-left: 4px solid {c_accent}; padding: 18px; margin-bottom: 15px; border-radius: 6px; }}
-            .list-card h3 {{ font-family: 'Bebas Neue'; color: {c_accent}; font-size: 22px; margin: 0 0 10px 0; letter-spacing: 1px; }}
+            /* LISTAS Y TABLAS */
+            .list-card {{ background-color: {c_card}; border: 1px solid #1a1a1a; border-left: 3px solid {c_accent}; padding: 18px; margin-bottom: 15px; border-radius: 6px; }}
+            .list-card h3 {{ font-family: 'Bebas Neue'; color: {c_accent}; font-size: 20px; margin: 0 0 10px 0; letter-spacing: 1px; text-transform: uppercase; }}
             .data-table {{ width: 100%; border-collapse: collapse; }}
-            .data-table td {{ padding: 10px 5px; border-bottom: 1px solid #1a1a1a; font-size: 11px; color: #ddd; vertical-align: top; }}
+            .data-table td {{ padding: 10px 5px; border-bottom: 1px solid #1a1a1a; font-size: 11px; color: #ddd; vertical-align: top; line-height: 1.4; }}
             
-            /* FIRMA PIE DE PÁGINA INTERIOR */
             .footer-interior {{ margin-top: 40px; border-top: 1px solid #222; padding-top: 15px; display: table; width: 100%; }}
         </style>
     </head>
@@ -121,38 +126,38 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             
             <table class="footer-portada">
                 <tr>
-                    <td style="text-align: left; width: 33%; vertical-align: bottom;">{qr_placeholder}</td>
+                    <td style="text-align: left; width: 33%; vertical-align: bottom;">{qr_html}</td>
                     <td style="text-align: center; width: 33%; vertical-align: bottom; font-size: 9px; color: #666; letter-spacing: 2px;">POWERED BY EDDY PT ELITE<br>FECHA: {d.get('fecha', 'ACTUAL')}</td>
-                    <td style="text-align: right; width: 33%; vertical-align: bottom;"><div class="signature">Eddy Signature</div></td>
+                    <td style="text-align: right; width: 33%; vertical-align: bottom;"><div class="signature">Eddy Personal Trainer</div></td>
                 </tr>
             </table>
         </div>
 
         <div class="page-content">
             <div class="header-interior">
-                <div class="header-left"><h1>📈 ANALÍTICA FÍSICA Y OBJETIVOS</h1></div>
+                <div class="header-left"><h1>ANALÍTICA FÍSICA Y MÉTRICAS</h1></div>
                 <div class="header-right">{logo_chico}</div>
             </div>
 
             <table class="grid-container">
                 <tr>
                     <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">Edad / Estatura</span>
-                        <span class="metric-value">{d['edad']} A / {d['estatura']} CM</span>
+                        <span class="metric-label">EDAD REGISTRADA</span>
+                        <span class="metric-value">{d['edad']} AÑOS</span>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 100%;"></div></div>
+                    </td>
+                    <td class="glass-card" style="width: 25%;">
+                        <span class="metric-label">ESTATURA</span>
+                        <span class="metric-value">{d['estatura']} CM</span>
                         <div class="bar-bg"><div class="bar-fill" style="width: 80%;"></div></div>
                     </td>
                     <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">Peso Actual</span>
+                        <span class="metric-label">PESO ACTUAL</span>
                         <span class="metric-value">{d['peso']} KG</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 75%;"></div></div>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 70%;"></div></div>
                     </td>
                     <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">Cintura / Cadera</span>
-                        <span class="metric-value">{d['cintura']} / {d['cadera']} CM</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 60%;"></div></div>
-                    </td>
-                    <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">Grasa Estimada</span>
+                        <span class="metric-label">GRASA ESTIMADA</span>
                         <span class="metric-highlight">{d['rfm']}%</span>
                     </td>
                 </tr>
@@ -160,33 +165,53 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
 
             <table class="grid-container">
                 <tr>
-                    <td class="glass-card" style="width: 50%; border-top-color: #fff;">
-                        <span class="metric-label" style="color: #fff;">Porcentaje Objetivo (Meta)</span>
-                        <span class="metric-highlight" style="font-size: 40px;">{d['meta'].upper()}</span>
-                        <span style="font-size: 10px; color: {c_titanio}; margin-top: 5px; display: block;">DIETA: {d['dt'].upper()} | ÍNDICE RCC: {d['rcc']}</span>
+                    <td class="glass-card" style="width: 25%;">
+                        <span class="metric-label">CINTURA</span>
+                        <span class="metric-value">{d['cintura']} CM</span>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 60%;"></div></div>
                     </td>
                     <td class="glass-card" style="width: 25%;">
-                        <span class="metric-label">KCal Diarias</span>
-                        <span class="metric-value">{d['k']:.0f}</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 100%;"></div></div>
+                        <span class="metric-label">CADERA</span>
+                        <span class="metric-value">{d['cadera']} CM</span>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 60%;"></div></div>
+                    </td>
+                    <td class="glass-card" style="width: 25%;">
+                        <span class="metric-label">ÍNDICE RCC</span>
+                        <span class="metric-value">{d['rcc']}</span>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 50%;"></div></div>
                     </td>
                     <td class="glass-card" style="width: 25%; border-top-color: #00BFFF;">
-                        <span class="metric-label" style="color: #00BFFF;">Hidratación</span>
+                        <span class="metric-label" style="color: #00BFFF;">HIDRATACIÓN</span>
                         <span class="metric-value" style="color: #00BFFF;">{d['w']} LTS</span>
                         <div class="bar-bg"><div class="bar-fill" style="width: 100%; background-color: #00BFFF;"></div></div>
                     </td>
                 </tr>
             </table>
 
+            <table class="grid-container">
+                <tr>
+                    <td class="glass-card" style="width: 75%; border-top-color: #fff; text-align: left; padding-left: 25px;">
+                        <span class="metric-label" style="color: #fff;">OBJETIVO PRINCIPAL</span>
+                        <span class="metric-highlight" style="font-size: 34px;">{d['meta'].upper()}</span>
+                        <span style="font-size: 10px; color: {c_titanio}; margin-top: 5px; display: block;">TIPO DE DIETA ELEGIDA: {d['dt'].upper()}</span>
+                    </td>
+                    <td class="glass-card" style="width: 25%;">
+                        <span class="metric-label">KCAL DIARIAS</span>
+                        <span class="metric-value">{d['k']:.0f}</span>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 100%;"></div></div>
+                    </td>
+                </tr>
+            </table>
+
             <div class="glass-card" style="margin-top: 10px; padding: 15px; text-align: left;">
-                <span class="metric-label">PROYECCIÓN DE EVOLUCIÓN</span>
-                <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 6px; border: 1px solid #1a1a1a; margin-top: 5px;">
+                <span class="metric-label">PROYECCIÓN DE EVOLUCIÓN CORPORAL</span>
+                <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 6px; border: 1px solid #1a1a1a; margin-top: 10px;">
             </div>
         </div>
 
         <div class="page-content">
             <div class="header-interior">
-                <div class="header-left"><h1>🥗 ESTRATEGIA NUTRICIONAL</h1></div>
+                <div class="header-left"><h1>ESTRATEGIA NUTRICIONAL</h1></div>
                 <div class="header-right">{logo_chico}</div>
             </div>
 
@@ -201,32 +226,30 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                         <span class="metric-value" style="font-size: 24px;">C: {d['c']:.0f}g</span>
                     </td>
                     <td class="glass-card" style="padding: 12px;">
-                        <span class="metric-label">Grasas</span>
+                        <span class="metric-label">Grasas Totales</span>
                         <span class="metric-value" style="font-size: 24px;">G: {d['g']:.0f}g</span>
                     </td>
                 </tr>
             </table>
     """
 
-    # --- BUCLE EXACTO DE COMIDAS ---
     for comida, opciones in d['m'].items():
         html += f"""
             <div class="list-card">
-                <h3>🍴 {comida}</h3>
+                <h3>{comida}</h3>
                 <table class="data-table">
         """
         for op in opciones:
-            html += f"<tr><td style='width: 15px; color: {c_accent}; font-weight: bold;'>•</td><td>{op}</td></tr>"
+            html += f"<tr><td style='width: 15px; color: {c_accent}; font-weight: bold;'>&rsaquo;</td><td>{op}</td></tr>"
         html += "</table></div>"
 
-    # --- BUCLE EXACTO DE SUPLEMENTACIÓN ---
     html += f"""
             <div class="list-card" style="border-left-color: #00BFFF;">
-                <h3 style="color: #00BFFF;">💊 SUPLEMENTACIÓN Y MICRONUTRIENTES</h3>
+                <h3 style="color: #00BFFF;">SUPLEMENTACIÓN Y MICRONUTRIENTES</h3>
                 <table class="data-table">
     """
     for suplemento in d['s']:
-        html += f"<tr><td style='width: 15px; color: #00BFFF; font-weight: bold;'>•</td><td>{suplemento}</td></tr>"
+        html += f"<tr><td style='width: 15px; color: #00BFFF; font-weight: bold;'>&rsaquo;</td><td>{suplemento}</td></tr>"
         
     html += f"""
                 </table>
@@ -234,55 +257,54 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             
             <table class="footer-interior">
                 <tr>
-                    <td style="text-align: right;"><div class="signature">Eddy Signature</div><div style="font-size: 9px; color: #666; letter-spacing: 1px;">FIRMA DIGITAL AUTORIZADA</div></td>
-                    <td style="width: 60px; text-align: right; vertical-align: top;">{qr_placeholder}</td>
+                    <td style="text-align: right;"><div class="signature">Eddy Personal Trainer</div><div style="font-size: 9px; color: #666; letter-spacing: 1px;">FIRMA DIGITAL AUTORIZADA</div></td>
+                    <td style="width: 60px; text-align: right; vertical-align: bottom;">{qr_html}</td>
                 </tr>
             </table>
         </div>
     """
 
     # ==========================================\
-    # PÁGINA 4: ENTRENAMIENTO (NO FALTA NINGÚN BUCLE)
+    # PÁGINA 4: ENTRENAMIENTO
     # ==========================================\
     html += f"""
         <div class="page-content">
             <div class="header-interior">
-                <div class="header-left"><h1>🏋️‍♂️ PLAN DE ENTRENAMIENTO</h1></div>
+                <div class="header-left"><h1>PLAN DE ENTRENAMIENTO</h1></div>
                 <div class="header-right">{logo_chico}</div>
             </div>
-            <div style="font-size: 11px; color: {c_titanio}; margin-top: -10px; margin-bottom: 20px; letter-spacing: 2px;">
-                TIPO: <span style="color: {c_txt};">{d['entreno'].upper()}</span> | FRECUENCIA: <span style="color: {c_txt};">{d['dias']} DÍAS/SEM</span>
+            <div style="font-size: 11px; color: {c_titanio}; margin-top: -10px; margin-bottom: 20px; letter-spacing: 2px; text-transform: uppercase;">
+                TIPO: <span style="color: {c_txt};">{d['entreno']}</span> | FRECUENCIA: <span style="color: {c_txt};">{d['dias']} DÍAS/SEM</span>
             </div>
     """
 
-    # --- BUCLE EXACTO DE RUTINAS ---
     for dia, ejercicios in d['rutina'].items():
         html += f"""
             <div class="list-card">
-                <h3>📅 {dia}</h3>
+                <h3>{dia}</h3>
                 <table class="data-table">
         """
         for ej in ejercicios:
-            html += f"<tr><td style='width: 15px; color: {c_accent}; font-weight: bold;'>•</td><td>{ej}</td></tr>"
+            html += f"<tr><td style='width: 15px; color: {c_accent}; font-weight: bold;'>&rsaquo;</td><td>{ej}</td></tr>"
         html += "</table></div>"
 
     html += f"""
             <table class="footer-interior">
                 <tr>
-                    <td style="text-align: right;"><div class="signature">Eddy Signature</div><div style="font-size: 9px; color: #666; letter-spacing: 1px;">FIRMA DIGITAL AUTORIZADA</div></td>
-                    <td style="width: 60px; text-align: right; vertical-align: top;">{qr_placeholder}</td>
+                    <td style="text-align: right;"><div class="signature">Eddy Personal Trainer</div><div style="font-size: 9px; color: #666; letter-spacing: 1px;">FIRMA DIGITAL AUTORIZADA</div></td>
+                    <td style="width: 60px; text-align: right; vertical-align: bottom;">{qr_html}</td>
                 </tr>
             </table>
         </div>
     """
 
     # ==========================================\
-    # PÁGINA 5: TICKET DE COMPRAS (NO FALTA NADA)
+    # PÁGINA 5: TICKET DE COMPRAS
     # ==========================================\
     html += f"""
         <div class="page-content">
             <div class="header-interior">
-                <div class="header-left"><h1>🛒 TICKET DE COMPRA MENSUAL</h1></div>
+                <div class="header-left"><h1>TICKET DE COMPRA MENSUAL</h1></div>
                 <div class="header-right">{logo_chico}</div>
             </div>
             
@@ -290,7 +312,6 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <table class="data-table">
     """
     
-    # --- BUCLE EXACTO DE COMPRAS (Con conversiones de huevos e infusiones) ---
     for item, cant in d['compras'].items():
         if "Huevo" in item or "Claras" in item:
             unidades = int(cant / 50)
@@ -312,8 +333,8 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             <table class="footer-interior" style="margin-top: 50px;">
                 <tr>
                     <td style="text-align: left; font-family: 'Bebas Neue'; font-size: 22px; color: {c_accent}; letter-spacing: 4px;">EDDY PERSONAL TRAINER ELITE</td>
-                    <td style="text-align: right;"><div class="signature">Eddy Signature</div></td>
-                    <td style="width: 60px; text-align: right; vertical-align: top;">{qr_placeholder}</td>
+                    <td style="text-align: right;"><div class="signature">Eddy Personal Trainer</div></td>
+                    <td style="width: 60px; text-align: right; vertical-align: bottom;">{qr_html}</td>
                 </tr>
             </table>
         </div>
