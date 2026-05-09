@@ -9,26 +9,26 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
     is_f = (gen == "f")
     
     # Colores Base (Ébano absoluto y Blanco)
-    c_bg = "#070707"         
-    c_card = "#111111"       
+    c_bg = "#050505"         
+    c_card = "#121212"       
     c_txt = "#F5F5F5"        
     c_titanio = "#A0A0A0"    
     
     if is_f:
         # RUBY BLACK ELITE (Femenino)
         c_accent = "#FF0055"     # Rosa Neón/Rubí de la foto
-        c_dark = "#4A0018"
+        c_dark = "rgba(255, 0, 85, 0.3)" # Para el glow radial
         nombre_edicion = "RUBY BLACK ELITE"
         ruta_logo_exacta = "logo_rosa.png" 
     else:
         # BLACK GOLD ALPHA (Masculino)
         c_accent = "#FFD700"     # Dorado Metálico de la foto
-        c_dark = "#5A4A00"
+        c_dark = "rgba(255, 215, 0, 0.3)" # Para el glow radial
         nombre_edicion = "BLACK GOLD ALPHA"
         ruta_logo_exacta = "logo_dorado.png"
 
     # ==========================================\
-    # 2. PROCESAMIENTO DE IMÁGENES
+    # 2. PROCESAMIENTO DE IMÁGENES (CON GLOW HACK)
     # ==========================================\
     logo_portada = ""
     logo_chico = ""
@@ -37,11 +37,17 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
     if ruta_final and os.path.exists(ruta_final):
         with open(ruta_final, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
-            logo_portada = f'<img src="data:image/png;base64,{b64}" class="img-portada">'
+            # Logo chico normal
             logo_chico = f'<img src="data:image/png;base64,{b64}" class="img-chica">'
+            # HACK WEASYPRINT: Glow radial detrás de la imagen (porque WeasyPrint no lee drop-shadow)
+            logo_portada = f"""
+            <div style="display: inline-block; background: radial-gradient(circle, {c_dark} 0%, transparent 65%); padding: 40px; border-radius: 50%;">
+                <img src="data:image/png;base64,{b64}" class="img-portada">
+            </div>
+            """
 
     # Simulador de Código QR para el pie de página
-    qr_placeholder = """<div style="border: 2px solid #fff; padding: 2px; width: 40px; height: 40px; display: inline-block; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');"></div>"""
+    qr_placeholder = """<div style="border: 2px solid #fff; padding: 2px; width: 45px; height: 45px; display: inline-block; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');"></div>"""
 
     # ==========================================\
     # 3. MAQUETADO CSS EXTREMO (ESTILO DASHBOARD)
@@ -55,48 +61,47 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             body {{ font-family: 'Montserrat', sans-serif; color: {c_txt}; background-color: {c_bg}; margin: 0; padding: 0; font-size: 10px; }}
             
             /* --- PORTADA CALCADA A LA FOTO --- */
-            .page-cover {{ text-align: center; height: 100vh; box-sizing: border-box; padding: 50px 30px; position: relative; }}
-            .img-portada {{ height: 380px; filter: drop-shadow(0 0 30px {c_dark}); margin-bottom: 20px; }}
-            .cover-title {{ font-family: 'Bebas Neue', cursive; font-size: 60px; letter-spacing: 6px; color: {c_accent}; margin: 0; text-shadow: 0 5px 15px #000; }}
-            .cover-subtitle {{ font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 5px; color: {c_titanio}; margin-top: 5px; text-transform: uppercase; }}
+            .page-cover {{ text-align: center; height: 100vh; box-sizing: border-box; padding: 60px 30px; position: relative; }}
+            .img-portada {{ height: 350px; position: relative; z-index: 10; }}
+            .cover-title {{ font-family: 'Bebas Neue', cursive; font-size: 65px; letter-spacing: 7px; color: {c_accent}; margin: -20px 0 0 0; text-shadow: 2px 2px 5px #000; }}
+            .cover-subtitle {{ font-family: 'Montserrat', sans-serif; font-size: 12px; letter-spacing: 5px; color: {c_titanio}; margin-top: 5px; text-transform: uppercase; }}
             
-            .badge-edicion {{ border: 1px solid {c_accent}; color: {c_txt}; padding: 6px 25px; border-radius: 30px; font-weight: bold; font-size: 12px; letter-spacing: 3px; display: inline-block; margin: 25px 0; background: linear-gradient(180deg, #111, #000); box-shadow: 0 0 15px {c_dark}; }}
+            .badge-edicion {{ border: 1px solid {c_accent}; color: {c_txt}; padding: 8px 30px; border-radius: 40px; font-weight: bold; font-size: 13px; letter-spacing: 4px; display: inline-block; margin: 30px 0; background-color: #000; box-shadow: 0 0 10px rgba(255,255,255,0.1); }}
             
-            .atleta-box {{ margin-top: 10px; border-top: 1px solid #333; padding-top: 20px; width: 60%; margin-left: auto; margin-right: auto; }}
-            .atleta-name {{ font-family: 'Bebas Neue', cursive; font-size: 45px; color: {c_accent}; margin: 0; letter-spacing: 2px; }}
+            .atleta-box {{ margin-top: 20px; border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 20px 0; width: 70%; margin-left: auto; margin-right: auto; }}
+            .atleta-name {{ font-family: 'Bebas Neue', cursive; font-size: 50px; color: {c_accent}; margin: 0; letter-spacing: 2px; }}
             
-            .footer-portada {{ position: absolute; bottom: 40px; width: calc(100% - 60px); display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #333; padding-top: 15px; }}
-            .signature {{ font-family: 'Great Vibes', cursive; font-size: 28px; color: {c_titanio}; }}
+            .footer-portada {{ position: absolute; bottom: 50px; left: 40px; right: 40px; display: table; width: calc(100% - 80px); border-top: 1px solid #333; padding-top: 15px; }}
+            .signature {{ font-family: 'Great Vibes', cursive; font-size: 32px; color: {c_titanio}; }}
             
             /* --- INTERIORES (EL DASHBOARD) --- */
-            .page-content {{ padding: 30px 40px; page-break-before: always; }}
-            .header-interior {{ border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px; display: table; width: 100%; }}
+            .page-content {{ padding: 40px; page-break-before: always; }}
+            .header-interior {{ border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 25px; display: table; width: 100%; }}
             .header-left {{ display: table-cell; vertical-align: bottom; width: 80%; }}
             .header-right {{ display: table-cell; vertical-align: bottom; text-align: right; width: 20%; }}
-            .header-left h1 {{ font-family: 'Bebas Neue'; font-size: 32px; color: {c_accent}; margin: 0; letter-spacing: 2px; display: inline-block; }}
-            .img-chica {{ height: 50px; filter: drop-shadow(0 0 5px {c_accent}); }}
+            .header-left h1 {{ font-family: 'Bebas Neue'; font-size: 35px; color: {c_accent}; margin: 0; letter-spacing: 2px; }}
+            .img-chica {{ height: 55px; }}
             
             /* TARJETAS DE CRISTAL (Gauges simulados) */
             .grid-container {{ width: 100%; border-collapse: separate; border-spacing: 12px; margin-left: -12px; }}
-            .glass-card {{ background: linear-gradient(145deg, #151515, #080808); border: 1px solid #222; border-top: 2px solid {c_accent}; border-radius: 8px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.8); text-align: center; }}
+            .glass-card {{ background-color: {c_card}; border: 1px solid #1a1a1a; border-top: 3px solid {c_accent}; border-radius: 8px; padding: 18px; text-align: center; }}
             
             .metric-label {{ color: {c_titanio}; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }}
-            .metric-value {{ font-family: 'Bebas Neue'; font-size: 28px; color: {c_txt}; display: block; }}
-            .metric-highlight {{ color: {c_accent}; font-family: 'Bebas Neue'; font-size: 34px; display: block; }}
+            .metric-value {{ font-family: 'Bebas Neue'; font-size: 30px; color: {c_txt}; display: block; }}
+            .metric-highlight {{ color: {c_accent}; font-family: 'Bebas Neue'; font-size: 38px; display: block; text-shadow: 0 0 10px rgba(0,0,0,0.5); }}
             
             /* BARRAS DE PROGRESO NEÓN */
-            .bar-bg {{ width: 100%; background: #222; height: 6px; border-radius: 3px; margin-top: 10px; overflow: hidden; }}
-            .bar-fill {{ background: linear-gradient(90deg, {c_dark}, {c_accent}); height: 100%; box-shadow: 0 0 10px {c_accent}; }}
+            .bar-bg {{ width: 100%; background: #222; height: 5px; border-radius: 3px; margin-top: 12px; overflow: hidden; }}
+            .bar-fill {{ background-color: {c_accent}; height: 100%; }}
             
             /* LISTAS Y TABLAS (Para que no se corte nada) */
-            .list-card {{ background: {c_card}; border: 1px solid #1a1a1a; border-left: 3px solid {c_accent}; padding: 15px; margin-bottom: 12px; border-radius: 6px; }}
-            .list-card h3 {{ font-family: 'Bebas Neue'; color: {c_accent}; font-size: 20px; margin: 0 0 8px 0; letter-spacing: 1px; }}
+            .list-card {{ background-color: {c_card}; border: 1px solid #1a1a1a; border-left: 4px solid {c_accent}; padding: 18px; margin-bottom: 15px; border-radius: 6px; }}
+            .list-card h3 {{ font-family: 'Bebas Neue'; color: {c_accent}; font-size: 22px; margin: 0 0 10px 0; letter-spacing: 1px; }}
             .data-table {{ width: 100%; border-collapse: collapse; }}
-            .data-table td {{ padding: 8px 5px; border-bottom: 1px solid #151515; font-size: 10px; color: #ddd; vertical-align: top; }}
+            .data-table td {{ padding: 10px 5px; border-bottom: 1px solid #1a1a1a; font-size: 11px; color: #ddd; vertical-align: top; }}
             
             /* FIRMA PIE DE PÁGINA INTERIOR */
             .footer-interior {{ margin-top: 40px; border-top: 1px solid #222; padding-top: 15px; display: table; width: 100%; }}
-            .footer-interior td {{ vertical-align: middle; }}
         </style>
     </head>
     <body>
@@ -109,23 +114,23 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             <div class="badge-edicion">{nombre_edicion}</div>
             
             <div class="atleta-box">
-                <div style="font-size: 10px; color: {c_titanio}; letter-spacing: 2px; margin-bottom: 5px;">ATLETA DE ÉLITE</div>
+                <div style="font-size: 11px; color: {c_titanio}; letter-spacing: 3px; margin-bottom: 5px;">ATLETA DE ÉLITE</div>
                 <h2 class="atleta-name">{d['n'].upper()}</h2>
-                <div style="font-size: 9px; color: {c_titanio}; letter-spacing: 1px; margin-top: 5px;">NIVEL DE ENTRENAMIENTO: {d['nivel'].upper()}</div>
+                <div style="font-size: 10px; color: {c_titanio}; letter-spacing: 2px; margin-top: 8px;">NIVEL DE ENTRENAMIENTO: {d['nivel'].upper()}</div>
             </div>
             
             <table class="footer-portada">
                 <tr>
-                    <td style="text-align: left; width: 33%;">{qr_placeholder}</td>
-                    <td style="text-align: center; width: 33%; font-size: 8px; color: #666; letter-spacing: 1px;">POWERED BY EDDY PERSONAL PT ELITE</td>
-                    <td style="text-align: right; width: 33%;"><div class="signature">Eddy Signature</div></td>
+                    <td style="text-align: left; width: 33%; vertical-align: bottom;">{qr_placeholder}</td>
+                    <td style="text-align: center; width: 33%; vertical-align: bottom; font-size: 9px; color: #666; letter-spacing: 2px;">POWERED BY EDDY PT ELITE<br>FECHA: {d.get('fecha', 'ACTUAL')}</td>
+                    <td style="text-align: right; width: 33%; vertical-align: bottom;"><div class="signature">Eddy Signature</div></td>
                 </tr>
             </table>
         </div>
 
         <div class="page-content">
             <div class="header-interior">
-                <div class="header-left"><h1>📈 ANALÍTICA FÍSICA</h1></div>
+                <div class="header-left"><h1>📈 ANALÍTICA FÍSICA Y OBJETIVOS</h1></div>
                 <div class="header-right">{logo_chico}</div>
             </div>
 
@@ -157,8 +162,8 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <tr>
                     <td class="glass-card" style="width: 50%; border-top-color: #fff;">
                         <span class="metric-label" style="color: #fff;">Porcentaje Objetivo (Meta)</span>
-                        <span class="metric-highlight" style="font-size: 38px;">{d['meta'].upper()}</span>
-                        <span style="font-size: 9px; color: {c_titanio};">DIETA: {d['dt'].upper()} | RCC: {d['rcc']}</span>
+                        <span class="metric-highlight" style="font-size: 40px;">{d['meta'].upper()}</span>
+                        <span style="font-size: 10px; color: {c_titanio}; margin-top: 5px; display: block;">DIETA: {d['dt'].upper()} | ÍNDICE RCC: {d['rcc']}</span>
                     </td>
                     <td class="glass-card" style="width: 25%;">
                         <span class="metric-label">KCal Diarias</span>
@@ -168,14 +173,14 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                     <td class="glass-card" style="width: 25%; border-top-color: #00BFFF;">
                         <span class="metric-label" style="color: #00BFFF;">Hidratación</span>
                         <span class="metric-value" style="color: #00BFFF;">{d['w']} LTS</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 100%; background: #00BFFF; box-shadow: 0 0 10px #00BFFF;"></div></div>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 100%; background-color: #00BFFF;"></div></div>
                     </td>
                 </tr>
             </table>
 
-            <div class="glass-card" style="margin-top: 10px; padding: 10px;">
-                <span class="metric-label" style="text-align: left;">PROYECCIÓN DE EVOLUCIÓN</span>
-                <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 5px; border: 1px solid #222;">
+            <div class="glass-card" style="margin-top: 10px; padding: 15px; text-align: left;">
+                <span class="metric-label">PROYECCIÓN DE EVOLUCIÓN</span>
+                <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 6px; border: 1px solid #1a1a1a; margin-top: 5px;">
             </div>
         </div>
 
@@ -185,25 +190,25 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <div class="header-right">{logo_chico}</div>
             </div>
 
-            <table class="grid-container" style="margin-bottom: 10px;">
+            <table class="grid-container" style="margin-bottom: 15px;">
                 <tr>
-                    <td class="glass-card" style="padding: 10px;">
-                        <span class="metric-label">Proteína</span>
-                        <span class="metric-value" style="font-size: 20px;">p {d['p']:.0f}g</span>
+                    <td class="glass-card" style="padding: 12px;">
+                        <span class="metric-label">Proteína Total</span>
+                        <span class="metric-value" style="font-size: 24px;">P: {d['p']:.0f}g</span>
                     </td>
-                    <td class="glass-card" style="padding: 10px;">
+                    <td class="glass-card" style="padding: 12px;">
                         <span class="metric-label">Carbohidratos</span>
-                        <span class="metric-value" style="font-size: 20px;">c {d['c']:.0f}g</span>
+                        <span class="metric-value" style="font-size: 24px;">C: {d['c']:.0f}g</span>
                     </td>
-                    <td class="glass-card" style="padding: 10px;">
+                    <td class="glass-card" style="padding: 12px;">
                         <span class="metric-label">Grasas</span>
-                        <span class="metric-value" style="font-size: 20px;">g {d['g']:.0f}g</span>
+                        <span class="metric-value" style="font-size: 24px;">G: {d['g']:.0f}g</span>
                     </td>
                 </tr>
             </table>
     """
 
-    # --- BUCLE INTACTO DE COMIDAS (Comillas corregidas) ---
+    # --- BUCLE EXACTO DE COMIDAS ---
     for comida, opciones in d['m'].items():
         html += f"""
             <div class="list-card">
@@ -211,17 +216,17 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <table class="data-table">
         """
         for op in opciones:
-            html += f"<tr><td style='width: 10px; color: {c_accent};'>•</td><td>{op}</td></tr>"
+            html += f"<tr><td style='width: 15px; color: {c_accent}; font-weight: bold;'>•</td><td>{op}</td></tr>"
         html += "</table></div>"
 
-    # --- BUCLE INTACTO DE SUPLEMENTACIÓN (Comillas corregidas) ---
+    # --- BUCLE EXACTO DE SUPLEMENTACIÓN ---
     html += f"""
             <div class="list-card" style="border-left-color: #00BFFF;">
                 <h3 style="color: #00BFFF;">💊 SUPLEMENTACIÓN Y MICRONUTRIENTES</h3>
                 <table class="data-table">
     """
     for suplemento in d['s']:
-        html += f"<tr><td style='width: 10px; color: #00BFFF;'>•</td><td>{suplemento}</td></tr>"
+        html += f"<tr><td style='width: 15px; color: #00BFFF; font-weight: bold;'>•</td><td>{suplemento}</td></tr>"
         
     html += f"""
                 </table>
@@ -229,15 +234,15 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
             
             <table class="footer-interior">
                 <tr>
-                    <td style="text-align: right;"><div class="signature">Eddy Signature</div><div style="font-size: 8px; color: #666;">Firma digital cromada</div></td>
-                    <td style="width: 50px; text-align: right;">{qr_placeholder}</td>
+                    <td style="text-align: right;"><div class="signature">Eddy Signature</div><div style="font-size: 9px; color: #666; letter-spacing: 1px;">FIRMA DIGITAL AUTORIZADA</div></td>
+                    <td style="width: 60px; text-align: right; vertical-align: top;">{qr_placeholder}</td>
                 </tr>
             </table>
         </div>
     """
 
     # ==========================================\
-    # PÁGINA 4: ENTRENAMIENTO
+    # PÁGINA 4: ENTRENAMIENTO (NO FALTA NINGÚN BUCLE)
     # ==========================================\
     html += f"""
         <div class="page-content">
@@ -245,10 +250,12 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <div class="header-left"><h1>🏋️‍♂️ PLAN DE ENTRENAMIENTO</h1></div>
                 <div class="header-right">{logo_chico}</div>
             </div>
-            <div style="font-size: 10px; color: {c_titanio}; margin-bottom: 15px;">TIPO: {d['entreno'].upper()} | {d['dias']} DÍAS/SEM</div>
+            <div style="font-size: 11px; color: {c_titanio}; margin-top: -10px; margin-bottom: 20px; letter-spacing: 2px;">
+                TIPO: <span style="color: {c_txt};">{d['entreno'].upper()}</span> | FRECUENCIA: <span style="color: {c_txt};">{d['dias']} DÍAS/SEM</span>
+            </div>
     """
 
-    # --- BUCLE INTACTO DE RUTINAS (Comillas corregidas) ---
+    # --- BUCLE EXACTO DE RUTINAS ---
     for dia, ejercicios in d['rutina'].items():
         html += f"""
             <div class="list-card">
@@ -256,21 +263,21 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <table class="data-table">
         """
         for ej in ejercicios:
-            html += f"<tr><td style='width: 10px; color: {c_accent};'>•</td><td>{ej}</td></tr>"
+            html += f"<tr><td style='width: 15px; color: {c_accent}; font-weight: bold;'>•</td><td>{ej}</td></tr>"
         html += "</table></div>"
 
     html += f"""
             <table class="footer-interior">
                 <tr>
-                    <td style="text-align: right;"><div class="signature">Eddy Signature</div><div style="font-size: 8px; color: #666;">Firma digital cromada</div></td>
-                    <td style="width: 50px; text-align: right;">{qr_placeholder}</td>
+                    <td style="text-align: right;"><div class="signature">Eddy Signature</div><div style="font-size: 9px; color: #666; letter-spacing: 1px;">FIRMA DIGITAL AUTORIZADA</div></td>
+                    <td style="width: 60px; text-align: right; vertical-align: top;">{qr_placeholder}</td>
                 </tr>
             </table>
         </div>
     """
 
     # ==========================================\
-    # PÁGINA 5: TICKET DE COMPRAS
+    # PÁGINA 5: TICKET DE COMPRAS (NO FALTA NADA)
     # ==========================================\
     html += f"""
         <div class="page-content">
@@ -283,30 +290,30 @@ def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
                 <table class="data-table">
     """
     
-    # --- BUCLE INTACTO DE COMPRAS ---
+    # --- BUCLE EXACTO DE COMPRAS (Con conversiones de huevos e infusiones) ---
     for item, cant in d['compras'].items():
         if "Huevo" in item or "Claras" in item:
             unidades = int(cant / 50)
-            res = f"<b style='color:{c_accent};'>{unidades} Uni.</b> (~{round(unidades/12, 1)} Doc.)"
+            res = f"<span style='color:{c_accent}; font-weight: bold; font-size: 12px;'>{unidades} Uni.</span> <span style='color: #888;'>(~{round(unidades/12, 1)} Doc.)</span>"
         elif any(x in item for x in ["Café", "Mate", "Té", "Infusión"]):
-            res = f"<b style='color:{c_accent};'>{int(cant)} Tazas</b>"
+            res = f"<span style='color:{c_accent}; font-weight: bold; font-size: 12px;'>{int(cant)} Tazas</span>"
         else:
             if cant >= 1000:
-                res = f"<b style='color:{c_accent};'>{round(cant/1000, 2)} KG</b>"
+                res = f"<span style='color:{c_accent}; font-weight: bold; font-size: 12px;'>{round(cant/1000, 2)} KG</span>"
             else:
-                res = f"<b style='color:{c_accent};'>{int(cant)} g</b>"
+                res = f"<span style='color:{c_accent}; font-weight: bold; font-size: 12px;'>{int(cant)} g</span>"
                 
-        html += f"<tr><td style='width: 75%; font-weight: bold;'>{item}</td><td style='width: 25%; text-align: right;'>{res}</td></tr>"
+        html += f"<tr><td style='width: 75%; font-weight: bold; font-size: 11px;'>{item}</td><td style='width: 25%; text-align: right;'>{res}</td></tr>"
     
     html += f"""
                 </table>
             </div>
             
-            <table class="footer-interior" style="margin-top: 60px;">
+            <table class="footer-interior" style="margin-top: 50px;">
                 <tr>
-                    <td style="text-align: left; font-family: 'Bebas Neue'; font-size: 20px; color: {c_accent}; letter-spacing: 3px;">EDDY PERSONAL TRAINER ELITE</td>
+                    <td style="text-align: left; font-family: 'Bebas Neue'; font-size: 22px; color: {c_accent}; letter-spacing: 4px;">EDDY PERSONAL TRAINER ELITE</td>
                     <td style="text-align: right;"><div class="signature">Eddy Signature</div></td>
-                    <td style="width: 50px; text-align: right;">{qr_placeholder}</td>
+                    <td style="width: 60px; text-align: right; vertical-align: top;">{qr_placeholder}</td>
                 </tr>
             </table>
         </div>
