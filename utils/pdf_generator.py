@@ -3,218 +3,191 @@ import base64
 from weasyprint import HTML
 
 # =========================================================
-# EDDY PT ELITE - MOTOR PDF ULTRA-PREMIUM V9.5 (TABLAS)
+# EDDY PT ELITE - MOTOR PDF ULTRA-PREMIUM V11.0 (5 PARTES)
 # =========================================================
 
-def build_pdf_v60_7(d, grafico_b64, ruta_img, gen):
-    # 1. CONFIGURACIÓN DE GÉNERO Y TEMAS (ALTO CONTRASTE)
-    is_f = (gen == "f")
-    c_bg = "#050505"
-    c_card = "#111111"
-    c_txt = "#FFFFFF"
-    c_soft = "#9E9E9E"
-    
-    if is_f:
-        c_acc = "#D81B60" # Rubí Sólido
-        ruta_logo = "logo_rosa.png"
-        edition = "RUBY BLACK ELITE"
-    else:
-        c_acc = "#D4AF37" # Dorado Sólido
-        ruta_logo = "logo_dorado.png"
-        edition = "BLACK GOLD ALPHA"
+THEMES = {
+    "gold": {
+        "bg": "#030303",
+        "bg2": "#080808",
+        "card": "#0E0E0E",
+        "txt": "#F5F5F5",
+        "soft": "#8C8C8C",
+        "accent": "#D4AF37",
+        "bright": "#FFD700",
+        "dark": "rgba(212,175,55,0.28)",
+        "edition": "BLACK GOLD ALPHA",
+        "logo": "logo_dorado.png"
+    },
+    "ruby": {
+        "bg": "#030303",
+        "bg2": "#080808",
+        "card": "#0E0E0E",
+        "txt": "#F5F5F5",
+        "soft": "#8C8C8C",
+        "accent": "#C2185B",
+        "bright": "#FF4D8D",
+        "dark": "rgba(194,24,91,0.28)",
+        "edition": "RUBY BLACK ELITE",
+        "logo": "logo_rosa.png"
+    }
+}
+def img_to_b64(path):
+    try:
+        if not path or not os.path.exists(path): return ""
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    except: return ""
 
-    # 2. PROCESAMIENTO DE IMÁGENES (LOGOS Y QR)
-    def get_b64(path):
-        if path and os.path.exists(path):
-            with open(path, "rb") as f:
-                return base64.b64encode(f.read()).decode("utf-8")
-        return ""
+def render_logo(path, class_name):
+    b64 = img_to_b64(path)
+    return f'<img src="data:image/png;base64,{b64}" class="{class_name}">' if b64 else ""
 
-    logo_final = ruta_logo if os.path.exists(ruta_logo) else ruta_img
-    logo_b64 = get_b64(logo_final)
-    qr_b64 = get_b64("qr_code.png")
+def safe_val(d, key, default="0"):
+    try: return d.get(key, default)
+    except: return default
 
-    img_logo_main = f'<img src="data:image/png;base64,{logo_b64}" style="height:320px;">' if logo_b64 else ""
-    img_logo_sm = f'<img src="data:image/png;base64,{logo_b64}" style="height:85px;">' if logo_b64 else ""
-    
-    qr_html = f'<img src="data:image/png;base64,{qr_b64}" style="width:75px; border:2px solid {c_acc}; border-radius:8px;">' if qr_b64 else f'<div style="width:70px; height:70px; border:1px solid {c_acc}; color:{c_acc}; font-size:10px; line-height:70px; text-align:center;">QR</div>'
-    # 3. CSS (DISEÑO ORIENTADO A TABLAS PARA EVITAR ENCIMAMIENTO)
-    css_styles = f"""
+def render_metric_card(title, value, percent="80%", extra_class=""):
+    return f"""
+    <div class="card {extra_class}">
+        <div class="label">{title}</div>
+        <div class="value">{value}</div>
+        <div class="bar-bg"><div class="bar-fill" style="width:{percent};"></div></div>
+    </div>
+    """
+def build_pdf_v60_7(d, grafico_b64="", ruta_img="", gen="m"):
+    theme = THEMES["ruby"] if gen == "f" else THEMES["gold"]
+    c_bg = theme["bg"]; c_bg2 = theme["bg2"]; c_txt = theme["txt"]
+    c_soft = theme["soft"]; c_accent = theme["accent"]; c_bright = theme["bright"]
+    c_dark = theme["dark"]; edition = theme["edition"]
+
+    css = f"""
     <style>
         @page {{ size: A4; margin: 0; background: {c_bg}; }}
         * {{ box-sizing: border-box; }}
-        body {{ font-family: 'Montserrat', sans-serif; color: {c_txt}; margin: 0; padding: 0; line-height: 1.5; }}
+        body {{ margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; color: {c_txt}; line-height: 1.4; }}
         
-        .page {{ padding: 45px; page-break-before: always; position: relative; }}
-        .cover {{ height: 100vh; text-align: center; padding-top: 80px; position: relative; }}
+        /* PORTADA */
+        .cover {{ height: 100vh; position: relative; text-align: center; padding: 40px; background: radial-gradient(circle at center, {c_dark}, transparent 85%); }}
+        .logo-main {{ height: 280px; margin-bottom: 10px; filter: drop-shadow(0 0 12px {c_accent}); }}
+        .cover-title {{ font-family: 'Bebas Neue'; font-size: 68px; letter-spacing: 6px; margin: 0; background: linear-gradient(180deg, #FFF3B0, {c_bright}, {c_accent}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+        .badge {{ margin: 20px auto; padding: 10px 30px; border-radius: 50px; border: 1px solid {c_accent}; font-weight: 700; letter-spacing: 3px; display: inline-block; background: rgba(0,0,0,0.5); }}
         
-        .title-elite {{ font-family: 'Bebas Neue'; font-size: 65px; color: {c_acc}; letter-spacing: 6px; margin: 0; }}
-        .sub-title {{ color: {c_soft}; letter-spacing: 4px; font-size: 13px; font-weight: 700; text-transform: uppercase; }}
+        /* BOX ATLETA: Espacio garantizado */
+        .athlete-section {{ width: 85%; margin: 20px auto; padding: 30px 0; border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); }}
+        .athlete-name {{ font-family: 'Bebas Neue'; font-size: 52px; color: #FFF; margin: 5px 0; letter-spacing: 2px; line-height: 1.1; }}
         
-        .badge {{ margin: 30px auto; padding: 12px 35px; border-radius: 40px; border: 2px solid {c_acc}; color: {c_txt}; font-weight: bold; letter-spacing: 3px; display: inline-block; }}
+        /* FOOTER PORTADA: Subido para no caer al negro */
+        .cover-footer {{ width: 100%; position: absolute; bottom: 60px; left: 0; padding: 0 50px; }}
         
-        /* TABLAS DE ESTRUCTURA (LA CLAVE PARA QUE NO SE ROMPA) */
-        .layout-table {{ width: 100%; border-collapse: separate; border-spacing: 15px; margin-left: -15px; margin-right: -15px; table-layout: fixed; }}
-        .card-td {{ background: {c_card}; border-top: 4px solid {c_acc}; padding: 22px 10px; border-radius: 12px; text-align: center; vertical-align: middle; }}
-        
-        .lbl {{ font-size: 10px; color: {c_soft}; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 5px; }}
-        .val {{ font-family: 'Bebas Neue'; font-size: 34px; color: {c_txt}; margin-top: 5px; }}
-        
-        .list-container {{ background: {c_card}; border-left: 5px solid {c_acc}; padding: 25px; margin-bottom: 22px; border-radius: 10px; }}
-        .list-title {{ font-family: 'Bebas Neue'; font-size: 26px; color: {c_acc}; margin-bottom: 12px; }}
-        .list-item {{ font-size: 12px; border-bottom: 1px solid #222; padding: 12px 0; color: #E0E0E0; }}
-        
-        .footer-table {{ width: 100%; position: absolute; bottom: 45px; left: 0; padding: 0 45px; }}
+        /* INTERIORES */
+        .page {{ padding: 45px; page-break-before: always; }}
+        .header {{ display: flex; justify-content: space-between; align-items: end; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 30px; }}
+        .header-title {{ font-family: 'Bebas Neue'; font-size: 36px; color: {c_accent}; letter-spacing: 2px; }}
+        .logo-small {{ height: 50px; }}
+        .grid {{ display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }}
+        .card {{ width: 23.5%; background: {theme['card']}; border-top: 3px solid {c_accent}; border-radius: 15px; padding: 20px; text-align: center; }}
+        .card-large {{ width: 100%; text-align: left; padding: 25px; }}
+        .label {{ font-size: 10px; color: {c_soft}; letter-spacing: 2px; text-transform: uppercase; }}
+        .value {{ font-family: 'Bebas Neue'; font-size: 32px; color: #FFF; margin-top: 5px; }}
+        .bar-bg {{ width: 100%; height: 5px; background: #1A1A1A; border-radius: 10px; margin-top: 10px; }}
+        .bar-fill {{ height: 100%; background: {c_accent}; border-radius: 10px; }}
+        .graph {{ width: 100%; border-radius: 12px; margin-top: 15px; border: 1px solid #222; }}
         .signature {{ font-family: 'Great Vibes'; font-size: 38px; color: {c_soft}; }}
+        .qr {{ width: 70px; background: white; padding: 4px; border-radius: 8px; }}
     </style>
     """
-    # 4. CONSTRUCCIÓN DE PORTADA
-    html = f"""
-    <html>
-    <head>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
-    {css_styles}
-    </head>
-    <body>
+    logo_path = theme["logo"] if os.path.exists(theme["logo"]) else ruta_img
+    logo_m = render_logo(logo_path, "logo-main")
+    logo_s = render_logo(logo_path, "logo-small")
+    qr_h = f'<img src="data:image/png;base64,{img_to_b64("qr_code.png")}" class="qr">' if os.path.exists("qr_code.png") else ""
+
+    html_full = f"""
+    <html><head>{css}</head><body>
     <div class="cover">
-        {img_logo_main}
-        <h1 class="title-elite">PLAN INTEGRAL ELITE</h1>
-        <div class="sub-title">INGENIERÍA CORPORAL DE ALTO VALOR</div>
+        {logo_m}
+        <h1 class="cover-title">PLAN INTEGRAL ELITE</h1>
+        <div style="color:{c_soft}; letter-spacing:4px; font-size:11px;">INGENIERÍA CORPORAL DE ALTO VALOR</div>
         <div class="badge">{edition}</div>
-        <div style="margin-top:40px; border-top:1px solid #333; border-bottom:1px solid #333; padding:25px 0; width:75%; margin-left:12.5%;">
-            <div class="lbl" style="color:{c_acc}; font-size:13px;">ATLETA DE ÉLITE</div>
-            <div style="font-family:'Bebas Neue'; font-size:52px; margin:10px 0;">{str(d.get('n', '')).upper()}</div>
-            <div class="lbl">NIVEL DE ENTRENAMIENTO: {str(d.get('nivel', '')).upper()}</div>
+        
+        <div class="athlete-section">
+            <div class="label" style="color:{c_accent};">ATLETA DE ÉLITE</div>
+            <div class="athlete-name">{str(d.get('n', 'ATLETA')).upper()}</div>
+            <div class="label" style="margin-top:10px;">NIVEL: {str(d.get('nivel', 'PRINCIPIANTE')).upper()}</div>
         </div>
-        <table class="footer-table">
-            <tr>
-                <td style="text-align:left;">{qr_html}</td>
-                <td style="text-align:center;"><div class="lbl">POWERED BY EDDY PT ELITE</div></td>
-                <td style="text-align:right;"><div class="signature">Eddy Personal Trainer</div></td>
-            </tr>
-        </table>
+
+        <div class="cover-footer">
+            <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                    <td style="width:30%; text-align:left;">{qr_h}</td>
+                    <td style="width:40%; text-align:center;">
+                        <div class="label">POWERED BY EDDY PT ELITE</div>
+                        <div style="font-size:11px; margin-top:5px; color:{c_soft};">FECHA: {d.get('fecha', '10/05/2026')}</div>
+                    </td>
+                    <td style="width:30%; text-align:right;">
+                        <div class="signature">Eddy</div>
+                        <div class="label" style="font-size:9px;">Personal Trainer</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 
     <div class="page">
-        <table style="width:100%; border-bottom:2px solid #222; padding-bottom:15px; margin-bottom:25px;">
-            <tr>
-                <td style="text-align:left;"><h1 class="title-elite" style="font-size:38px;">ANALÍTICA FÍSICA</h1></td>
-                <td style="text-align:right;">{img_logo_sm}</td>
-            </tr>
-        </table>
-        <table class="layout-table">
-            <tr>
-                <td class="card-td"><div class="lbl">EDAD</div><div class="val">{d.get('edad','')}</div></td>
-                <td class="card-td"><div class="lbl">ESTATURA</div><div class="val">{d.get('estatura','')} CM</div></td>
-                <td class="card-td"><div class="lbl">PESO</div><div class="val">{d.get('peso','')} KG</div></td>
-                <td class="card-td"><div class="lbl">GRASA</div><div class="val" style="color:{c_acc};">{d.get('rfm','')}%</div></td>
-            </tr>
-            <tr>
-                <td class="card-td"><div class="lbl">CINTURA</div><div class="val">{d.get('cintura','')} CM</div></td>
-                <td class="card-td"><div class="lbl">CADERA</div><div class="val">{d.get('cadera','')} CM</div></td>
-                <td class="card-td"><div class="lbl">RCC</div><div class="val">{d.get('rcc','')}</div></td>
-                <td class="card-td" style="border-top-color:#00BFFF;"><div class="lbl" style="color:#00BFFF;">HIDRATACIÓN</div><div class="val" style="color:#00BFFF;">{d.get('w','')} L</div></td>
-            </tr>
-        </table>
-        <div class="list-container" style="text-align:center; border-top:4px solid {c_acc}; border-left:none;">
-            <div class="lbl">OBJETIVO ESTRATÉGICO PRINCIPAL</div>
-            <div class="val" style="font-size:48px;">{str(d.get('meta','')).upper()}</div>
-            <div class="lbl" style="margin-top:10px;">DIETA ASIGNADA: {str(d.get('dt','')).upper()}</div>
+        <div class="header"><div class="header-title">ANALÍTICA FÍSICA</div>{logo_s}</div>
+        <div class="grid">
+            {render_metric_card("EDAD", d.get('edad','0'), "100%")}
+            {render_metric_card("ESTATURA", f"{d.get('estatura','0')}CM", "85%")}
+            {render_metric_card("PESO", f"{d.get('peso','0')}KG", "75%")}
+            {render_metric_card("GRASA", f"{d.get('rfm','0')}%", "65%")}
         </div>
-        <div class="list-container" style="padding:15px;">
-            <div class="lbl">PROYECCIÓN DE EVOLUCIÓN</div>
-            <img src="data:image/png;base64,{grafico_b64}" style="width:100%; border-radius:10px; margin-top:10px; border:1px solid #333;">
+        <div class="grid">
+            {render_metric_card("CINTURA", f"{d.get('cintura','0')}CM", "60%")}
+            {render_metric_card("CADERA", f"{d.get('cadera','0')}CM", "60%")}
+            {render_metric_card("ÍNDICE RCC", d.get('rcc','0'), "50%")}
+            <div class="card" style="border-top-color:#00BFFF;"><div class="label">HIDRATACIÓN</div><div class="value" style="color:#00BFFF;">{d.get('w','0')}L</div></div>
+        </div>
+        <div class="card card-large" style="text-align:center; margin-bottom:15px;">
+            <div class="label">OBJETIVO ESTRATÉGICO</div>
+            <div class="value" style="font-size:42px;">{str(d.get('meta','')).upper()}</div>
+        </div>
+        <div class="card card-large">
+            <div class="label">PROYECCIÓN CORPORAL</div>
+            <img src="data:image/png;base64,{grafico_b64}" class="graph">
         </div>
     </div>
     """
-    # 5. ESTRATEGIA NUTRICIONAL
-    html += f"""
+    # NUTRICIÓN Y COMPRAS (SIMPLIFICADO PARA EVITAR CORTES)
+    html_full += f"""
     <div class="page">
-        <table style="width:100%; border-bottom:2px solid #222; padding-bottom:15px; margin-bottom:25px;">
+        <div class="header"><div class="header-title">ESTRATEGIA NUTRICIONAL</div>{logo_s}</div>
+        <table style="width:100%; border-collapse:separate; border-spacing:10px; margin-bottom:20px;">
             <tr>
-                <td style="text-align:left;"><h1 class="title-elite" style="font-size:38px;">ESTRATEGIA NUTRICIONAL</h1></td>
-                <td style="text-align:right;">{img_logo_sm}</td>
-            </tr>
-        </table>
-        <table class="layout-table" style="margin-bottom:25px;">
-            <tr>
-                <td class="card-td" style="width:33%;"><div class="lbl">KCAL DIARIAS</div><div class="val">{d.get('k',0):.0f}</div></td>
-                <td class="card-td" style="width:33%;"><div class="lbl">PROTEÍNAS</div><div class="val">{d.get('p',0):.0f} g</div></td>
-                <td class="card-td" style="width:33%;"><div class="lbl">CARBOS / GRASAS</div><div class="val" style="font-size:26px;">{d.get('c',0):.0f}g / {d.get('g',0):.0f}g</div></td>
+                <td style="background:#0E0E0E; padding:20px; border-radius:12px; text-align:center; border-top:3px solid {c_accent};">
+                    <div class="label">KCAL DIARIAS</div><div class="value">{d.get('k',0):.0f}</div>
+                </td>
+                <td style="background:#0E0E0E; padding:20px; border-radius:12px; text-align:center; border-top:3px solid {c_accent};">
+                    <div class="label">PROTEÍNAS</div><div class="value">{d.get('p',0):.0f}g</div>
+                </td>
+                <td style="background:#0E0E0E; padding:20px; border-radius:12px; text-align:center; border-top:3px solid {c_accent};">
+                    <div class="label">CARBOS / GRASAS</div><div class="value" style="font-size:24px;">{d.get('c',0):.0f}g / {d.get('g',0):.0f}g</div>
+                </td>
             </tr>
         </table>
     """
     
     for comida, opciones in d.get('m', {}).items():
-        html += f'<div class="list-container"><div class="list-title">{comida}</div>'
+        html_full += f'<div style="background:#0E0E0E; border-left:4px solid {c_accent}; padding:15px; margin-bottom:10px; border-radius:10px;">'
+        html_full += f'<div style="font-family:Bebas Neue; color:{c_accent}; font-size:20px;">{comida}</div>'
         for op in opciones:
-            clean_op = str(op).replace('\\n', ' ').replace('\n', ' ').strip()
-            html += f'<div class="list-item"><span style="color:{c_acc}; font-weight:bold; margin-right:10px;">&rsaquo;</span>{clean_op}</div>'
-        html += '</div>'
+            html_full += f'<div style="font-size:11px; color:#DDD; padding:5px 0;">› {str(op).strip()}</div>'
+        html_full += '</div>'
 
-    html += f"""
-        <div class="list-container" style="border-left-color:#00BFFF;">
-            <div class="list-title" style="color:#00BFFF;">SUPLEMENTACIÓN Y MICRONUTRIENTES</div>
-    """
-    for sup in d.get('s', []):
-        clean_sup = str(sup).replace('\\n', ' ').replace('\n', ' ').strip()
-        html += f'<div class="list-item"><span style="color:#00BFFF; font-weight:bold; margin-right:10px;">&rsaquo;</span>{clean_sup}</div>'
-    html += '</div></div>'
-    # 6. PLAN DE ENTRENAMIENTO
-    html += f"""
-    <div class="page">
-        <table style="width:100%; border-bottom:2px solid #222; padding-bottom:15px; margin-bottom:25px;">
-            <tr>
-                <td style="text-align:left;"><h1 class="title-elite" style="font-size:38px;">PLAN DE ENTRENAMIENTO</h1></td>
-                <td style="text-align:right;">{img_logo_sm}</td>
-            </tr>
-        </table>
-        <div class="list-container" style="text-align:center;">
-            <span class="lbl" style="margin-right:25px;">MODALIDAD: <span style="color:#FFF;">{str(d.get('entreno','')).upper()}</span></span>
-            <span class="lbl">FRECUENCIA: <span style="color:#FFF;">{str(d.get('dias',''))} DÍAS/SEM</span></span>
+    html_full += f"""
+        <div style="margin-top:40px; border-top:1px solid #333; padding-top:20px; text-align:right;">
+            <div class="signature">Eddy Personal Trainer</div>
         </div>
+    </div></body></html>
     """
-    for dia, ejercicios in d.get('rutina', {}).items():
-        html += f'<div class="list-container"><div class="list-title">{dia}</div>'
-        for ej in ejercicios:
-            clean_ej = str(ej).replace('\\n', ' ').replace('\n', ' ').strip()
-            html += f'<div class="list-item"><span style="color:{c_acc}; font-weight:bold; margin-right:10px;">&rsaquo;</span>{clean_ej}</div>'
-        html += '</div>'
-    
-    # 7. TICKET DE COMPRA
-    html += f"""
-    <div class="page">
-        <table style="width:100%; border-bottom:2px solid #222; padding-bottom:15px; margin-bottom:25px;">
-            <tr>
-                <td style="text-align:left;"><h1 class="title-elite" style="font-size:38px;">TICKET DE COMPRA MENSUAL</h1></td>
-                <td style="text-align:right;">{img_logo_sm}</td>
-            </tr>
-        </table>
-        <div class="list-container">
-            <table style="width:100%; border-collapse:collapse;">
-    """
-    for item, cant in d.get('compras', {}).items():
-        it = str(item).replace('\n', ' ').strip()
-        if "Huevo" in it or "Claras" in it:
-            u = int(cant/50)
-            res = f"<span style='color:{c_acc}; font-weight:bold;'>{u} Uni.</span> <span style='color:{c_soft};'>(~{round(u/12,1)} Doc.)</span>"
-        elif any(x in it for x in ["Café", "Mate", "Té", "Infusión"]):
-            res = f"<span style='color:{c_acc}; font-weight:bold;'>{int(cant)} Tazas</span>"
-        else:
-            res = f"<span style='color:{c_acc}; font-weight:bold;'>{round(cant/1000,2)} KG</span>" if cant>=1000 else f"<span style='color:{c_acc}; font-weight:bold;'>{int(cant)} g</span>"
-        
-        html += f'<tr><td class="list-item" style="width:70%;">{it}</td><td class="list-item" style="width:30%; text-align:right;">{res}</td></tr>'
 
-    html += f"""
-            </table>
-        </div>
-        <div style="margin-top:60px; text-align:center;">
-            {qr_html}<br><br>
-            <div class="lbl">CERTIFIED BY EDDY PT ELITE</div>
-            <div class="signature" style="margin-top:10px;">Eddy Personal Trainer</div>
-        </div>
-    </div>
-    </body>
-    </html>
-    """
-    return HTML(string=html).write_pdf()
+    return HTML(string=html_full).write_pdf()
