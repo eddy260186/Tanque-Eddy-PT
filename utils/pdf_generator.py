@@ -35,7 +35,9 @@ def img_to_b64(path):
     if path and os.path.exists(path):
         with open(path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
-    return ""def render_macro_bar(icon, title, grams, percent, accent):
+    return ""
+
+def render_macro_bar(icon, title, grams, percent, accent):
     """Barra de Macros 3D con Icono integrado."""
     p = min(max(float(percent), 0), 100)
     g_val = safe_int(grams)
@@ -59,6 +61,7 @@ THEMES = {
     "gold": {"acc": "#D4AF37", "dark": "rgba(212,175,55,0.1)", "logo": "logo_dorado.png"},
     "ruby": {"acc": "#C2185B", "dark": "rgba(194,24,91,0.1)", "logo": "logo_rosa.png"}
 }
+
 def build_pdf_v60_7(d, grafico_b64="", ruta_img="", gen="m"):
     theme = THEMES["ruby"] if gen == "f" else THEMES["gold"]
     c_acc = theme["acc"]; c_dark = theme["dark"]
@@ -77,7 +80,7 @@ def build_pdf_v60_7(d, grafico_b64="", ruta_img="", gen="m"):
             border-top: 3px solid {c_acc};
             border-radius: 15px;
             box-shadow: 0 15px 25px rgba(0,0,0,0.8), inset 0 2px 2px rgba(255,255,255,0.05);
-            page-break-inside: avoid; /* NUNCA SE CORTA A LA MITAD */
+            page-break-inside: avoid;
         }}
         
         /* Iconos Espectaculares */
@@ -92,11 +95,12 @@ def build_pdf_v60_7(d, grafico_b64="", ruta_img="", gen="m"):
         .lbl-luxury {{ font-size: 10px; color: #999; text-transform: uppercase; font-weight: bold; letter-spacing: 2px; }}
         .val-3d {{ font-size: 24px; font-weight: 900; color: #FFF; text-shadow: 0 2px 5px rgba(0,0,0,0.8); margin-top: 5px; }}
 
-        /* Grillas Rígidas (Cero Encimamientos) */
+        /* Grillas Rígidas */
         .grid-table {{ width: 100%; border-collapse: separate; border-spacing: 15px; margin-left: -15px; margin-right: -15px; }}
         .grid-td {{ vertical-align: top; }}
     </style>
     """
+
     logo_b64 = img_to_b64(theme["logo"] if os.path.exists(theme["logo"]) else ruta_img)
     qr_b64 = img_to_b64("qr_code.png")
     
@@ -158,8 +162,7 @@ def build_pdf_v60_7(d, grafico_b64="", ruta_img="", gen="m"):
             <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
         </div>
     </div>
-    """
-    html += f"""
+
     <div class="page-container">
         <div class="title-3d">🍎 NUTRITION MATRIX</div>
         
