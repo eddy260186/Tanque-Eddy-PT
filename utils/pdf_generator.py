@@ -1,229 +1,266 @@
 import os
 import base64
+from datetime import datetime
 from weasyprint import HTML
 
 # =========================================================
-# EDDY PT ELITE - 3D LUXURY ENGINE V27.0 (100% ESPAÑOL & PERFECTO)
+# EDDY ELITE PDF ENGINE V80.1 (WEASYPRINT BLINDADO)
+# BLACK GOLD / RUBY EDITION - CINEMATIC FITNESS SYSTEM
 # =========================================================
 
 def safe_int(value):
-    """Filtro de titanio: Sin decimales basuras."""
+    """Filtro de titanio: Aniquila decimales basuras."""
     try: return int(round(float(value)))
     except: return 0
 
-def generate_gauge_svg(percent, color, label_value):
-    """Gauge con efecto relieve 3D perfecto y centrado."""
-    circumference = 251.2
-    p = min(max(float(percent), 0), 100)
-    offset = circumference - (p / 100) * circumference
-    
-    return f'''
-    <div style="text-align: center; padding: 10px 0;">
-        <svg width="85" height="85" viewBox="0 0 120 120" style="overflow: visible;">
-            <circle cx="60" cy="60" r="40" stroke="#000" stroke-width="12" fill="none" style="filter: drop-shadow(4px 4px 5px rgba(0,0,0,0.8));" />
-            <circle cx="60" cy="60" r="40" stroke="#151515" stroke-width="8" fill="none" />
-            <circle cx="60" cy="60" r="40" stroke="{color}" stroke-width="8" fill="none"
-                stroke-linecap="round" stroke-dasharray="{circumference}" 
-                stroke-dashoffset="{offset}" transform="rotate(-90 60 60)" />
-            <text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" 
-                fill="#FFFFFF" font-size="26" font-weight="900" font-family="Arial">{label_value}</text>
-        </svg>
-    </div>
-    '''
-
 def img_to_b64(path):
+    """Convierte imágenes a Base64 de forma segura."""
     if path and os.path.exists(path):
         with open(path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
-    return ""def render_macro_bar(icon, title, grams, percent, accent):
-    """Barra de Macros 3D con Icono integrado en español."""
-    p = min(max(float(percent), 0), 100)
-    g_val = safe_int(grams)
-    
-    return f"""
-    <div class="card-3d" style="padding: 15px; margin-bottom: 15px;">
-        <table style="width: 100%;">
-            <tr>
-                <td style="width: 45px;"><div class="icon-3d" style="border-color: {accent}; color: {accent};">{icon}</div></td>
-                <td style="text-align: left;"><span class="lbl-luxury" style="margin: 0; font-size:12px;">{title}</span></td>
-                <td style="text-align: right;"><span class="val-3d" style="color: {accent}; font-size: 20px;">{g_val}g</span></td>
-            </tr>
-        </table>
-        <div style="height: 10px; background: #000; border-radius: 10px; margin-top: 10px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8);">
-            <div style="height: 100%; width: {p}%; background: linear-gradient(90deg, {accent}, #FFF); border-radius: 10px; box-shadow: 0 0 10px {accent};"></div>
-        </div>
-    </div>
-    """
+    return ""
+# =========================================================
+# THEMES
+# =========================================================
 
 THEMES = {
-    "gold": {"acc": "#D4AF37", "dark": "rgba(212,175,55,0.1)", "logo": "logo_dorado.png"},
-    "ruby": {"acc": "#C2185B", "dark": "rgba(194,24,91,0.1)", "logo": "logo_rosa.png"}
+    "gold": {
+        "accent": "#D4AF37",
+        "bright": "#FFD700",
+        "soft": "rgba(212,175,55,0.12)",
+        "card": "#111111",
+        "border": "rgba(212,175,55,0.25)",
+        "text": "#FFFFFF",
+        "muted": "#8A8A8A",
+        "logo": "logo_dorado.png",
+        "overlay": "logo_dorado.png"
+    },
+    "ruby": {
+        "accent": "#FF2D75",
+        "bright": "#FF73A8",
+        "soft": "rgba(255,45,117,0.12)",
+        "card": "#111111",
+        "border": "rgba(255,45,117,0.25)",
+        "text": "#FFFFFF",
+        "muted": "#8A8A8A",
+        "logo": "logo_rosa.png",
+        "overlay": "logo_rosa.png"
+    }
 }
-def build_pdf_v60_7(d, grafico_b64="", ruta_img="", gen="m"):
-    theme = THEMES["ruby"] if gen == "f" else THEMES["gold"]
-    c_acc = theme["acc"]; c_dark = theme["dark"]
+# =========================================================
+# SVG PREMIUM GAUGE
+# =========================================================
+
+def generate_gauge(percent, color, title, value):
+    circumference = 339.292
+    p = min(max(float(percent), 0), 100)
+    offset = circumference - (p / 100) * circumference
+
+    return f"""
+    <div style="text-align:center; width:100%; padding: 10px 0;">
+        <div style="font-size:10px; letter-spacing:2px; color:#888; margin-bottom:10px; text-transform:uppercase; font-weight:bold;">
+            {title}
+        </div>
+        <svg width="140" height="140" viewBox="0 0 220 220" style="overflow: visible;">
+            <circle cx="110" cy="110" r="54" stroke="#000" stroke-width="16" fill="none" style="filter: drop-shadow(0 5px 10px rgba(0,0,0,0.9));"/>
+            <circle cx="110" cy="110" r="54" stroke="#1F1F1F" stroke-width="12" fill="none"/>
+            <circle cx="110" cy="110" r="54" stroke="{color}" stroke-width="12" fill="none"
+                stroke-linecap="round" stroke-dasharray="{circumference}" stroke-dashoffset="{offset}"
+                transform="rotate(-90 110 110)" style="filter: drop-shadow(0 0 10px {color});" />
+            <text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="34" font-weight="900" font-family="Arial">
+                {value}
+            </text>
+        </svg>
+    </div>
+    """
+# =========================================================
+# MACRO BAR
+# =========================================================
+
+def macro_bar(title, grams, percent, accent):
+    p = min(max(float(percent), 0), 100)
+    g_val = safe_int(grams)
+    return f"""
+    <div style="margin-bottom:25px;">
+        <table style="width: 100%; margin-bottom: 8px;">
+            <tr>
+                <td style="text-align: left; color:white; font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">{title}</td>
+                <td style="text-align: right; color:{accent}; font-size:16px; font-weight:900;">{g_val}g</td>
+            </tr>
+        </table>
+        <div style="height:12px; border-radius:10px; background:#1A1A1A; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);">
+            <div style="width:{p}%; height:100%; border-radius:10px; background:linear-gradient(90deg, {accent}, #FFF); box-shadow:0 0 15px {accent};"></div>
+        </div>
+    </div>
+    """
+# =========================================================
+# PDF ENGINE MAIN
+# =========================================================
+
+def build_pdf_elite_v80(data, grafico_b64="", genero="m"):
+    theme = THEMES["ruby"] if genero == "f" else THEMES["gold"]
     
+    accent = theme["accent"]
+    bright = theme["bright"]
+    soft = theme["soft"]
+    border = theme["border"]
+    
+    logo_main = img_to_b64(theme["logo"])
+    logo_overlay = img_to_b64(theme["overlay"])
+    logo_tanque = img_to_b64("logo_tanque.png")
+    qr = img_to_b64("qr_code.png")
+
     css = f"""
     <style>
-        /* MARGEN DE SEGURIDAD: 3.5cm arriba y abajo para el logo y la firma */
-        @page {{ size: A4; margin: 35mm 15mm 35mm 15mm; background-color: #050505; }}
-        body {{ font-family: 'Arial', sans-serif; color: #FFF; margin: 0; padding: 0; }}
-        
-        /* LOGO A LOS COSTADOS Y FIRMA: Se repite en CADA hoja automáticamente */
-        .fixed-logo {{ position: fixed; top: -25mm; right: 0; width: 60px; height: 60px; text-align: right; }}
-        .fixed-footer {{ position: fixed; bottom: -25mm; left: 0; right: 0; text-align: center; border-top: 1px solid #222; padding-top: 8mm; }}
-        
-        .footer-name {{ font-family: 'Arial', sans-serif; font-weight: 900; font-size: 16px; color: #666; font-style: italic; letter-spacing: 2px; }}
-        .footer-title {{ font-size: 10px; color: {c_acc}; text-transform: uppercase; letter-spacing: 3px; font-weight: bold; margin-top: 3px; }}
+    @page {{ size: A4; margin: 0; background: #050505; }}
+    body {{ margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; color: #FFF; background: #050505; }}
+    
+    .page-container {{ width: 210mm; min-height: 297mm; position: relative; padding: 45px; page-break-after: always; box-sizing: border-box; }}
+    """
+    css += f"""
+    /* FONDOS Y EFECTOS SEGUROS PARA WEASYPRINT */
+    .bg-glow {{ position: absolute; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, {soft}, transparent 70%); top: -300px; left: -100px; z-index: -1; }}
+    
+    .hero-title {{ font-size: 58px; font-weight: 900; margin-top: 20px; letter-spacing: 8px; color: {accent}; text-shadow: 0 4px 15px rgba(0,0,0,0.8); text-transform: uppercase; }}
+    .hero-sub {{ color: #888; letter-spacing: 5px; font-size: 11px; font-weight: bold; margin-top: 10px; text-transform: uppercase; }}
 
-        /* EFECTO 3D REALISTA PARA CARTAS E ICONOS */
-        .card-3d {{
-            background: linear-gradient(145deg, #111, #080808);
-            border: 1px solid #1a1a1a;
-            border-top: 2px solid {c_acc};
-            border-radius: 15px;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.8), -5px -5px 15px rgba(30,30,30,0.3);
-            page-break-inside: avoid; /* NUNCA SE CORTA A LA MITAD */
-        }}
-        
-        .icon-3d {{
-            display: inline-block; width: 35px; height: 35px; line-height: 35px;
-            text-align: center; border-radius: 50%;
-            background: linear-gradient(145deg, #1a1a1a, #050505);
-            border: 1px solid {c_acc}; font-size: 16px;
-            box-shadow: 3px 3px 6px rgba(0,0,0,0.8), -3px -3px 6px rgba(30,30,30,0.5);
-        }}
+    .premium-card {{
+        background: linear-gradient(145deg, #111, #080808);
+        border: 1px solid {border}; border-top: 2px solid {accent}; border-radius: 20px;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.9), inset 0 2px 5px rgba(255,255,255,0.03);
+        position: relative; overflow: hidden; margin-bottom: 25px;
+        page-break-inside: avoid;
+    }}
+    .premium-card::before {{ content: ''; position: absolute; width: 200px; height: 40px; background: rgba(255,255,255,0.03); transform: rotate(-35deg); top: -10px; left: -100px; }}
 
-        .title-3d {{ font-size: 26px; font-weight: 900; color: #FFF; letter-spacing: 3px; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 20px; text-transform: uppercase; margin-top: 20px; }}
-        .lbl-luxury {{ font-size: 10px; color: #999; text-transform: uppercase; font-weight: bold; letter-spacing: 2px; }}
-        .val-3d {{ font-size: 24px; font-weight: 900; color: #FFF; margin-top: 5px; }}
-
-        .grid-table {{ width: 100%; border-collapse: separate; border-spacing: 12px; margin-left: -12px; margin-right: -12px; }}
-        .grid-td {{ vertical-align: top; }}
+    .section-title {{ font-size: 24px; font-weight: 900; letter-spacing: 3px; margin-bottom: 25px; color: #FFF; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 10px; }}
+    
+    .grid-table {{ width: 100%; border-collapse: separate; border-spacing: 15px; margin-left: -15px; margin-right: -15px; }}
+    .grid-td {{ vertical-align: top; text-align: center; }}
     </style>
     """
-    logo_b64 = img_to_b64(theme["logo"] if os.path.exists(theme["logo"]) else ruta_img)
-    qr_b64 = img_to_b64("qr_code.png")
-    
     html = f"""
     <html><head>{css}</head><body>
-    
-    <div class="fixed-logo">
-        <img src="data:image/png;base64,{logo_b64}" style="width: 60px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8));">
-    </div>
-    <div class="fixed-footer">
-        <div class="footer-name">Eddy Personal Trainer</div>
-        <div class="footer-title">DIRECTOR DE RENDIMIENTO ELITE</div>
-    </div>
 
-    <div style="text-align: center; margin-top: 20px; margin-bottom: 80px;">
-        <img src="data:image/png;base64,{logo_b64}" style="height: 220px; margin-bottom: 20px; filter: drop-shadow(0 15px 25px rgba(0,0,0,0.9));">
-        <div style="font-size: 55px; font-weight: 900; color: {c_acc}; letter-spacing: 8px; margin-bottom: 5px; text-transform: uppercase;">SISTEMA ÉLITE</div>
-        <div style="color: #888; font-size: 14px; letter-spacing: 6px; font-weight: bold;">INGENIERÍA FÍSICA DE ALTO RENDIMIENTO</div>
-        
-        <div class="card-3d" style="margin: 60px auto; width: 85%; padding: 45px 0;">
-            <div class="icon-3d" style="margin-bottom: 15px;">👑</div><br>
-            <span class="lbl-luxury" style="color: {c_acc};">PERFIL DEL ATLETA AUTORIZADO</span>
-            <div class="val-3d" style="font-size: 42px; margin: 15px 0; line-height: 1.1;">{str(d.get('n','ATLETA')).upper()}</div>
-            <span class="lbl-luxury">NIVEL: {str(d.get('nivel','')).upper()}</span>
-        </div>
-        
-        <div style="margin-top: 50px;">
-            <img src="data:image/png;base64,{qr_b64}" style="width: 80px; border-radius: 10px; border: 2px solid {c_acc}; padding: 5px; background: #FFF; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
-            <div class="lbl-luxury" style="margin-top: 15px; color:#666;">ESCANEAR PARA ACCESO DIGITAL</div>
-        </div>
-    </div>
+    <div class="page-container" style="text-align:center;">
+        <div class="bg-glow"></div>
+        <table style="width: 100%; height: 850px; border-collapse: collapse;">
+            <tr>
+                <td style="vertical-align: top; padding-top: 50px;">
+                    <img src="data:image/png;base64,{logo_main}" style="width: 200px; filter: drop-shadow(0 0 20px {accent});">
+                    <div class="hero-title">EDDY ELITE</div>
+                    <div class="hero-sub">HIGH PERFORMANCE SYSTEM</div>
 
-    <div>
-        <div class="title-3d">📊 TABLERO DE RENDIMIENTO</div>
+                    <div class="premium-card" style="margin-top: 60px; padding: 45px; width: 85%; margin-left: auto; margin-right: auto;">
+                        <div style="font-size: 13px; color: {accent}; letter-spacing: 3px; font-weight: bold; margin-bottom: 15px;">AUTHORIZED ATHLETE</div>
+                        <div style="font-size: 45px; font-weight: 900; letter-spacing: 2px;">{str(data.get('n','ATLETA')).upper()}</div>
+                        <div style="margin-top: 10px; color: #888; font-size: 12px; letter-spacing: 2px;">LEVEL: {str(data.get('nivel','ELITE')).upper()}</div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: bottom; height: 150px;">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="text-align: left; width: 50%;"><img src="data:image/png;base64,{qr}" style="width: 80px; border-radius: 12px; border: 2px solid {accent}; padding: 5px; background: #FFF;"></td>
+                            <td style="text-align: right; width: 50%;">
+                                <div style="font-style: italic; font-size: 35px; color: #666; font-weight: bold;">Eddy</div>
+                                <div style="font-size: 10px; color: {accent}; letter-spacing: 2px; font-weight: bold;">PERFORMANCE DIRECTOR</div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+    """
+    html += f"""
+    <div class="page-container">
+        <div class="bg-glow" style="top: 200px;"></div>
+        <div class="section-title">BODY ANALYTICS</div>
         
         <table class="grid-table">
             <tr>
-                <td class="grid-td"><div class="card-3d" style="padding: 15px; text-align: center;"><div class="lbl-luxury">EDAD</div>{generate_gauge_svg(100, c_acc, safe_int(d.get('edad',0)))}</div></td>
-                <td class="grid-td"><div class="card-3d" style="padding: 15px; text-align: center;"><div class="lbl-luxury">ESTATURA</div>{generate_gauge_svg(85, c_acc, safe_int(d.get('estatura',0)))}</div></td>
-                <td class="grid-td"><div class="card-3d" style="padding: 15px; text-align: center;"><div class="lbl-luxury">PESO (KG)</div>{generate_gauge_svg(75, c_acc, safe_int(d.get('peso',0)))}</div></td>
-                <td class="grid-td"><div class="card-3d" style="padding: 15px; text-align: center;"><div class="lbl-luxury">GRASA %</div>{generate_gauge_svg(d.get('rfm',0), c_acc, f"{safe_int(d.get('rfm',0))}%")}</div></td>
+                <td class="grid-td"><div class="premium-card" style="padding:15px;">{generate_gauge(100, accent, 'EDAD', safe_int(data.get('edad',0)))}</div></td>
+                <td class="grid-td"><div class="premium-card" style="padding:15px;">{generate_gauge(85, accent, 'ALTURA', safe_int(data.get('estatura',0)))}</div></td>
+                <td class="grid-td"><div class="premium-card" style="padding:15px;">{generate_gauge(75, accent, 'PESO (KG)', safe_int(data.get('peso',0)))}</div></td>
             </tr>
         </table>
 
-        <div class="card-3d" style="padding: 25px; margin-bottom: 20px; text-align: center;">
-            <div class="icon-3d" style="margin-bottom: 10px;">🎯</div><br>
-            <span class="lbl-luxury">OBJETIVO ESTRATÉGICO</span>
-            <div class="val-3d" style="color: {c_acc}; font-size: 30px; letter-spacing: 2px;">{str(d.get('meta','')).upper()}</div>
-        </div>
-
-        <div class="card-3d" style="padding: 20px; text-align: center; margin-bottom: 40px;">
-            <span class="lbl-luxury" style="margin-bottom: 15px; display: block;"><span class="icon-3d" style="width: 20px; height: 20px; line-height: 20px; font-size: 10px;">📈</span> EVOLUCIÓN PREDICTIVA</span>
-            <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 8px; border: 1px solid #222;">
-        </div>
-    </div>
-    """
-    html += f"""
-    <div>
-        <div class="title-3d">🍎 MATRIZ NUTRICIONAL</div>
-        
-        <div class="card-3d" style="padding: 20px; margin-bottom: 25px;">
-            {render_macro_bar("🥩", "PROTEÍNAS", d.get('p',0), 100, c_acc)}
-            {render_macro_bar("🍚", "CARBOHIDRATOS", d.get('c',0), 80, "#4CAF50")}
-            {render_macro_bar("🥑", "GRASAS SALUDABLES", d.get('g',0), 60, "#FFC107")}
-        </div>
-    """
-    
-    for comida, opciones in d.get('m', {}).items():
-        html += f"""
-        <div class="card-3d" style="padding: 18px; margin-bottom: 15px; border-left: 5px solid {c_acc};">
-            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                <div class="icon-3d" style="margin-right: 12px; font-size: 14px; width: 28px; height: 28px; line-height: 28px;">🍽️</div>
-                <div class="val-3d" style="font-size: 16px; color: {c_acc}; text-transform: uppercase; margin: 0;">{comida}</div>
-            </div>
-            <div style="font-size: 12px; color: #CCC; line-height: 1.5; padding-left: 40px;">{str(opciones[0]).strip() if opciones else ""}</div>
-        </div>
-        """
-
-    html += f"""
-    </div>
-    
-    <div style="margin-top: 40px;">
-        <div class="title-3d">⚡ PROTOCOLO DE ENTRENAMIENTO</div>
-        
-        <table style="width: 100%; margin-bottom: 20px;">
+        <table style="width: 100%; margin-bottom: 25px;">
             <tr>
                 <td style="width: 50%; padding-right: 10px;">
-                    <div class="card-3d" style="padding: 15px; text-align: center;">
-                        <div class="icon-3d" style="margin-bottom: 5px;">🏋️</div><br><span class="lbl-luxury">MODALIDAD</span>
-                        <div class="val-3d" style="font-size: 14px;">{str(d.get('entreno','')).upper()}</div>
+                    <div class="premium-card" style="padding: 25px; text-align: center;">
+                        <div style="color: #888; font-size: 11px; letter-spacing: 2px; margin-bottom: 10px;">OBJETIVO PRINCIPAL</div>
+                        <div style="font-size: 20px; font-weight: 900; color: {accent};">{str(data.get('meta','')).upper()}</div>
                     </div>
                 </td>
                 <td style="width: 50%; padding-left: 10px;">
-                    <div class="card-3d" style="padding: 15px; text-align: center;">
-                        <div class="icon-3d" style="margin-bottom: 5px;">📅</div><br><span class="lbl-luxury">FRECUENCIA</span>
-                        <div class="val-3d" style="font-size: 14px;">{str(d.get('dias',''))} DÍAS/SEM</div>
+                    <div class="premium-card" style="padding: 25px; text-align: center;">
+                        <div style="color: #888; font-size: 11px; letter-spacing: 2px; margin-bottom: 10px;">HIDRATACIÓN / RFM</div>
+                        <div style="font-size: 20px; font-weight: 900; color: #FFF;">{data.get('w',3)}L <span style="color:{accent};">|</span> {safe_int(data.get('rfm',0))}%</div>
                     </div>
                 </td>
             </tr>
         </table>
+
+        <div class="premium-card" style="padding: 25px; text-align: center;">
+            <div style="color: #888; font-size: 11px; letter-spacing: 2px; margin-bottom: 15px;">PREDICTIVE EVOLUTION</div>
+            <img src="data:image/png;base64,{grafico_b64}" style="width: 100%; border-radius: 12px; border: 1px solid #222;">
+        </div>
+    </div>
+    """
+    html += f"""
+    <div class="page-container">
+        <div class="section-title">NUTRITION SYSTEM</div>
+        
+        <div class="premium-card" style="padding: 30px;">
+            {macro_bar('PROTEÍNAS', data.get('p',0), 90, accent)}
+            {macro_bar('CARBOHIDRATOS', data.get('c',0), 75, '#00BFFF')}
+            {macro_bar('GRASAS', data.get('g',0), 55, '#FF9800')}
+            
+            <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid #222;">
+                <span style="font-size: 12px; color: #888; letter-spacing: 2px;">CALORÍAS OBJETIVO: </span>
+                <span style="font-size: 18px; font-weight: 900; color: #FFF;">{safe_int(data.get('k',0))} KCAL</span>
+            </div>
+        </div>
+    """
+
+    for comida, opciones in data.get('m', {}).items():
+        html += f"""
+        <div class="premium-card" style="padding: 20px; border-left: 5px solid {accent}; margin-bottom: 15px;">
+            <div style="font-size: 14px; color: {accent}; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px;">{comida.upper()}</div>
+            <div style="font-size: 12px; color: #CCC; line-height: 1.6;">{str(opciones[0]).strip() if opciones else ""}</div>
+        </div>
+        """
+        
+    html += "</div>"
+    html += f"""
+    <div class="page-container">
+        <div class="section-title">WORKOUT PROTOCOL</div>
+        
+        <div class="premium-card" style="padding: 20px; text-align: center;">
+            <span style="color:#888; font-size:12px; letter-spacing:2px; margin-right:15px;">MODALIDAD: <span style="color:#FFF; font-weight:bold;">{str(data.get('entreno','')).upper()}</span></span>
+            <span style="color:#888; font-size:12px; letter-spacing:2px;">FRECUENCIA: <span style="color:#FFF; font-weight:bold;">{str(data.get('dias',''))} DÍAS/SEM</span></span>
+        </div>
     """
     
-    for dia, ejercicios in d.get('rutina', {}).items():
+    for dia, ejercicios in data.get('rutina', {}).items():
         html += f"""
-        <div class="card-3d" style="padding: 18px; margin-bottom: 15px;">
-            <div class="val-3d" style="font-size: 16px; color: {c_acc}; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px;">{dia.upper()}</div>
+        <div class="premium-card" style="padding: 20px; margin-bottom: 15px;">
+            <div style="font-size: 16px; color: {accent}; font-weight: 900; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 12px;">{dia.upper()}</div>
         """
         for ej in ejercicios:
-            html += f'<div style="font-size: 12px; color: #DDD; padding: 5px 0; border-bottom: 1px dashed #1a1a1a;"><span style="color:{c_acc}; margin-right:8px; font-weight:bold;">›</span> {str(ej).strip()}</div>'
+            html += f'<div style="font-size: 12px; color: #DDD; padding: 6px 0; border-bottom: 1px dashed #1A1A1A;"><span style="color:{accent}; font-weight:bold; margin-right:8px;">›</span>{str(ej).strip()}</div>'
         html += "</div>"
 
     html += f"""
-    </div>
-
-    <div style="margin-top: 40px;">
-        <div class="title-3d">🛒 LISTA DE ABASTECIMIENTO</div>
-        
-        <div class="card-3d" style="padding: 20px;">
+        <div class="section-title" style="margin-top: 40px;">SUPPLY LIST</div>
+        <div class="premium-card" style="padding: 25px;">
             <table style="width: 100%; border-collapse: collapse;">
     """
     
-    for item, cant in d.get('compras', {}).items():
+    for item, cant in data.get('compras', {}).items():
         it = str(item).replace('\n', '').strip()
         c_val = safe_int(cant)
         
@@ -231,13 +268,17 @@ def build_pdf_v60_7(d, grafico_b64="", ruta_img="", gen="m"):
         elif any(x in it for x in ["Café", "Mate", "Té", "Infusión"]): res = f"{c_val} Tazas"
         else: res = f"{c_val/1000:.2f} KG" if c_val>=1000 else f"{c_val} g"
         
-        html += f'<tr><td style="padding: 10px 0; border-bottom: 1px solid #1A1A1A; font-size: 12px; color: #EEE;">{it}</td><td style="padding: 10px 0; border-bottom: 1px solid #1A1A1A; text-align: right; font-size: 13px; font-weight: 900; color: {c_acc};">{res}</td></tr>'
+        html += f'<tr><td style="padding: 12px 0; border-bottom: 1px solid #1A1A1A; font-size: 12px; color: #EEE;">{it}</td><td style="padding: 12px 0; border-bottom: 1px solid #1A1A1A; text-align: right; font-size: 14px; font-weight: 900; color: {accent};">{res}</td></tr>'
 
     html += f"""
             </table>
+        </div>
+        <div style="text-align: center; margin-top: 50px; opacity: 0.3;">
+            <div style="font-size: 10px; color: #FFF; letter-spacing: 5px;">EDDY ELITE PERFORMANCE SYSTEM</div>
         </div>
     </div>
     </body></html>
     """
 
+    # Retorna los bytes directamente para que Streamlit los pueda descargar
     return HTML(string=html).write_pdf()
