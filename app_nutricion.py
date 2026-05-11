@@ -18,7 +18,7 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 
 from database.supabase_mgr import init_supabase
 from utils.biometria import calcular_biometria
-from utils.pdf_generator_elite import build_pdf_elite_design
+from utils.pdf_generator import build_pdf_v60_7
 from data.alimentos import alimentos_db
 from data.ejercicios import ejercicios_db, rutinas_elite
 from styles import aplicar_diseno_elite
@@ -765,31 +765,28 @@ if not st.session_state.pago_validado:
             else:
                 st.warning("Por favor, ingresá el número de operación.")
 
-# --- SECCIÓN FINAL DE DESCARGA ---
 if st.session_state.pago_validado:
-    st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
+    st.success("✅ ¡Pago validado!")
     
-    # Preparamos los datos
+    # --- RECONSTRUCCIÓN DEL MOTOR DE DATOS (PAYLOAD) ---
     payload = {
         "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual,
-        "rfm": rfm, "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total,
-        "w": agua_total, "meta": tipo_objetivo, "nivel": nivel_experiencia,
-        "dias": dias_entreno, "entreno": tipo_entreno, "m": diccionario_menus,
-        "rutina": diccionario_rutinas, "compras": lista_compras
+        "cintura": cintura, "cadera": cadera, "rcc": rcc_valor, "rfm": rfm,
+        "nivel": nivel_experiencia, "entreno": tipo_entreno, "dias": dias_entreno,
+        "meta": tipo_objetivo, "dt": dieta_tipo,
+        "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total,
+        "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
+        "rutina": diccionario_rutinas
     }
 
-    try:
-        from utils.pdf_generator_elite import build_pdf_elite_design
-        # Generar el PDF
-        pdf_data = build_pdf_elite_design(payload, "logo_dorado.png" if os.path.exists("logo_dorado.png") else None)
-        
-        if pdf_data:
-            st.download_button(
-                label="🏆 DESCARGAR MI PLAN ELITE (PDF DORADO)",
-                data=pdf_data,
-                file_name=f"Plan_Elite_{nombre}.pdf",
-                mime="application/pdf",
-                type="primary"
-            )
-    except Exception as e:
-        st.error(f"Error al generar el diseño: {e}")
+    # Llamamos al generador viejo que ya te funcionaba
+    pdf_viejo = build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero)
+    
+    if pdf_viejo:
+        st.download_button(
+            label="📥 DESCARGAR PLAN NUTRICIONAL",
+            data=pdf_viejo,
+            file_name=f"Plan_{nombre}.pdf",
+            mime="application/pdf"
+        )
+        )
