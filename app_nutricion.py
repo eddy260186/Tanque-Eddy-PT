@@ -768,7 +768,7 @@ if not st.session_state.pago_validado:
 if st.session_state.pago_validado:
     st.success("✅ ¡Pago validado!")
     
-    # --- RECONSTRUCCIÓN DEL MOTOR DE DATOS (PAYLOAD) ---
+    # Re-definimos el payload para que no haya errores de variables
     payload = {
         "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual,
         "cintura": cintura, "cadera": cadera, "rcc": rcc_valor, "rfm": rfm,
@@ -779,7 +779,7 @@ if st.session_state.pago_validado:
         "rutina": diccionario_rutinas
     }
 
-    # Llamamos al generador viejo que ya te funcionaba
+    # Llamamos al generador viejo que ya te funcionaba (build_pdf_v60_7)
     pdf_viejo = build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero)
     
     if pdf_viejo:
@@ -788,5 +788,4 @@ if st.session_state.pago_validado:
             data=pdf_viejo,
             file_name=f"Plan_{nombre}.pdf",
             mime="application/pdf"
-        )
         )
