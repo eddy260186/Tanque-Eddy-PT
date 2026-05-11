@@ -772,24 +772,20 @@ if st.session_state.pago_validado:
     
     if nombre:
         payload = {
-            "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual,
+            "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, 
             "cintura": cintura, "cadera": cadera, "rcc": rcc_valor, "rfm": rfm,
             "nivel": nivel_experiencia, "entreno": tipo_entreno, "dias": dias_entreno,
             "meta": tipo_objetivo, "dt": dieta_tipo,
-            "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total,
+            "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total, 
             "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
             "rutina": diccionario_rutinas
         }
-        
-        # 1. Llamamos al motor NUEVO Elite
-        pdf_elite = build_pdf_elite_design(payload, ruta_logo_final)
-        
-        # 2. Creamos el botón con el PDF nuevo
-        if pdf_elite:
-            st.download_button(
-                label="🏆 DESCARGAR MI PLAN ELITE (DORADO)",
-                data=pdf_elite,
-                file_name=f"Plan_Elite_{nombre}.pdf",
-                mime="application/pdf",
-                type="primary"
-            )
+        st.download_button(
+            label="📥 DESCARGAR MI PLAN ELITE (PDF)", 
+            data=build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), 
+            file_name=f"Plan_Elite_{nombre}.pdf",
+            mime="application/pdf",
+            type="primary"
+        )
+    else:
+        st.warning("⚠️ Escribe el nombre del atleta para generar el archivo.")
