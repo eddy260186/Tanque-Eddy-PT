@@ -765,27 +765,31 @@ if not st.session_state.pago_validado:
             else:
                 st.warning("Por favor, ingresá el número de operación.")
 
-# --- PANTALLA DE DESCARGA LIBERADA ---
+# --- SECCIÓN FINAL DE DESCARGA ---
 if st.session_state.pago_validado:
-    st.balloons()
     st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
     
-    if nombre:
-        payload = {
-            "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, 
-            "cintura": cintura, "cadera": cadera, "rcc": rcc_valor, "rfm": rfm,
-            "nivel": nivel_experiencia, "entreno": tipo_entreno, "dias": dias_entreno,
-            "meta": tipo_objetivo, "dt": dieta_tipo,
-            "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total, 
-            "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
-            "rutina": diccionario_rutinas
-        }
-        st.download_button(
-            label="📥 DESCARGAR MI PLAN ELITE (PDF)", 
-            data=build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero), 
-            file_name=f"Plan_Elite_{nombre}.pdf",
-            mime="application/pdf",
-            type="primary"
-        )
-    else:
-        st.warning("⚠️ Escribe el nombre del atleta para generar el archivo.")
+    # Preparamos los datos
+    payload = {
+        "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual,
+        "rfm": rfm, "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total,
+        "w": agua_total, "meta": tipo_objetivo, "nivel": nivel_experiencia,
+        "dias": dias_entreno, "entreno": tipo_entreno, "m": diccionario_menus,
+        "rutina": diccionario_rutinas, "compras": lista_compras
+    }
+
+    try:
+        from utils.pdf_generator_elite import build_pdf_elite_design
+        # Generar el PDF
+        pdf_data = build_pdf_elite_design(payload, "logo_dorado.png" if os.path.exists("logo_dorado.png") else None)
+        
+        if pdf_data:
+            st.download_button(
+                label="🏆 DESCARGAR MI PLAN ELITE (PDF DORADO)",
+                data=pdf_data,
+                file_name=f"Plan_Elite_{nombre}.pdf",
+                mime="application/pdf",
+                type="primary"
+            )
+    except Exception as e:
+        st.error(f"Error al generar el diseño: {e}")
