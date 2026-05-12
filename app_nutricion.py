@@ -768,7 +768,7 @@ if not st.session_state.pago_validado:
 if st.session_state.pago_validado:
     st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
     
-    # Re-armamos los datos para tu motor de 900 líneas
+    # 1. Definimos la data (Payload)
     payload = {
         "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual,
         "rfm": rfm, "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total,
@@ -776,19 +776,26 @@ if st.session_state.pago_validado:
         "w": agua_total, "compras": lista_compras
     }
 
-    try:
-        # Llamamos a tu gran archivo de 900 líneas
-        from utils.pdf_generator_elite import build_pdf_elite_design
-        pdf_elite = build_pdf_elite_design(payload, "logo_dorado.png" if os.path.exists("logo_dorado.png") else None)
-        
-        if pdf_elite:
-            st.download_button(
-                label="🏆 DESCARGAR PLAN ELITE GOLD",
-                data=pdf_elite,
-                file_name=f"Plan_Elite_{nombre}.pdf",
-                mime="application/pdf",
-                type="primary"
-            )
-    except Exception as e:
-        st.error(f"Error técnico en el servidor: {e}")
-        st.info("💡 Si ves un error de 'library', espera 2 minutos a que Streamlit termine de instalar los paquetes.")
+    # 2. CONTENEDOR SEGURO: Esto previene el error "removeChild" de React
+    zona_segura = st.empty()
+    
+    # 3. Procesamiento blindado
+    with st.spinner("Ensamblando PDF Elite Gold..."):
+        try:
+            # Llamamos a tu motor de diseño Elite sin tocar su código
+            from utils.pdf_generator_elite import build_pdf_elite_design
+            pdf_elite = build_pdf_elite_design(payload, ruta_logo_final)
+            
+            if pdf_elite:
+                # El botón se dibuja dentro de la zona segura con una Key única
+                zona_segura.download_button(
+                    label="🏆 DESCARGAR PLAN ELITE GOLD",
+                    data=pdf_elite,
+                    file_name=f"Plan_Elite_{nombre}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    key="boton_descarga_elite_seguro"
+                )
+        except Exception as e:
+            st.error(f"Error de ensamblado en servidor: {e}")
+            st.info("⚙️ Solución: Entrá a Streamlit Cloud, tocá los 3 puntitos arriba a la derecha y elegí 'Reboot app'.")
