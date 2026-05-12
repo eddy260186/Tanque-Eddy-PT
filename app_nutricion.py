@@ -85,9 +85,10 @@ if st.session_state["usuario_actual"] is None:
     # --- SOLO EL LOGO CENTRADO Y MÁS CHICO ---
     col1, col_logo, col3 = st.columns([1, 1, 1]) 
     with col_logo:
-        import os
-    if os.path.exists("logo_tanque.png"):
-        st.image("logo_tanque.png", use_container_width=True)
+        try:
+            st.image("logo_tanque.png", use_container_width=True)
+        except:
+            pass
         
     st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🏆 Portal Elite Fitness</h2>", unsafe_allow_html=True)
     st.markdown("<h5 style='text-align: center; color: #888888; font-style: italic; margin-top: 0px;'>🚫 No apto para escarbadientes🚫</h5>", unsafe_allow_html=True)
