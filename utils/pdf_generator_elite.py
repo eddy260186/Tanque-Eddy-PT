@@ -990,5 +990,6 @@ def build_pdf_elite_design(data, logo_path=None):
         return output.getvalue()
         
     except Exception as e:
-        print(f"Error generando PDF: {e}")
-        return None
+        # En vez de hacer un print silencioso y devolver None, lanzamos el error
+        # para que app_nutricion.py lo atrape y te lo muestre en rojo en la pantalla.
+        raise Exception(f"Falla interna al fusionar el PDF: {e}")
