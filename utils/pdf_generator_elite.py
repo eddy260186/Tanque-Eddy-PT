@@ -502,8 +502,35 @@ def build_pdf_elite_design(data, logo_path=None):
     """
     
     # ==========================================
-    # PÁGINA 2: NUTRICIÓN INTELIGENTE
+    # PÁGINA 2: NUTRICIÓN INTELIGENTE (100% DINÁMICA)
     # ==========================================
+    
+    # 1. Calculamos los porcentajes reales para el PDF
+    total_macros = proteina + carbos + grasas
+    pct_p = int((proteina / total_macros) * 100) if total_macros > 0 else 0
+    pct_c = int((carbos / total_macros) * 100) if total_macros > 0 else 0
+    pct_g = int((grasas / total_macros) * 100) if total_macros > 0 else 0
+    
+    # 2. Armamos el código HTML de los menús leyendo tu variable 'menus'
+    html_menus_dinamicos = ""
+    if menus:
+        for comida, opciones in menus.items():
+            # Agarramos la primera opción generada para el resumen del PDF
+            texto_opcion = str(opciones[0] if isinstance(opciones, list) and opciones else "Sin datos")
+            texto_limpio = texto_opcion.replace("Opcion 1: ", "")
+            
+            html_menus_dinamicos += f'''
+                    <li class="menu-item">
+                        <div class="menu-meal">🍽️ {comida.upper()}</div>
+                        {texto_limpio}
+                    </li>'''
+    else:
+        html_menus_dinamicos = '''
+                    <li class="menu-item">
+                        <div class="menu-meal">⚠️ AVISO</div>
+                        No se generó un menú para este perfil.
+                    </li>'''
+
     html_pagina2 = f"""
     <!DOCTYPE html>
     <html>
@@ -658,15 +685,15 @@ def build_pdf_elite_design(data, logo_path=None):
                     <div class="section-title">Distribución de Macros</div>
                     <div class="macro-item">
                         <div class="macro-label">Proteínas</div>
-                        <div class="macro-value">{int(proteina)}g (40%)</div>
+                        <div class="macro-value">{int(proteina)}g ({pct_p}%)</div>
                     </div>
                     <div class="macro-item">
                         <div class="macro-label">Carbohidratos</div>
-                        <div class="macro-value">{int(carbos)}g (42%)</div>
+                        <div class="macro-value">{int(carbos)}g ({pct_c}%)</div>
                     </div>
                     <div class="macro-item">
                         <div class="macro-label">Grasas</div>
-                        <div class="macro-value">{int(grasas)}g (18%)</div>
+                        <div class="macro-value">{int(grasas)}g ({pct_g}%)</div>
                     </div>
                 </div>
                 
@@ -674,42 +701,27 @@ def build_pdf_elite_design(data, logo_path=None):
                     <div class="section-title">Distribución Calórica</div>
                     <div class="macro-item">
                         <div class="macro-label">Desayuno</div>
-                        <div class="macro-value">{int(cal_obj * 0.20)}</div>
+                        <div class="macro-value">{int(cal_obj * 0.20)} kcal</div>
                     </div>
                     <div class="macro-item">
                         <div class="macro-label">Almuerzo</div>
-                        <div class="macro-value">{int(cal_obj * 0.35)}</div>
+                        <div class="macro-value">{int(cal_obj * 0.35)} kcal</div>
                     </div>
                     <div class="macro-item">
                         <div class="macro-label">Merienda</div>
-                        <div class="macro-value">{int(cal_obj * 0.15)}</div>
+                        <div class="macro-value">{int(cal_obj * 0.15)} kcal</div>
                     </div>
                     <div class="macro-item">
                         <div class="macro-label">Cena</div>
-                        <div class="macro-value">{int(cal_obj * 0.30)}</div>
+                        <div class="macro-value">{int(cal_obj * 0.30)} kcal</div>
                     </div>
                 </div>
             </div>
             
             <div class="section" style="margin-top: 40px;">
-                <div class="section-title">Menú Destacado del Día</div>
+                <div class="section-title">Menú Asignado del Día</div>
                 <div class="menu-list">
-                    <li class="menu-item">
-                        <div class="menu-meal">🌅 DESAYUNO</div>
-                        Avena, claras de huevo, banana, café
-                    </li>
-                    <li class="menu-item">
-                        <div class="menu-meal">🍽️ ALMUERZO</div>
-                        Pechuga de pollo, arroz integral, brócoli
-                    </li>
-                    <li class="menu-item">
-                        <div class="menu-meal">☕ MERIENDA</div>
-                        Yogur griego, frutos rojos, almendras
-                    </li>
-                    <li class="menu-item">
-                        <div class="menu-meal">🌙 CENA</div>
-                        Salmón, batata asada, espárragos
-                    </li>
+{html_menus_dinamicos}
                 </div>
             </div>
             
