@@ -766,26 +766,29 @@ if not st.session_state.pago_validado:
                 st.warning("Por favor, ingresá el número de operación.")
 
 if st.session_state.pago_validado:
-    st.success("✅ ¡Pago validado!")
+    st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
     
-    # Re-definimos el payload para que no haya errores de variables
+    # Re-armamos los datos para tu motor de 900 líneas
     payload = {
         "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual,
-        "cintura": cintura, "cadera": cadera, "rcc": rcc_valor, "rfm": rfm,
-        "nivel": nivel_experiencia, "entreno": tipo_entreno, "dias": dias_entreno,
-        "meta": tipo_objetivo, "dt": dieta_tipo,
-        "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total,
-        "s": suples, "m": diccionario_menus, "compras": lista_compras, "w": agua_total,
-        "rutina": diccionario_rutinas
+        "rfm": rfm, "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total,
+        "m": diccionario_menus, "rutina": diccionario_rutinas, "meta": tipo_objetivo,
+        "w": agua_total, "compras": lista_compras
     }
 
-    # Llamamos al generador viejo que ya te funcionaba (build_pdf_v60_7)
-    pdf_viejo = build_pdf_v60_7(payload, grafico_base64, ruta_logo_final, genero)
-    
-    if pdf_viejo:
-        st.download_button(
-            label="📥 DESCARGAR PLAN NUTRICIONAL",
-            data=pdf_viejo,
-            file_name=f"Plan_{nombre}.pdf",
-            mime="application/pdf"
-        )
+    try:
+        # Llamamos a tu gran archivo de 900 líneas
+        from utils.pdf_generator_elite import build_pdf_elite_design
+        pdf_elite = build_pdf_elite_design(payload, "logo_dorado.png" if os.path.exists("logo_dorado.png") else None)
+        
+        if pdf_elite:
+            st.download_button(
+                label="🏆 DESCARGAR PLAN ELITE GOLD",
+                data=pdf_elite,
+                file_name=f"Plan_Elite_{nombre}.pdf",
+                mime="application/pdf",
+                type="primary"
+            )
+    except Exception as e:
+        st.error(f"Error técnico en el servidor: {e}")
+        st.info("💡 Si ves un error de 'library', espera 2 minutos a que Streamlit termine de instalar los paquetes.")
