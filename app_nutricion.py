@@ -3,6 +3,8 @@ import streamlit as st
 from weasyprint import HTML
 from datetime import datetime, date, time
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg") # Optimización brutal de memoria para servidor
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import os
