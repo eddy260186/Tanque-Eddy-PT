@@ -508,8 +508,12 @@ fig_plotly.update_layout(
     margin=dict(l=20, r=20, t=50, b=20)
 )
 
-# Lo mostramos en la aplicación
-st.plotly_chart(fig_plotly, use_container_width=True)
+# Lo mostramos en la aplicación de forma segura para no romper React
+st.plotly_chart(
+    fig_plotly, 
+    use_container_width=True, 
+    key="grafico_evolucion_corporal_elite"
+)
 
 # ==========================================
 # 6. SUPLEMENTACIÓN
@@ -776,24 +780,25 @@ if st.session_state.pago_validado:
         "w": agua_total, "compras": lista_compras
     }
 
-    # 2. CAJA FUERTE VISUAL: Esto evita el error de "removeChild" en React
-    zona_descarga = st.empty()
+    # 2. TU SOLUCIÓN PROFESIONAL: Usamos container en lugar de empty()
+    contenedor_seguro = st.container()
     
-    # 3. Ruedita de carga para darle tiempo a tu motor de 900 líneas
-    with st.spinner("⏳ Ensamblando tu PDF Elite Gold (esto puede tardar unos segundos)..."):
-        try:
-            from utils.pdf_generator_elite import build_pdf_elite_design
-            pdf_elite = build_pdf_elite_design(payload, "logo_dorado.png" if os.path.exists("logo_dorado.png") else None)
-            
-            if pdf_elite:
-                # 4. El botón aparece DENTRO de la caja fuerte usando una Key única
-                zona_descarga.download_button(
-                    label="🏆 DESCARGAR PLAN ELITE GOLD",
-                    data=pdf_elite,
-                    file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf",
-                    mime="application/pdf",
-                    type="primary",
-                    key="boton_seguro_elite_descarga"
-                )
-        except Exception as e:
-            st.error(f"Error técnico en el servidor: {e}")
+    with contenedor_seguro:
+        # 3. Ruedita de carga para darle tiempo a tu motor de 900 líneas
+        with st.spinner("⏳ Ensamblando tu PDF Elite Gold (esto puede tardar unos segundos)..."):
+            try:
+                from utils.pdf_generator_elite import build_pdf_elite_design
+                pdf_elite = build_pdf_elite_design(payload, "logo_dorado.png" if os.path.exists("logo_dorado.png") else None)
+                
+                if pdf_elite:
+                    # 4. El botón aparece DENTRO de la caja fuerte usando una Key única
+                    st.download_button(
+                        label="🏆 DESCARGAR PLAN ELITE GOLD",
+                        data=pdf_elite,
+                        file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf",
+                        mime="application/pdf",
+                        type="primary",
+                        key="btn_descarga_pdf_final_seguro"
+                    )
+            except Exception as e:
+                st.error(f"Error técnico en el servidor: {e}")
