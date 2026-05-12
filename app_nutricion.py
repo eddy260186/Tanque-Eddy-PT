@@ -768,7 +768,7 @@ if not st.session_state.pago_validado:
 if st.session_state.pago_validado:
     st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
     
-    # 1. Definimos la data (Payload)
+    # 1. Armamos los datos
     payload = {
         "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual,
         "rfm": rfm, "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total,
@@ -776,26 +776,24 @@ if st.session_state.pago_validado:
         "w": agua_total, "compras": lista_compras
     }
 
-    # 2. CONTENEDOR SEGURO: Esto previene el error "removeChild" de React
-    zona_segura = st.empty()
+    # 2. CAJA FUERTE VISUAL: Esto evita el error de "removeChild" en React
+    zona_descarga = st.empty()
     
-    # 3. Procesamiento blindado
-    with st.spinner("Ensamblando PDF Elite Gold..."):
+    # 3. Ruedita de carga para darle tiempo a tu motor de 900 líneas
+    with st.spinner("⏳ Ensamblando tu PDF Elite Gold (esto puede tardar unos segundos)..."):
         try:
-            # Llamamos a tu motor de diseño Elite sin tocar su código
             from utils.pdf_generator_elite import build_pdf_elite_design
-            pdf_elite = build_pdf_elite_design(payload, ruta_logo_final)
+            pdf_elite = build_pdf_elite_design(payload, "logo_dorado.png" if os.path.exists("logo_dorado.png") else None)
             
             if pdf_elite:
-                # El botón se dibuja dentro de la zona segura con una Key única
-                zona_segura.download_button(
+                # 4. El botón aparece DENTRO de la caja fuerte usando una Key única
+                zona_descarga.download_button(
                     label="🏆 DESCARGAR PLAN ELITE GOLD",
                     data=pdf_elite,
-                    file_name=f"Plan_Elite_{nombre}.pdf",
+                    file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf",
                     mime="application/pdf",
                     type="primary",
-                    key="boton_descarga_elite_seguro"
+                    key="boton_seguro_elite_descarga"
                 )
         except Exception as e:
-            st.error(f"Error de ensamblado en servidor: {e}")
-            st.info("⚙️ Solución: Entrá a Streamlit Cloud, tocá los 3 puntitos arriba a la derecha y elegí 'Reboot app'.")
+            st.error(f"Error técnico en el servidor: {e}")
