@@ -82,12 +82,17 @@ if "usuario_actual" not in st.session_state:
 
 if st.session_state["usuario_actual"] is None:
     
-    # --- SOLO EL LOGO CENTRADO Y MÁS CHICO ---
+# --- SOLO EL LOGO CENTRADO Y MÁS CHICO ---
     col1, col_logo, col3 = st.columns([1, 1, 1]) 
     with col_logo:
         try:
-            st.image("logo_tanque.png", use_container_width=True)
-        except:
+            import os
+            # Buscamos el logo verde directamente
+            if os.path.exists("logo.png"):
+                st.image("logo.png", use_container_width=True)
+            elif os.path.exists("logo.png.png"):
+                st.image("logo.png.png", use_container_width=True)
+        except Exception:
             pass
         
     st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🏆 Portal Elite Fitness</h2>", unsafe_allow_html=True)
@@ -166,12 +171,23 @@ if st.session_state["usuario_actual"] is None:
 # ==========================================
 st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
+import os
+directorio_script = os.path.dirname(os.path.abspath(__file__))
+
+rutas_logo = [
+    os.path.join(directorio_script, "logo.png"),       
+    os.path.join(directorio_script, "logo.png.png"),   
+    os.path.join(directorio_script, "logo")
+]
+ruta_logo_final = next((r for r in rutas_logo if os.path.exists(r)), None)
+
 with st.sidebar:
     st.header("🏢 Branding")
-    try:
-        st.image("logo_tanque.png", use_container_width=True)
-    except:
-        pass
+    if ruta_logo_final:
+        try:
+            st.image(ruta_logo_final, use_container_width=True)
+        except Exception:
+            pass
     st.divider()
 
     # --- BOTÓN DE SOPORTE WHATSAPP EN EL MENÚ LATERAL ---
