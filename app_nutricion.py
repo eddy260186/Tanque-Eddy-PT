@@ -166,19 +166,12 @@ if st.session_state["usuario_actual"] is None:
 # ==========================================
 st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
-directorio_script = os.path.dirname(os.path.abspath(__file__))
-rutas_logo = [
-    os.path.join(directorio_script, "logo.png"),
-    os.path.join(directorio_script, "logo.png.png"),
-    os.path.join(directorio_script, "logo")
-]
-ruta_logo_final = next((r for r in rutas_logo if os.path.exists(r)), None)
-
 with st.sidebar:
     st.header("🏢 Branding")
-    # Paso 1: Mostrar el logo limpio
-    if ruta_logo_final:
-        st.image(ruta_logo_final, use_container_width=True)
+    try:
+        st.image("logo_tanque.png", use_container_width=True)
+    except:
+        pass
     st.divider()
 
     # --- BOTÓN DE SOPORTE WHATSAPP EN EL MENÚ LATERAL ---
