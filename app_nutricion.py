@@ -86,12 +86,8 @@ if st.session_state["usuario_actual"] is None:
     col1, col_logo, col3 = st.columns([1, 1, 1]) 
     with col_logo:
         try:
-            import os
-            # Buscamos el logo verde directamente
-            if os.path.exists("logo.png"):
-                st.image("logo.png", use_container_width=True)
-            elif os.path.exists("logo.png.png"):
-                st.image("logo.png.png", use_container_width=True)
+            # Llamamos al LOGO VERDE directamente
+            st.image("logo.png", use_container_width=True)
         except Exception:
             pass
         
