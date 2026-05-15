@@ -82,17 +82,27 @@ if "usuario_actual" not in st.session_state:
 
 if st.session_state["usuario_actual"] is None:
     
-# --- SOLO EL LOGO CENTRADO Y MÁS CHICO ---
+# --- LOGO DE PORTADA INTELIGENTE (Paso 1) ---
     col1, col_logo, col3 = st.columns([1, 1, 1]) 
     with col_logo:
-        try:
-            import os
-            # Buscamos la carpeta exacta donde está corriendo el programa
-            ruta_carpeta = os.path.dirname(os.path.abspath(__file__))
-            ruta_verde = os.path.join(ruta_carpeta, "logo.png")
-            st.image(ruta_verde, use_container_width=True)
-        except Exception:
-            pass
+        # Buscamos el logo verde con todos sus posibles nombres
+        nombres_fotos = ["logo.png", "logo(1).png", "logo.png.png", "logo_tanque.png"]
+        foto_encontrada = None
+        
+        for nombre in nombres_fotos:
+            ruta_test = os.path.join(os.path.dirname(os.path.abspath(__file__)), nombre)
+            if os.path.exists(ruta_test):
+                foto_encontrada = ruta_test
+                break
+        
+        if foto_encontrada:
+            try:
+                st.image(foto_encontrada, use_container_width=True)
+            except Exception:
+                pass
+        else:
+            # Esto te avisará si el archivo falta en GitHub
+            st.error("⚠️ Logo de portada no encontrado")
         
     st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🏆 Portal Elite Fitness</h2>", unsafe_allow_html=True)
     st.markdown("<h5 style='text-align: center; color: #888888; font-style: italic; margin-top: 0px;'>🚫 No apto para escarbadientes🚫</h5>", unsafe_allow_html=True)
@@ -171,17 +181,30 @@ if st.session_state["usuario_actual"] is None:
 st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
 import os
-# Este es el GPS que usa toda la app para no perderse
+# GPS Vital: Esto hace que la línea 207 y los logos funcionen en la nube
 directorio_script = os.path.dirname(os.path.abspath(__file__))
 
 with st.sidebar:
     st.header("🏢 Branding")
-    try:
-        # Apuntamos directo al logo verde usando el GPS
-        ruta_sidebar = os.path.join(directorio_script, "logo.png")
-        st.image(ruta_sidebar, use_container_width=True)
-    except Exception:
-        pass
+    # Buscador Inteligente para el Logo del Sidebar
+    nombres_fotos = ["logo.png", "logo(1).png", "logo.png.png", "logo_tanque.png"]
+    foto_sidebar = None
+    
+    for nombre in nombres_fotos:
+        ruta_test = os.path.join(directorio_script, nombre)
+        if os.path.exists(ruta_test):
+            foto_sidebar = ruta_test
+            break
+            
+    if foto_sidebar:
+        try:
+            st.image(foto_sidebar, use_container_width=True)
+        except Exception:
+            pass
+    else:
+        # Esto te avisará si el archivo falta en GitHub
+        st.error("⚠️ Logo del menú no encontrado")
+        
     st.divider()
 
     # --- BOTÓN DE SOPORTE WHATSAPP EN EL MENÚ LATERAL ---
