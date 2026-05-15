@@ -82,27 +82,29 @@ if "usuario_actual" not in st.session_state:
 
 if st.session_state["usuario_actual"] is None:
     
-# --- LOGO DE PORTADA INTELIGENTE (Paso 1) ---
+# --- LOGO DE PORTADA (logo_tanque) ---
     col1, col_logo, col3 = st.columns([1, 1, 1]) 
     with col_logo:
-        # Buscamos el logo verde con todos sus posibles nombres
-        nombres_fotos = ["logo.png", "logo(1).png", "logo.png.png", "logo_tanque.png"]
-        foto_encontrada = None
+        import os
+        directorio_script = os.path.dirname(os.path.abspath(__file__))
         
-        for nombre in nombres_fotos:
-            ruta_test = os.path.join(os.path.dirname(os.path.abspath(__file__)), nombre)
+        # Buscamos específicamente el logo de portada que me indicaste
+        nombres_portada = ["logo_tanque.png", "logo_tanque(1).png", "logo_tanque"]
+        foto_portada = None
+        
+        for nombre in nombres_portada:
+            ruta_test = os.path.join(directorio_script, nombre)
             if os.path.exists(ruta_test):
-                foto_encontrada = ruta_test
+                foto_portada = ruta_test
                 break
         
-        if foto_encontrada:
+        if foto_portada:
             try:
-                st.image(foto_encontrada, use_container_width=True)
+                st.image(foto_portada, use_container_width=True)
             except Exception:
                 pass
         else:
-            # Esto te avisará si el archivo falta en GitHub
-            st.error("⚠️ Logo de portada no encontrado")
+            st.error(f"⚠️ No se encontró '{nombres_portada[0]}' en la carpeta del servidor")
         
     st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🏆 Portal Elite Fitness</h2>", unsafe_allow_html=True)
     st.markdown("<h5 style='text-align: center; color: #888888; font-style: italic; margin-top: 0px;'>🚫 No apto para escarbadientes🚫</h5>", unsafe_allow_html=True)
@@ -181,29 +183,28 @@ if st.session_state["usuario_actual"] is None:
 st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
 import os
-# GPS Vital: Esto hace que la línea 207 y los logos funcionen en la nube
+# GPS Vital: Esto define la ruta para los logos y para la base de datos (Línea 207)
 directorio_script = os.path.dirname(os.path.abspath(__file__))
 
 with st.sidebar:
     st.header("🏢 Branding")
-    # Buscador Inteligente para el Logo del Sidebar
-    nombres_fotos = ["logo.png", "logo(1).png", "logo.png.png", "logo_tanque.png"]
-    foto_sidebar = None
+    # Buscador para el logo del menú (el verde)
+    nombres_sidebar = ["logo.png", "logo(1).png", "logo.png.png"]
+    foto_side = None
     
-    for nombre in nombres_fotos:
-        ruta_test = os.path.join(directorio_script, nombre)
-        if os.path.exists(ruta_test):
-            foto_sidebar = ruta_test
+    for n in nombres_sidebar:
+        ruta_s = os.path.join(directorio_script, n)
+        if os.path.exists(ruta_s):
+            foto_side = ruta_s
             break
             
-    if foto_sidebar:
+    if foto_side:
         try:
-            st.image(foto_sidebar, use_container_width=True)
+            st.image(foto_side, use_container_width=True)
         except Exception:
             pass
     else:
-        # Esto te avisará si el archivo falta en GitHub
-        st.error("⚠️ Logo del menú no encontrado")
+        st.info("ℹ️ Logo del menú lateral no detectado")
         
     st.divider()
 
