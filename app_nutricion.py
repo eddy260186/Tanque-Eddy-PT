@@ -148,33 +148,52 @@ if st.session_state["usuario_actual"] is None:
         else:
             st.error(f"❌ Logo no encontrado: {ruta_logo}")
 
-    # ===== TITULO =====
+    # ===== TITULO PREMIUM ALINEADO =====
 
-    st.markdown("""
-    <div class='hero-title'>
-        🏆 Portal Elite Fitness
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div style='
+text-align:center;
+color:#d4af37;
+font-size:64px;
+font-weight:800;
+margin-top:-45px;
+margin-bottom:0px;
+letter-spacing:1px;
+position:relative;
+left:-8px;
+'>
+🏆 Portal Elite Fitness
+</div>
+""", unsafe_allow_html=True)
 
-    # ===== SUBTITULO =====
+# ===== SUBTITULO PREMIUM =====
 
-    st.markdown("""
-    <div class='hero-sub'>
-        🚫 No apto para escarbadientes 🚫
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div style='
+text-align:center;
+color:#8c8c8c;
+font-size:20px;
+font-style:italic;
+margin-top:8px;
+margin-bottom:30px;
+position:relative;
+left:-5px;
+'>
+🚫 No apto para escarbadientes 🚫
+</div>
+""", unsafe_allow_html=True)
 
     # ===== LINEA DORADA =====
 
-    st.markdown("""
+st.markdown("""
     <hr class='gold-line'>
     """, unsafe_allow_html=True)
         
   
     # --- EL RESTO VUELVE A LA NORMALIDAD (ANCHO COMPLETO COMO LO QUERÍAS) ---
-    tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
+tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
     
-    with tab_login:
+with tab_login:
         email_login = st.text_input("Correo electrónico", key="log_email")
         pass_login = st.text_input("Contraseña", type="password", key="log_pass")
         
@@ -189,7 +208,7 @@ if st.session_state["usuario_actual"] is None:
                 # ACÁ ESTÁ EL CAMBIO: Ahora el error nos dice la verdad
                 st.error(f"Error al iniciar sesión: {e}")
                 
-    with tab_registro:
+with tab_registro:
         st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
         
         nombre_reg = st.text_input("Nombre Completo", key="reg_nombre")
@@ -236,7 +255,7 @@ if st.session_state["usuario_actual"] is None:
         link_wa = f"https://wa.me/{numero_whatsapp}?text={mensaje}"
         
         st.markdown(f"<div style='text-align: center;'><a href='{link_wa}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 15px;'>💬 <b>¿Problemas para ingresar? Contactá al Soporte</b></a></div>", unsafe_allow_html=True)
-    st.stop() # Frena la app acá si no están logueados
+        st.stop() # Frena la app acá si no están logueados
 
 # ==========================================
 # SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
