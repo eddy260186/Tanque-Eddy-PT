@@ -82,89 +82,60 @@ if "usuario_actual" not in st.session_state:
 
 if st.session_state["usuario_actual"] is None:
     
-    # ==========================================
-    # HERO SECTION PREMIUM
-    # ==========================================
+# --- LOGO PREMIUM PORTADA ---
+import pathlib
 
-    import pathlib
+ROOT = pathlib.Path().resolve()
 
-    ROOT = pathlib.Path().resolve()
+ruta_logo = ROOT / "logo_tanque.png"
 
-    ruta_logo = ROOT / "logo_tanque.png"
+col1, col_logo, col3 = st.columns([2,3,2])
 
-    st.markdown("""
-    <style>
+with col_logo:
 
-    .hero-container{
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:center;
-        margin-top:10px;
-        margin-bottom:25px;
-    }
+    if ruta_logo.exists():
 
-    .hero-title{
+        st.image(
+            str(ruta_logo),
+            width=620
+        )
+
+        st.markdown("""
+        <h1 style='
         text-align:center;
-        font-size:42px;
-        font-weight:800;
         color:#d4af37;
-        margin-top:10px;
-        margin-bottom:5px;
-        letter-spacing:1px;
-    }
+        font-size:52px;
+        margin-top:-10px;
+        margin-bottom:0px;
+        font-weight:800;
+        '>
+        🏆 Portal Elite Fitness
+        </h1>
+        """, unsafe_allow_html=True)
 
-    .hero-sub{
+        st.markdown("""
+        <p style='
         text-align:center;
-        color:#8e8e8e;
-        font-size:17px;
+        color:#8c8c8c;
+        font-size:18px;
         font-style:italic;
+        margin-top:0px;
         margin-bottom:25px;
-    }
+        '>
+        🚫 No apto para escarbadientes 🚫
+        </p>
+        """, unsafe_allow_html=True)
 
-    .gold-line{
-        height:1px;
-        width:100%;
-        background:linear-gradient(
-            to right,
-            transparent,
-            rgba(212,175,55,0.8),
-            transparent
-        );
-        margin-top:10px;
-        margin-bottom:20px;
-    }
+        st.markdown("""
+        <hr style='
+        border:1px solid rgba(212,175,55,0.35);
+        margin-top:15px;
+        margin-bottom:25px;
+        '>
+        """, unsafe_allow_html=True)
 
-    </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<div class="hero-container">', unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns([1,2,1])
-
-    with col2:
-
-        if ruta_logo.exists():
-
-            st.image(
-                str(ruta_logo),
-                width=430
-            )
-
-        else:
-            st.error(f"❌ Logo no encontrado: {ruta_logo}")
-
-    st.markdown("""
-        <div class="hero-title">
-            🏆 Portal Elite Fitness
-        </div>
-
-        <div class="hero-sub">
-            🚫 No apto para escarbadientes 🚫
-        </div>
-
-        <div class="gold-line"></div>
-    """, unsafe_allow_html=True)
+    else:
+        st.error(f"❌ Logo no encontrado: {ruta_logo}")
         
     st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>🏆 Portal Elite Fitness</h2>", unsafe_allow_html=True)
     st.markdown("<h5 style='text-align: center; color: #888888; font-style: italic; margin-top: 0px;'>🚫 No apto para escarbadientes🚫</h5>", unsafe_allow_html=True)
