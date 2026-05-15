@@ -86,8 +86,11 @@ if st.session_state["usuario_actual"] is None:
     col1, col_logo, col3 = st.columns([1, 1, 1]) 
     with col_logo:
         try:
-            # Llamamos al LOGO VERDE directamente
-            st.image("logo.png", use_container_width=True)
+            import os
+            # Buscamos la carpeta exacta donde está corriendo el programa
+            ruta_carpeta = os.path.dirname(os.path.abspath(__file__))
+            ruta_verde = os.path.join(ruta_carpeta, "logo.png")
+            st.image(ruta_verde, use_container_width=True)
         except Exception:
             pass
         
@@ -168,22 +171,17 @@ if st.session_state["usuario_actual"] is None:
 st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
 import os
+# Este es el GPS que usa toda la app para no perderse
 directorio_script = os.path.dirname(os.path.abspath(__file__))
-
-rutas_logo = [
-    os.path.join(directorio_script, "logo.png"),       
-    os.path.join(directorio_script, "logo.png.png"),   
-    os.path.join(directorio_script, "logo")
-]
-ruta_logo_final = next((r for r in rutas_logo if os.path.exists(r)), None)
 
 with st.sidebar:
     st.header("🏢 Branding")
-    if ruta_logo_final:
-        try:
-            st.image(ruta_logo_final, use_container_width=True)
-        except Exception:
-            pass
+    try:
+        # Apuntamos directo al logo verde usando el GPS
+        ruta_sidebar = os.path.join(directorio_script, "logo.png")
+        st.image(ruta_sidebar, use_container_width=True)
+    except Exception:
+        pass
     st.divider()
 
     # --- BOTÓN DE SOPORTE WHATSAPP EN EL MENÚ LATERAL ---
