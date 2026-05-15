@@ -83,7 +83,7 @@ if "usuario_actual" not in st.session_state:
 if st.session_state["usuario_actual"] is None:
     
 # --- LOGO PREMIUM PORTADA ---
-import pathlib
+    import pathlib
 
 ROOT = pathlib.Path().resolve()
 
