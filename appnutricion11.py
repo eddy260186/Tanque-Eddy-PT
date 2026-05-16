@@ -78,18 +78,13 @@ def descontar_credito(email_usuario, creditos_actuales):
 if "usuario_actual" not in st.session_state:
     st.session_state["usuario_actual"] = None
 
-# ==========================================
-# CONTROL LOGIN
-# ==========================================
-
-if "usuario_actual" not in st.session_state:
-    st.session_state["usuario_actual"] = None
-
-# ==========================================
-# PANTALLA LOGIN
-# ==========================================
+# Si NO hay nadie logueado, mostramos solo la pantalla de entrada
 
 if st.session_state["usuario_actual"] is None:
+    
+    # ==========================================
+    # HERO SECTION PREMIUM CENTRADA
+    # ==========================================
 
     import pathlib
 
@@ -97,20 +92,16 @@ if st.session_state["usuario_actual"] is None:
 
     ruta_logo = ROOT / "logo_tanque.png"
 
-    # ==========================================
-    # ESTILOS
-    # ==========================================
-
     st.markdown("""
     <style>
 
     .hero-title{
         text-align:center;
         color:#d4af37;
-        font-size:64px;
-        font-weight:800;
-        margin-top:-45px;
+        font-size:58px;
+        margin-top:-10px;
         margin-bottom:0px;
+        font-weight:800;
         letter-spacing:1px;
     }
 
@@ -119,7 +110,7 @@ if st.session_state["usuario_actual"] is None:
         color:#8c8c8c;
         font-size:20px;
         font-style:italic;
-        margin-top:10px;
+        margin-top:5px;
         margin-bottom:30px;
     }
 
@@ -129,23 +120,10 @@ if st.session_state["usuario_actual"] is None:
         margin-bottom:30px;
     }
 
-    div[data-baseweb="input"]{
-        border-radius:14px !important;
-    }
-
-    .stButton>button{
-        border-radius:14px;
-        font-weight:700;
-        height:52px;
-        font-size:18px;
-    }
-
     </style>
     """, unsafe_allow_html=True)
 
-    # ==========================================
-    # LOGO CENTRADO
-    # ==========================================
+    # ===== LOGO CENTRADO REAL =====
 
     col1, col2, col3 = st.columns([1,2,1])
 
@@ -155,151 +133,129 @@ if st.session_state["usuario_actual"] is None:
 
             st.markdown(
                 """
-                <div style='
-                display:flex;
-                justify-content:center;
-                position:relative;
-                left:45px;
-                '>
+                <div style='display:flex; justify-content:center;'>
                 """,
                 unsafe_allow_html=True
             )
 
             st.image(
                 str(ruta_logo),
-                width=760
+                width=720
             )
 
             st.markdown("</div>", unsafe_allow_html=True)
 
         else:
-            st.error(f"Logo no encontrado: {ruta_logo}")
+            st.error(f"❌ Logo no encontrado: {ruta_logo}")
 
-    # ==========================================
-    # TITULO
-    # ==========================================
+    # ===== TITULO PREMIUM ALINEADO =====
 
-    st.markdown("""
-    <div class='hero-title'>
-    🏆 Portal Elite Fitness
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div style='
+text-align:center;
+color:#d4af37;
+font-size:64px;
+font-weight:800;
+margin-top:-45px;
+margin-bottom:0px;
+letter-spacing:1px;
+position:relative;
+left:-8px;
+'>
+🏆 Portal Elite Fitness
+</div>
+""", unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class='hero-sub'>
-    🚫 No apto para escarbadientes 🚫
-    </div>
-    """, unsafe_allow_html=True)
+# ===== SUBTITULO PREMIUM =====
 
-    st.markdown("""
+st.markdown("""
+<div style='
+text-align:center;
+color:#8c8c8c;
+font-size:20px;
+font-style:italic;
+margin-top:8px;
+margin-bottom:30px;
+position:relative;
+left:-5px;
+'>
+🚫 No apto para escarbadientes 🚫
+</div>
+""", unsafe_allow_html=True)
+
+    # ===== LINEA DORADA =====
+
+st.markdown("""
     <hr class='gold-line'>
     """, unsafe_allow_html=True)
-
-    # ==========================================
-    # TABS
-    # ==========================================
-
-    tab_login, tab_registro = st.tabs([
-        "Iniciar Sesión",
-        "Crear Cuenta Nueva"
-    ])
-
-    # ==========================================
-    # LOGIN
-    # ==========================================
-
-    with tab_login:
-
-        email_login = st.text_input(
-            "Correo electrónico",
-            key="log_email"
-        )
-
-        pass_login = st.text_input(
-            "Contraseña",
-            type="password",
-            key="log_pass"
-        )
-
-        if st.button(
-            "ENTRAR",
-            type="primary",
-            use_container_width=True
-        ):
-
+        
+  
+    # --- EL RESTO VUELVE A LA NORMALIDAD (ANCHO COMPLETO COMO LO QUERÍAS) ---
+tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
+    
+with tab_login:
+        email_login = st.text_input("Correo electrónico", key="log_email")
+        pass_login = st.text_input("Contraseña", type="password", key="log_pass")
+        
+        # Botón ancho premium LOGIN
+        if st.button("Entrar", type="primary", use_container_width=True):
             try:
-
-                respuesta = supabase.auth.sign_in_with_password({
-                    "email": email_login.lower().strip(),
-                    "password": pass_login
-                })
-
+                respuesta = supabase.auth.sign_in_with_password({"email": email_login.lower().strip(), "password": pass_login})
                 st.session_state["usuario_actual"] = respuesta.user.email
-
-                st.success("Acceso concedido")
-
+                st.success("¡Acceso concedido! Cargando tu panel...")
                 st.rerun()
-
             except Exception as e:
+                # ACÁ ESTÁ EL CAMBIO: Ahora el error nos dice la verdad
+                st.error(f"Error al iniciar sesión: {e}")
+                
+with tab_registro:
+        st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
+        
+        nombre_reg = st.text_input("Nombre Completo", key="reg_nombre")
+        email_reg = st.text_input("Correo electrónico", key="reg_email")
+        pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
+        
+        # Selector de Género para evitar el error de "masculino" por defecto
+        genero_opcion = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero")
+        genero_db = "m" if genero_opcion == "Masculino" else "f"
+        
+        from datetime import date
+        fecha_nac_reg = st.date_input("Fecha de Nacimiento:", min_value=date(1940, 1, 1), max_value=date.today(), key="reg_fecha")
+        
+        if st.button("Registrarme", type="primary", use_container_width=True):
+            if not nombre_reg.strip():
+                st.warning("⚠️ Por favor, ingresa tu nombre completo.")
+            else:
+                try:
+                    # Limpieza total para evitar errores de teclado en iPhone/Android
+                    email_final = email_reg.lower().strip()
+                    respuesta = supabase.auth.sign_up({"email": email_final, "password": pass_reg})
+                    
+                    try:
+                        supabase.table("perfiles_atletas").insert({
+                            "email": email_final,
+                            "nombre_completo": nombre_reg.strip(),
+                            "pais": "Argentina", 
+                            "genero": genero_db,
+                            "fecha_nacimiento": str(fecha_nac_reg)
+                        }).execute()
+                        st.success("✅ ¡Cuenta creada con éxito! Ya puedes iniciar sesión.")
+                    except Exception as db_error:
+                        st.warning(f"Error al guardar perfil: {db_error}")
+                except Exception as auth_error:
+                    st.error(f"Error de registro: {auth_error}")
 
-                st.error(f"Error login: {e}")
+# --- BOTÓN DE SOPORTE WHATSAPP ---
 
-    # ==========================================
-    # REGISTRO
-    # ==========================================
-
-    with tab_registro:
-
-        nombre_reg = st.text_input(
-            "Nombre completo",
-            key="reg_nombre"
-        )
-
-        email_reg = st.text_input(
-            "Correo electrónico",
-            key="reg_email"
-        )
-
-        pass_reg = st.text_input(
-            "Contraseña",
-            type="password",
-            key="reg_pass"
-        )
-
-        genero = st.selectbox(
-            "Género",
-            ["Masculino", "Femenino"],
-            key="reg_genero"
-        )
-
-        if st.button(
-            "CREAR CUENTA",
-            type="primary",
-            use_container_width=True
-        ):
-
-            try:
-
-                email_final = email_reg.lower().strip()
-
-                respuesta = supabase.auth.sign_up({
-                    "email": email_final,
-                    "password": pass_reg
-                })
-
-                supabase.table("perfiles_atletas").insert({
-                    "email": email_final,
-                    "nombre_completo": nombre_reg,
-                    "genero": genero
-                }).execute()
-
-                st.success("Cuenta creada correctamente")
-
-            except Exception as e:
-
-                st.error(f"Error registro: {e}")
-
-    st.stop()
+        st.markdown("<br>", unsafe_allow_html=True) 
+        
+        # ACÁ PONÉS TU NÚMERO (ej: 54911... o 549237... si es de tu zona)
+        numero_whatsapp = "5491164788719" 
+        mensaje = "Hola%20Soporte.%20Necesito%20ayuda%20con%20el%20Portal%20Elite."
+        link_wa = f"https://wa.me/{numero_whatsapp}?text={mensaje}"
+        
+        st.markdown(f"<div style='text-align: center;'><a href='{link_wa}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 15px;'>💬 <b>¿Problemas para ingresar? Contactá al Soporte</b></a></div>", unsafe_allow_html=True)
+        st.stop() # Frena la app acá si no están logueados
 
 # ==========================================
 # SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
