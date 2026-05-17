@@ -363,14 +363,41 @@ with st.sidebar:
     num_opciones = st.slider("¿Cuántas opciones de menú por comida?", min_value=1, max_value=10, value=5)
 
 # ==========================================
-# 4. SALUD Y BIOMETRÍA ELITE
+# 4. TABLERO DE CONTROL: MAPA CORPORAL DE ÉLITE
 # ==========================================
 st.subheader("📏 Salud y Biometría Elite")
-col_c1, col_c2 = st.columns(2)
-with col_c1: 
-    cintura = st.number_input("Perímetro de Cintura (cm):", value=85.0)
-with col_c2: 
-    cadera = st.number_input("Perímetro de Cadera (cm):", value=95.0)
+
+# --- FILA 1: BIOMETRÍA BASE CIENTÍFICA ---
+st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🔑 Base Científica (Grasa y Salud)</p>", unsafe_allow_html=True)
+col_b1, col_b2 = st.columns(2)
+with col_b1:
+    cintura = st.number_input("Perímetro de Cinta / Cintura (cm):", value=85.0, key="medida_cintura")
+with col_b2:
+    cadera = st.number_input("Perímetro de Cadera (cm):", value=95.0, key="medida_cadera")
+
+st.divider()
+
+# --- FILA 2: TREN SUPERIOR PREMIUM ---
+st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🦅 Tren Superior Premium</p>", unsafe_allow_html=True)
+col_sup1, col_sup2, col_sup3 = st.columns(3)
+with col_sup1:
+    cuello = st.number_input("Perímetro de Cuello (cm):", value=38.0, key="medida_cuello")
+with col_sup2:
+    torso = st.number_input("Pectoral / Torso (cm):", value=100.0, key="medida_torso")
+with col_sup3:
+    brazos = st.number_input("Brazos (Promedio cm):", value=35.0, key="medida_brazos")
+
+st.divider()
+
+# --- FILA 3: TREN INFERIOR Y ESCULTURA ESTÉTICA ---
+st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🍑 Tren Inferior y Escultura Estética</p>", unsafe_allow_html=True)
+col_inf1, col_inf2, col_inf3 = st.columns(3)
+with col_inf1:
+    gluteos = st.number_input("Perímetro de Glúteos (cm):", value=98.0, key="medida_gluteos")
+with col_inf2:
+    piernas = st.number_input("Muslos / Piernas (cm):", value=55.0, key="medida_piernas")
+with col_inf3:
+    pantorrillas = st.number_input("Pantorrillas (cm):", value=38.0, key="medida_pantorrillas")
 
 rcc_valor = round(cintura / cadera, 2) if cadera > 0 else 0
 rfm, masa_magra, tmb = calcular_biometria(genero, estatura, cintura, peso_actual)
