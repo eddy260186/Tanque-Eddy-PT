@@ -445,13 +445,15 @@ with st.sidebar:
     valores = [p_g_total, c_g_total, g_g_total]
     colores_vip = ['#00d1ff', '#00ff88', '#ffd700'] # Azul, Verde, Dorado
 
+    # === REEMPLAZAR SOLO EL BLOQUE DE LA FIGURA ===
     fig = go.Figure(data=[go.Pie(
         labels=labels, 
         values=valores, 
         hole=.6, 
         marker=dict(colors=colores_vip, line=dict(color='#000000', width=2)),
-        textinfo='percent+label',
-        hoverinfo='label+value+percent'
+        texttemplate="<b>%{value} g</b><br>%{label}", # 💎 LA MAGIA: Obliga a mostrar los gramos reales
+        textposition="outside", # Saca los textos un poquito para afuera para que se lea perfecto
+        hoverinfo='label+percent'
     )])
 
     fig.update_layout(
