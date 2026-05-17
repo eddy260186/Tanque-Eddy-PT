@@ -86,7 +86,7 @@ if st.session_state["usuario_actual"] is None:
     import os
 
 # ==========================================
-    # ESTILOS CSS VIP DORADOS Y RESPONSIVOS
+    # ESTILOS CSS VIP DORADOS Y RESPONSIVOS (EDICIÓN PIXEL PERFECT)
     # ==========================================
     st.markdown("""
     <style>
@@ -128,11 +128,21 @@ if st.session_state["usuario_actual"] is None:
             display: none !important;
         }
         
-        /* 2. TRACCIÓN VIP: Ajuste de -40px para que respire por debajo de las coronas */
+        /* 2. FOTO DE BORDE A BORDE: Eliminamos los márgenes laterales de Streamlit */
+        .block-container {
+            padding-left: 0rem !important;
+            padding-right: 0rem !important;
+            padding-top: 1rem !important;
+            max-width: 100% !important;
+        }
+        
+        /* 3. TRACCIÓN VIP (PUNTO DULCE): Subimos -65px exactos para no amontonar */
         div[data-testid="stTabs"] {
-            margin-top: -40px !important; 
+            margin-top: -65px !important; 
             position: relative;
             z-index: 99; 
+            padding-left: 1.5rem !important; /* Devolvemos un pequeño margen para que el texto no toque el borde del teléfono */
+            padding-right: 1.5rem !important;
         }
     }
     </style>
