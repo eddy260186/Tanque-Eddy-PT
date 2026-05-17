@@ -435,6 +435,37 @@ else:
 agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
 
 # ==========================================
+# GRÁFICO DE MACROS ELITE (BARRA LATERAL)
+# ==========================================
+with st.sidebar:
+    st.markdown("<p style='text-align: center; color: #d4af37; font-weight: bold; font-size: 18px; margin-top: 10px; margin-bottom: -10px;'>📊 Distribución de Macros</p>", unsafe_allow_html=True)
+    
+    # Usamos tus variables reales que se acaban de calcular arriba
+    labels = ['Proteínas', 'Carbohidratos', 'Grasas']
+    valores = [p_g_total, c_g_total, g_g_total]
+    colores_vip = ['#00d1ff', '#00ff88', '#ffd700'] # Azul, Verde, Dorado
+
+    fig = go.Figure(data=[go.Pie(
+        labels=labels, 
+        values=valores, 
+        hole=.6, 
+        marker=dict(colors=colores_vip, line=dict(color='#000000', width=2)),
+        textinfo='percent+label',
+        hoverinfo='label+value+percent'
+    )])
+
+    fig.update_layout(
+        showlegend=False,
+        margin=dict(t=30, b=10, l=0, r=0),
+        height=250,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        annotations=[dict(text='MACROS', x=0.5, y=0.5, font_size=14, showarrow=False, font_color='#d4af37')]
+    )
+
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+# ==========================================
 # 5. CRM Y GRÁFICO INTERACTIVO
 # ==========================================
 accent_color = "#FFB6C1" if genero == "f" else "#d4af37"
