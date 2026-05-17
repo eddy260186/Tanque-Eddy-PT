@@ -127,10 +127,10 @@ if st.session_state["usuario_actual"] is None:
     """, unsafe_allow_html=True)
 
 # ==========================================
-    # LOGO DE PORTADA (MÁS CHICO Y CENTRADO DE ÉLITE)
+    # LOGO DE PORTADA (TAMAÑO PERFECTO EQUILIBRADO)
     # ==========================================
-    # Cambiamos a [2, 1, 2] para achicar la columna central de forma responsiva
-    col1, col_logo, col3 = st.columns([2, 1, 2])
+    # Columnas 1-1-1: El logo ocupa el 33% del centro. Ni gigante, ni diminuto.
+    col1, col_logo, col3 = st.columns([1, 1, 1])
     with col_logo:
         import os
         ruta_absoluta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_tanque.png")
