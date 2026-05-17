@@ -86,7 +86,7 @@ if st.session_state["usuario_actual"] is None:
     import os
 
     # ==========================================
-    # ESTILOS CSS VIP DORADOS
+    # ESTILOS CSS VIP DORADOS Y RESPONSIVOS
     # ==========================================
     st.markdown("""
     <style>
@@ -115,6 +115,23 @@ if st.session_state["usuario_actual"] is None:
         transform: scale(1.02);
         box-shadow: 0 0 15px rgba(212,175,55,0.6);
     }
+    
+    /* 💎 MAGIA RESPONSIVA: EL ESPACIADOR INTELIGENTE 💎 */
+    .espaciador-vip {
+        height: 120px; /* En PC lo empuja para abajo para centrarlo con la foto */
+    }
+    
+    @media (max-width: 768px) {
+        /* Si la pantalla es chica (Celular), el espaciador desaparece */
+        .espaciador-vip {
+            height: 0px !important;
+            display: none !important;
+        }
+        /* Subimos un poquito las pestañas para que no queden tan separadas de la foto */
+        .stTabs {
+            margin-top: -15px !important;
+        }
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -141,8 +158,8 @@ if st.session_state["usuario_actual"] is None:
 
     with col_der:
         # --- CAJA DE LOGIN VIP ---
-        # Bajamos la caja un poco para que quede centrada a la misma altura que la imagen
-        st.markdown("<br><br><br><br>", unsafe_allow_html=True) 
+        # Usamos el espaciador que se apaga en celulares en lugar de los <br>
+        st.markdown("<div class='espaciador-vip'></div>", unsafe_allow_html=True) 
         
         tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
 
