@@ -86,8 +86,8 @@ if st.session_state["usuario_actual"] is None:
     import os
 
 # ==========================================
-    # ESTILOS CSS VIP DORADOS Y RESPONSIVOS (EDICIÓN PIXEL PERFECT)
-    # ==========================================
+# ESTILOS CSS VIP DORADOS Y RESPONSIVOS (EDICIÓN PIXEL PERFECT)
+# ==========================================
     st.markdown("""
     <style>
     /* Estilizamos las cajas de texto con bordes dorados cuando se seleccionan */
@@ -170,8 +170,10 @@ if st.session_state["usuario_actual"] is None:
             st.error("❌ La súper imagen no se encontró en el servidor de GitHub.")
 
     with col_der:
+
         # --- CAJA DE LOGIN VIP ---
         # Usamos el espaciador que se apaga en celulares en lugar de los <br>
+
         st.markdown("<div class='espaciador-vip'></div>", unsafe_allow_html=True) 
         
         tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
@@ -224,17 +226,55 @@ if st.session_state["usuario_actual"] is None:
 
     st.stop()
 # ==========================================
-# INTERIOR DE LA APP (USUARIO LOGUEADO)
+# SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
 # ==========================================
 st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
 import os
-directorio_script = os.path.dirname(os.path.abspath(__file__))
+from datetime import date, datetime
 
+directorio_script = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
+
+# ==========================================
+# 3. OBTENER DATOS DEL ATLETA DESDE SUPABASE (SE MUEVE ARRIBA)
+# ==========================================
+email_usuario = st.session_state.get("usuario_actual", "")
+email_limpio = email_usuario.lower().strip() if email_usuario else ""
+
+res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_limpio).execute()
+
+if len(res_perfil.data) > 0:
+    perfil_db = res_perfil.data[0]
+    nombre_default = perfil_db.get("nombre_completo", "")
+    pais_default = perfil_db.get("pais", "Argentina")
+    genero_db = perfil_db.get("genero")
+    genero_idx = 0 if (genero_db and genero_db.strip() == "m") else 1
+    fecha_str = perfil_db.get("fecha_nacimiento")
+    if fecha_str:
+        fecha_nac_atleta = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+    else:
+        fecha_nac_atleta = date(1990, 1, 1)
+else:
+    nombre_default = email_limpio.split("@")[0].capitalize() # Plan B si no hay nombre
+    pais_default = "Argentina"
+    genero_idx = 0
+    fecha_nac_atleta = date(1990, 1, 1)
+
+# --- VARIABLES INVISIBLES EN EL BACKEND (Reemplazan a los inputs visuales) ---
+nombre = nombre_default
+pais = pais_default
+genero = "m" if genero_idx == 0 else "f"
+hoy = date.today()
+edad = hoy.year - fecha_nac_atleta.year - ((hoy.month, hoy.day) < (fecha_nac_atleta.month, fecha_nac_atleta.day))
+
+# ==========================================
+# CONSTRUCCIÓN DEL MENÚ LATERAL (SIDEBAR VIP)
+# ==========================================
 with st.sidebar:
     st.header("🏢 Branding")
     
-# Buscador automático optimizado para el Logo Verde del interior
+    # Buscador automático para el Logo Verde del interior
     nombres_sidebar = ["logo.png", "logo(1).png", "logo.png.png"]
     foto_side = None
     
@@ -246,91 +286,51 @@ with st.sidebar:
             
     if foto_side:
         try:
-            # LA CORRECCIÓN DE ÉLITE: use_column_width
             st.image(str(foto_side), use_column_width=True)
         except Exception:
             pass
-    else:
-        st.info("ℹ️ Logo del menú lateral no detectado")
-        
+            
     st.divider()
 
+    # --- BOTÓN DE SOPORTE WHATSAPP ---
     st.markdown("<p style='text-align: center; color: #d4af37; font-weight: bold; font-size: 14px; margin-bottom: 0px; letter-spacing: 1px;'>¿Dudas con tu plan?</p>", unsafe_allow_html=True)
     num_wa_interno = "5491164788719"
     msg_interno = "Hola%20Eddy.%20Tengo%20una%20consulta%20desde%20mi%20panel."
     link_wa_int = f"https://wa.me/{num_wa_interno}?text={msg_interno}"
-
     st.markdown(f"<div style='text-align: center;'><a href='{link_wa_int}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 16px;'>💬 <b>Contactar Soporte</b></a></div>", unsafe_allow_html=True)
     st.divider()
 
+    # --- CAJA VIP DE USUARIO CONECTADO (AHORA MUESTRA EL NOMBRE) ---
+    nombre_mostrar = nombre if nombre else "Atleta Elite"
     st.markdown(
         f"""
         <div style="background-color: #151a26; border: 1px solid #d4af37; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
             <span style="color: #d4af37; font-weight: bold; font-size: 16px;">👤 Conectado</span><br>
-            <span style="color: #ffffff; font-size: 14px; font-family: monospace;">{st.session_state['usuario_actual']}</span>
+            <span style="color: #ffffff; font-size: 15px; font-family: Arial, sans-serif; font-weight: bold; text-transform: capitalize;">{nombre_mostrar}</span>
         </div>
         """,
         unsafe_allow_html=True
     )
-    if st.button("Cerrar Sesión"):
+    
+    if st.button("Cerrar Sesión", use_container_width=True):
         supabase.auth.sign_out()
         st.session_state["usuario_actual"] = None
         st.rerun()
+        
     st.divider()
 
-DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
-from datetime import date, datetime
-
-# ==========================================
-# 3. PERFIL DEL ATLETA
-# ==========================================
-email_usuario = st.session_state.get("usuario_actual", "")
-email_limpio = email_usuario.lower().strip() if email_usuario else ""
-
-res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_limpio).execute()
-
-if len(res_perfil.data) > 0:
-    perfil_db = res_perfil.data[0]
-    nombre_default = perfil_db.get("nombre_completo", "")
-    pais_default = perfil_db.get("pais", "Argentina")
+    # ==========================================
+    # FORMULARIO REDUCIDO (SOLO LO DINÁMICO)
+    # ==========================================
+    st.header("📏 Medidas Actuales")
     
-    genero_db = perfil_db.get("genero")
-    genero_idx = 0 if (genero_db and genero_db.strip() == "m") else 1
-    
-    fecha_str = perfil_db.get("fecha_nacimiento")
-    if fecha_str:
-        fecha_nac_atleta = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-    else:
-        fecha_nac_atleta = date(1990, 1, 1)
-        
-    es_nuevo = False if nombre_default else True
-else:
-    nombre_default = ""
-    pais_default = "Argentina"
-    genero_idx = 0
-    fecha_nac_atleta = date(1990, 1, 1)
-    es_nuevo = True
-
-with st.sidebar:
-    st.header("👤 Perfil del Atleta")
-    if not es_nuevo:
-        st.success(f"👋 Hola de nuevo, {nombre_default}")
-        
-    nombre = st.text_input("Nombre Completo:", value=nombre_default, disabled=not es_nuevo)
-    pais = st.text_input("País de Residencia:", value=pais_default, disabled=not es_nuevo)
-    genero_seleccion = st.selectbox("Género:", ["m ", "f "], index=genero_idx, disabled=not es_nuevo)
-    genero = genero_seleccion.strip()
-    
-    hoy = date.today()
-    edad = hoy.year - fecha_nac_atleta.year - ((hoy.month, hoy.day) < (fecha_nac_atleta.month, fecha_nac_atleta.day))
-    st.info(f"🎂 Edad registrada: {edad} años")
-    
+    # Solo mostramos el embarazo si el perfil en la base de datos es femenino ("f")
     embarazada_bool = False
     if genero == "f": 
         embarazada_bool = st.checkbox("¿Está embarazada?")
         meses_gestacion = st.slider("Meses de gestación:", min_value=1, max_value=9, value=3, disabled=not embarazada_bool)
-    
-    st.divider()
+        st.divider()
+        
     estatura = st.number_input("Estatura (cm):", min_value=100, value=170)
     peso_actual = st.number_input("Peso actual (kg):", min_value=30.0, value=75.0)
 
