@@ -441,18 +441,20 @@ with st.sidebar:
     st.markdown("<p style='text-align: center; color: #d4af37; font-weight: bold; font-size: 18px; margin-top: 10px; margin-bottom: -10px;'>📊 Distribución de Macros</p>", unsafe_allow_html=True)
     
     # Usamos tus variables reales que se acaban de calcular arriba
+# Usamos tus variables y las redondeamos a enteros exactos (Ej: 135, 231)
     labels = ['Proteínas', 'Carbohidratos', 'Grasas']
-    valores = [p_g_total, c_g_total, g_g_total]
+    valores = [int(round(p_g_total)), int(round(c_g_total)), int(round(g_g_total))]
     colores_vip = ['#00d1ff', '#00ff88', '#ffd700'] # Azul, Verde, Dorado
 
-    # === REEMPLAZAR SOLO EL BLOQUE DE LA FIGURA ===
     fig = go.Figure(data=[go.Pie(
         labels=labels, 
         values=valores, 
         hole=.6, 
         marker=dict(colors=colores_vip, line=dict(color='#000000', width=2)),
-        texttemplate="<b>%{value} g</b><br>%{label}", # 💎 LA MAGIA: Obliga a mostrar los gramos reales
-        textposition="outside", # Saca los textos un poquito para afuera para que se lea perfecto
+        texttemplate="<b>%{value} g</b><br>%{label}", 
+        textposition="inside", # 💎 LA MAGIA: Textos adentro de los colores
+        textfont=dict(color="black", size=12, family="Arial"), # Letra negra y clara
+        insidetextorientation="horizontal", # Mantiene el texto derecho, sin rotar
         hoverinfo='label+percent'
     )])
 
