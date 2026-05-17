@@ -127,16 +127,16 @@ if st.session_state["usuario_actual"] is None:
     """, unsafe_allow_html=True)
 
 # ==========================================
-    # LOGO DE PORTADA (VERDAD ABSOLUTA)
+    # LOGO DE PORTADA (MÁS CHICO Y CENTRADO DE ÉLITE)
     # ==========================================
-    col1, col_logo, col3 = st.columns([1, 2, 1])
+    # Cambiamos a [2, 1, 2] para achicar la columna central de forma responsiva
+    col1, col_logo, col3 = st.columns([2, 1, 2])
     with col_logo:
         import os
         ruta_absoluta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_tanque.png")
         
         if os.path.exists(ruta_absoluta):
             try:
-                # LA CORRECCIÓN DE ÉLITE: Para fotos se usa use_column_width
                 st.image(ruta_absoluta, use_column_width=True)
             except Exception as e:
                 st.error(f"❌ Error visual: {e}")
