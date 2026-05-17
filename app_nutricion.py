@@ -79,136 +79,108 @@ if "usuario_actual" not in st.session_state:
     st.session_state["usuario_actual"] = None
 
 # ==========================================
-# PANTALLA LOGIN (SI NO ESTÁ LOGUEADO)
+# PANTALLA LOGIN (DISEÑO VIP 1 MILLÓN DE DÓLARES)
 # ==========================================
 if st.session_state["usuario_actual"] is None:
 
-    import pathlib
-    ROOT = pathlib.Path().resolve()
-    ruta_logo = ROOT / "logo_tanque.png"
+    import os
 
     # ==========================================
-    # ESTILOS DEL FRONTEND
+    # ESTILOS CSS VIP DORADOS
     # ==========================================
     st.markdown("""
     <style>
-    .hero-title{
-        text-align:center;
-        color:#d4af37;
-        font-size:64px;
-        font-weight:800;
-        margin-top:-15px;
-        margin-bottom:0px;
-        letter-spacing:1px;
+    /* Estilizamos las cajas de texto con bordes dorados cuando se seleccionan */
+    div[data-baseweb="input"] > div {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333 !important;
+        border-radius: 8px !important;
     }
-    .hero-sub{
-        text-align:center;
-        color:#8c8c8c;
-        font-size:20px;
-        font-style:italic;
-        margin-top:10px;
-        margin-bottom:30px;
+    div[data-baseweb="input"] > div:focus-within {
+        border: 1px solid #d4af37 !important;
+        box-shadow: 0 0 5px rgba(212,175,55,0.5) !important;
     }
-    .gold-line{
-        border:1px solid rgba(212,175,55,0.35);
-        margin-top:20px;
-        margin-bottom:30px;
-    }
-    div[data-baseweb="input"]{
-        border-radius:14px !important;
-    }
+    /* Botón dorado VIP */
     .stButton>button{
-        border-radius:14px;
-        font-weight:700;
-        height:52px;
+        background: linear-gradient(90deg, #b8860b 0%, #ffd700 50%, #b8860b 100%);
+        color: black !important;
+        border: none;
+        border-radius:8px;
+        font-weight:800;
+        height:50px;
         font-size:18px;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 0 15px rgba(212,175,55,0.6);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# ==========================================
-    # LOGO DE PORTADA (TAMAÑO PERFECTO EQUILIBRADO)
     # ==========================================
-    # Columnas 1-1-1: El logo ocupa el 33% del centro. Ni gigante, ni diminuto.
-    col1, col_logo, col3 = st.columns([1, 1, 1])
-    with col_logo:
-        import os
-        ruta_absoluta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_tanque.png")
+    # ESTRUCTURA DE 2 COLUMNAS (MAGIA PURA)
+    # ==========================================
+    # La columna izquierda (1.4) es más ancha para lucir la súper imagen
+    # La columna derecha (1.0) aloja el login
+    col_izq, col_der = st.columns([1.4, 1.0], gap="large")
+
+    with col_izq:
+        # --- LA SÚPER IMAGEN CON TODO INCLUIDO ---
+        dir_actual = os.path.dirname(os.path.abspath(__file__))
         
-        if os.path.exists(ruta_absoluta):
-            try:
-                st.image(ruta_absoluta, use_column_width=True)
-            except Exception as e:
-                st.error(f"❌ Error visual: {e}")
+        # Cazador automático: busca la foto por más que esté en mayúsculas (LOGO_TANQUE.png)
+        archivos_tanque = [f for f in os.listdir(dir_actual) if "tanque" in f.lower() and f.lower().endswith(".png")]
+        
+        if archivos_tanque:
+            ruta_segura = os.path.join(dir_actual, archivos_tanque[0])
+            # La mostramos al 100% de la columna izquierda
+            st.image(ruta_segura, use_column_width=True)
         else:
-            st.error("❌ El archivo 'logo_tanque.png' no existe en el servidor.")
+            st.error("❌ La súper imagen no se encontró en el servidor de GitHub.")
 
-    # ==========================================
-    # TÍTULOS DE BIENVENIDA
-    # ==========================================
-    st.markdown("""
-    <div class='hero-title'>
-    🏆 Portal Elite Fitness
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class='hero-sub'>
-    🚫 No apto para escarbadientes 🚫
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <hr class='gold-line'>
-    """, unsafe_allow_html=True)
-
-    # ==========================================
-    # PESTAÑAS DE ACCESO
-    # ==========================================
-    tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
-
-    with tab_login:
-        email_login = st.text_input("Correo electrónico", key="log_email")
-        pass_login = st.text_input("Contraseña", type="password", key="log_pass")
+    with col_der:
+        # --- CAJA DE LOGIN VIP ---
+        # Bajamos la caja un poco para que quede centrada a la misma altura que la imagen
+        st.markdown("<br><br><br><br>", unsafe_allow_html=True) 
         
-        if st.button("ENTRAR", type="primary", use_container_width=True):
-            try:
-                respuesta = supabase.auth.sign_in_with_password({
-                    "email": email_login.lower().strip(),
-                    "password": pass_login
-                })
-                st.session_state["usuario_actual"] = respuesta.user.email
-                st.success("¡Acceso concedido! Cargando tu panel de Élite...")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error de acceso: {e}")
+        tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
 
-    with tab_registro:
-        nombre_reg = st.text_input("Nombre completo", key="reg_nombre")
-        email_reg = st.text_input("Correo electrónico", key="reg_email")
-        pass_reg = st.text_input("Contraseña", type="password", key="reg_pass")
-        
-        genero = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero")
-        
-        if st.button("CREAR CUENTA", type="primary", use_container_width=True):
-            try:
-                email_final = email_reg.lower().strip()
-                respuesta = supabase.auth.sign_up({
-                    "email": email_final,
-                    "password": pass_reg
-                })
-                
-                supabase.table("perfiles_atletas").insert({
-                    "email": email_final,
-                    "nombre_completo": nombre_reg,
-                    "genero": "m" if genero == "Masculino" else "f"
-                }).execute()
-                st.success("¡Cuenta creada correctamente! Ya podés iniciar sesión en la pestaña anterior.")
-            except Exception as e:
-                st.error(f"Error en el registro: {e}")
+        with tab_login:
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-bottom:5px;'>✉️ Correo electrónico</p>", unsafe_allow_html=True)
+            email_login = st.text_input("Correo", key="log_email", label_visibility="collapsed", placeholder="Ingresa tu correo electrónico")
+            
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>🔒 Contraseña</p>", unsafe_allow_html=True)
+            pass_login = st.text_input("Pass", type="password", key="log_pass", label_visibility="collapsed", placeholder="Ingresa tu contraseña")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("ENTRAR ➔", type="primary", use_container_width=True):
+                try:
+                    respuesta = supabase.auth.sign_in_with_password({"email": email_login.lower().strip(), "password": pass_login})
+                    st.session_state["usuario_actual"] = respuesta.user.email
+                    st.success("¡Acceso concedido!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error login: {e}")
+            
+            st.markdown("<br><p style='text-align:center; color:#888; font-style:italic;'>\"La excelencia no es un acto, es un hábito.<br>Tú eres tu único límite.\"</p>", unsafe_allow_html=True)
+
+        with tab_registro:
+            nombre_reg = st.text_input("Nombre completo", key="reg_nombre")
+            email_reg = st.text_input("Correo electrónico", key="reg_email")
+            pass_reg = st.text_input("Contraseña", type="password", key="reg_pass")
+            genero = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero")
+            
+            if st.button("CREAR CUENTA", type="primary", use_container_width=True):
+                try:
+                    email_final = email_reg.lower().strip()
+                    respuesta = supabase.auth.sign_up({"email": email_final, "password": pass_reg})
+                    supabase.table("perfiles_atletas").insert({"email": email_final, "nombre_completo": nombre_reg, "genero": "m" if genero == "Masculino" else "f"}).execute()
+                    st.success("Cuenta creada correctamente. Ya podés iniciar sesión.")
+                except Exception as e:
+                    st.error(f"Error registro: {e}")
 
     st.stop()
-
 # ==========================================
 # INTERIOR DE LA APP (USUARIO LOGUEADO)
 # ==========================================
