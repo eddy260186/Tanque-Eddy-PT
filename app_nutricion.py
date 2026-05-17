@@ -136,11 +136,10 @@ if st.session_state["usuario_actual"] is None:
         
         if os.path.exists(ruta_absoluta):
             try:
-                # Intentamos mostrar la imagen
-                st.image(ruta_absoluta, use_container_width=True)
+                # LA CORRECCIÓN DE ÉLITE: Para fotos se usa use_column_width
+                st.image(ruta_absoluta, use_column_width=True)
             except Exception as e:
-                # SI LA IMAGEN ESTÁ ROTA (COMO AHORA), TE LO VA A DECIR ACÁ EN ROJO
-                st.error(f"❌ El archivo existe, pero está CORRUPTO o DAÑADO: {e}")
+                st.error(f"❌ Error visual: {e}")
         else:
             st.error("❌ El archivo 'logo_tanque.png' no existe en el servidor.")
 
@@ -221,7 +220,7 @@ directorio_script = os.path.dirname(os.path.abspath(__file__))
 with st.sidebar:
     st.header("🏢 Branding")
     
-    # Buscador automático optimizado para el Logo Verde del interior
+# Buscador automático optimizado para el Logo Verde del interior
     nombres_sidebar = ["logo.png", "logo(1).png", "logo.png.png"]
     foto_side = None
     
@@ -233,7 +232,8 @@ with st.sidebar:
             
     if foto_side:
         try:
-            st.image(str(foto_side), use_container_width=True)
+            # LA CORRECCIÓN DE ÉLITE: use_column_width
+            st.image(str(foto_side), use_column_width=True)
         except Exception:
             pass
     else:
