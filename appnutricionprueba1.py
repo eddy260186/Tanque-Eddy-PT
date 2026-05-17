@@ -78,27 +78,25 @@ def descontar_credito(email_usuario, creditos_actuales):
 if "usuario_actual" not in st.session_state:
     st.session_state["usuario_actual"] = None
 
-# ==========================================
-# PANTALLA LOGIN (SI NO ESTÁ LOGUEADO)
-# ==========================================
+# Si NO hay nadie logueado, mostramos solo la pantalla de entrada
 if st.session_state["usuario_actual"] is None:
-
+    
+    # ==========================================
+    # HERO SECTION PREMIUM CENTRADA
+    # ==========================================
     import pathlib
     ROOT = pathlib.Path().resolve()
     ruta_logo = ROOT / "logo_tanque.png"
 
-    # ==========================================
-    # ESTILOS DEL FRONTEND
-    # ==========================================
     st.markdown("""
     <style>
     .hero-title{
         text-align:center;
         color:#d4af37;
-        font-size:64px;
-        font-weight:800;
-        margin-top:-15px;
+        font-size:58px;
+        margin-top:-10px;
         margin-bottom:0px;
+        font-weight:800;
         letter-spacing:1px;
     }
     .hero-sub{
@@ -106,7 +104,7 @@ if st.session_state["usuario_actual"] is None:
         color:#8c8c8c;
         font-size:20px;
         font-style:italic;
-        margin-top:10px;
+        margin-top:5px;
         margin-bottom:30px;
     }
     .gold-line{
@@ -114,102 +112,118 @@ if st.session_state["usuario_actual"] is None:
         margin-top:20px;
         margin-bottom:30px;
     }
-    div[data-baseweb="input"]{
-        border-radius:14px !important;
-    }
-    .stButton>button{
-        border-radius:14px;
-        font-weight:700;
-        height:52px;
-        font-size:18px;
-    }
     </style>
     """, unsafe_allow_html=True)
 
-    # ==========================================
-    # LOGO DE PORTADA CENTRADO Y RESPONSIVO DE ÉLITE
-    # ==========================================
-    col1, col_logo, col3 = st.columns([1, 2, 1])
-    with col_logo:
+    # ===== LOGO CENTRADO RESPONSIVO DE ÉLITE =====
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
         if ruta_logo.exists():
             try:
                 st.image(str(ruta_logo), use_container_width=True)
             except Exception:
                 pass
         else:
-            try:
-                st.image("logo_tanque.png", use_container_width=True)
-            except Exception:
-                st.error(f"⚠️ Logo no encontrado en el directorio: {ruta_logo}")
+            st.error(f"❌ Logo no encontrado: {ruta_logo}")
 
-    # ==========================================
-    # TÍTULOS DE BIENVENIDA
-    # ==========================================
+    # ===== TITULO PREMIUM ALINEADO =====
     st.markdown("""
-    <div class='hero-title'>
+    <div style='
+    text-align:center;
+    color:#d4af37;
+    font-size:64px;
+    font-weight:800;
+    margin-top:-15px;
+    margin-bottom:0px;
+    letter-spacing:1px;
+    position:relative;
+    left:-8px;
+    '>
     🏆 Portal Elite Fitness
     </div>
     """, unsafe_allow_html=True)
 
+    # ===== SUBTITULO PREMIUM =====
     st.markdown("""
-    <div class='hero-sub'>
+    <div style='
+    text-align:center;
+    color:#8c8c8c;
+    font-size:20px;
+    font-style:italic;
+    margin-top:8px;
+    margin-bottom:30px;
+    position:relative;
+    left:-5px;
+    '>
     🚫 No apto para escarbadientes 🚫
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <hr class='gold-line'>
-    """, unsafe_allow_html=True)
-
-    # ==========================================
-    # PESTAÑAS DE ACCESO
-    # ==========================================
+    # ===== LINEA DORADA =====
+    st.markdown("<hr class='gold-line'>", unsafe_allow_html=True)
+        
+    # --- FORMULARIO DE INGRESO ---
     tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
-
+    
     with tab_login:
         email_login = st.text_input("Correo electrónico", key="log_email")
         pass_login = st.text_input("Contraseña", type="password", key="log_pass")
         
-        if st.button("ENTRAR", type="primary", use_container_width=True):
+        if st.button("Entrar", type="primary", use_container_width=True):
             try:
-                respuesta = supabase.auth.sign_in_with_password({
-                    "email": email_login.lower().strip(),
-                    "password": pass_login
-                })
+                respuesta = supabase.auth.sign_in_with_password({"email": email_login.lower().strip(), "password": pass_login})
                 st.session_state["usuario_actual"] = respuesta.user.email
-                st.success("¡Acceso concedido! Cargando tu panel de Élite...")
+                st.success("¡Acceso concedido! Cargando tu panel...")
                 st.rerun()
             except Exception as e:
-                st.error(f"Error de acceso: {e}")
-
-    with tab_registro:
-        nombre_reg = st.text_input("Nombre completo", key="reg_nombre")
-        email_reg = st.text_input("Correo electrónico", key="reg_email")
-        pass_reg = st.text_input("Contraseña", type="password", key="reg_pass")
-        
-        genero = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero")
-        
-        if st.button("CREAR CUENTA", type="primary", use_container_width=True):
-            try:
-                email_final = email_reg.lower().strip()
-                respuesta = supabase.auth.sign_up({
-                    "email": email_final,
-                    "password": pass_reg
-                })
+                st.error(f"Error al iniciar sesión: {e}")
                 
-                supabase.table("perfiles_atletas").insert({
-                    "email": email_final,
-                    "nombre_completo": nombre_reg,
-                    "genero": "m" if genero == "Masculino" else "f"
-                }).execute()
-                st.success("¡Cuenta creada correctamente! Ya podés iniciar sesión en la pestaña anterior.")
-            except Exception as e:
-                st.error(f"Error en el registro: {e}")
+    with tab_registro:
+        st.info("Crea tu cuenta gratis para poder generar y guardar tus rutinas.")
+        
+        nombre_reg = st.text_input("Nombre Completo", key="reg_nombre")
+        email_reg = st.text_input("Correo electrónico", key="reg_email")
+        pass_reg = st.text_input("Contraseña (mínimo 6 caracteres)", type="password", key="reg_pass")
+        
+        genero_opcion = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero")
+        genero_db = "m" if genero_opcion == "Masculino" else "f"
+        
+        from datetime import date
+        fecha_nac_reg = st.date_input("Fecha de Nacimiento:", min_value=date(1940, 1, 1), max_value=date.today(), key="reg_fecha")
+        
+        if st.button("Registrarme", type="primary", use_container_width=True):
+            if not nombre_reg.strip():
+                st.warning("⚠️ Por favor, ingresa tu nombre completo.")
+            else:
+                try:
+                    email_final = email_reg.lower().strip()
+                    respuesta = supabase.auth.sign_up({"email": email_final, "password": pass_reg})
+                    
+                    try:
+                        supabase.table("perfiles_atletas").insert({
+                            "email": email_final,
+                            "nombre_completo": nombre_reg.strip(),
+                            "pais": "Argentina", 
+                            "genero": genero_db,
+                            "fecha_nacimiento": str(fecha_nac_reg)
+                        }).execute()
+                        st.success("✅ ¡Cuenta creada con éxito! Ya puedes iniciar sesión.")
+                    except Exception as db_error:
+                        st.warning(f"Error al guardar perfil: {db_error}")
+                except Exception as auth_error:
+                    st.error(f"Error de registro: {auth_error}")
 
+    # --- BOTÓN DE SOPORTE WHATSAPP ---
+    st.markdown("<br>", unsafe_allow_html=True) 
+    numero_whatsapp = "5491164788719" 
+    mensaje = "Hola%20Soporte.%20Necesito%20ayuda%20con%20el%20Portal%20Elite."
+    link_wa = f"https://wa.me/{numero_whatsapp}?text={mensaje}"
+    
+    st.markdown(f"<div style='text-align: center;'><a href='{link_wa}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 15px;'>💬 <b>¿Problemas para ingresar? Contactá al Soporte</b></a></div>", unsafe_allow_html=True)
     st.stop()
 
 # ==========================================
-# INTERIOR DE LA APP (USUARIO LOGUEADO)
+# SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
 # ==========================================
 st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
 
@@ -218,8 +232,6 @@ directorio_script = os.path.dirname(os.path.abspath(__file__))
 
 with st.sidebar:
     st.header("🏢 Branding")
-    
-    # Buscador automático optimizado para el Logo Verde del interior
     nombres_sidebar = ["logo.png", "logo(1).png", "logo.png.png"]
     foto_side = None
     
@@ -231,7 +243,7 @@ with st.sidebar:
             
     if foto_side:
         try:
-            st.image(str(foto_side), use_container_width=True)
+            st.image(foto_side, use_container_width=True)
         except Exception:
             pass
     else:
@@ -282,11 +294,7 @@ if len(res_perfil.data) > 0:
     genero_idx = 0 if (genero_db and genero_db.strip() == "m") else 1
     
     fecha_str = perfil_db.get("fecha_nacimiento")
-    if fecha_str:
-        fecha_nac_atleta = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-    else:
-        fecha_nac_atleta = date(1990, 1, 1)
-        
+    fecha_nac_atleta = datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else date(1990, 1, 1)
     es_nuevo = False if nombre_default else True
 else:
     nombre_default = ""
@@ -392,7 +400,7 @@ else:
 agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
 
 # ==========================================
-# 5. CRM Y GRÁFICO INTERACTIVO
+# 5. CRM Y GRÁFICO
 # ==========================================
 accent_color = "#FFB6C1" if genero == "f" else "#d4af37"
 bg_plot = "#1A1A1A"
@@ -406,7 +414,7 @@ with st.sidebar:
                 res_perfil = supabase.table("perfiles_atletas").select("id").eq("email", email_usuario).execute()
                 perfil_id = res_perfil.data[0]["id"] if len(res_perfil.data) > 0 else supabase.table("perfiles_atletas").insert({"email": email_usuario, "nombre_completo": nombre, "pais": pais, "genero": genero, "objetivo_principal": tipo_objetivo}).execute().data[0]["id"]
                 
-                supabase.table("evaluaciones_biometricas").insert({"perfil_id": perfil_id, "edad": edad, "estatura": estatura, "peso": peso_actual, "cintura": cintura, "cadera": cadera, "rfm": rfm, "nivel_experiencia": nivel_experiencia, "meta": tipo_objetivo, "kcal_objetivo": int(cal_obj), "tipo_entrenamiento": tipo_entreno, "dias_entreno": dias_entreno}).execute()
+                supabase.table("evaluaciones_biometricas").insert({"perfil_id": perfil_id, "edad": edad, "estatura": estatura, "peso": peso_actual, "cintura": cintura, "cadera": cadera, "rfm": rfm, "nivel_experiencia": nivel_experiencia, "meta": tipo_objetivo, "kcal_objetivo": int(cal_obj), "tipo_test": tipo_entreno, "dias_entreno": dias_entreno}).execute()
                 
                 info_extra_json = {
                     "macros": {"proteina": round(p_g_total, 1), "carbos": round(c_g_total, 1), "grasas": round(g_g_total, 1)},
