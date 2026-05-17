@@ -126,21 +126,23 @@ if st.session_state["usuario_actual"] is None:
     </style>
     """, unsafe_allow_html=True)
 
-    # ==========================================
-    # LOGO DE PORTADA CENTRADO Y RESPONSIVO DE ÉLITE
+# ==========================================
+    # LOGO DE PORTADA (VERDAD ABSOLUTA)
     # ==========================================
     col1, col_logo, col3 = st.columns([1, 2, 1])
     with col_logo:
-        if ruta_logo.exists():
+        import os
+        ruta_absoluta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_tanque.png")
+        
+        if os.path.exists(ruta_absoluta):
             try:
-                st.image(str(ruta_logo), use_container_width=True)
-            except Exception:
-                pass
+                # Intentamos mostrar la imagen
+                st.image(ruta_absoluta, use_container_width=True)
+            except Exception as e:
+                # SI LA IMAGEN ESTÁ ROTA (COMO AHORA), TE LO VA A DECIR ACÁ EN ROJO
+                st.error(f"❌ El archivo existe, pero está CORRUPTO o DAÑADO: {e}")
         else:
-            try:
-                st.image("logo_tanque.png", use_container_width=True)
-            except Exception:
-                st.error(f"⚠️ Logo no encontrado en el directorio: {ruta_logo}")
+            st.error("❌ El archivo 'logo_tanque.png' no existe en el servidor.")
 
     # ==========================================
     # TÍTULOS DE BIENVENIDA
