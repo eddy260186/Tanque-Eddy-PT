@@ -441,7 +441,7 @@ with st.sidebar:
     st.markdown("<p style='text-align: center; color: #d4af37; font-weight: bold; font-size: 18px; margin-top: 10px; margin-bottom: -10px;'>📊 Distribución de Macros</p>", unsafe_allow_html=True)
     
     # Usamos tus variables reales que se acaban de calcular arriba
-# Usamos tus variables y las redondeamos a enteros exactos (Ej: 135, 231)
+# Usamos tus variables y las redondeamos a enteros exactos
     labels = ['Proteínas', 'Carbohidratos', 'Grasas']
     valores = [int(round(p_g_total)), int(round(c_g_total)), int(round(g_g_total))]
     colores_vip = ['#00d1ff', '#00ff88', '#ffd700'] # Azul, Verde, Dorado
@@ -452,9 +452,9 @@ with st.sidebar:
         hole=.6, 
         marker=dict(colors=colores_vip, line=dict(color='#000000', width=2)),
         texttemplate="<b>%{value} g</b><br>%{label}", 
-        textposition="inside", # 💎 LA MAGIA: Textos adentro de los colores
-        textfont=dict(color="black", size=12, family="Arial"), # Letra negra y clara
-        insidetextorientation="horizontal", # Mantiene el texto derecho, sin rotar
+        textposition="inside", 
+        textfont=dict(color="black", size=12, family="Arial"), 
+        insidetextorientation="radial", # 💎 LA MAGIA: Texto acomodado a lo largo de la porción
         hoverinfo='label+percent'
     )])
 
