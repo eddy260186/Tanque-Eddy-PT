@@ -86,7 +86,7 @@ if st.session_state["usuario_actual"] is None:
     import os
 
 # ==========================================
-    # ESTILOS CSS VIP DORADOS Y RESPONSIVOS (2000% MEJORADO)
+    # ESTILOS CSS VIP DORADOS Y RESPONSIVOS
     # ==========================================
     st.markdown("""
     <style>
@@ -128,11 +128,11 @@ if st.session_state["usuario_actual"] is None:
             display: none !important;
         }
         
-        /* 2. TRACCIÓN VIP: Tiramos el login entero hacia arriba (-90px) para comernos el borde negro */
+        /* 2. TRACCIÓN VIP: Ajuste de -40px para que respire por debajo de las coronas */
         div[data-testid="stTabs"] {
-            margin-top: -100px !important; 
+            margin-top: -40px !important; 
             position: relative;
-            z-index: 99; /* Asegura que puedas hacer clic en las pestañas aunque invadan la foto */
+            z-index: 99; 
         }
     }
     </style>
