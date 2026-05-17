@@ -85,8 +85,8 @@ if st.session_state["usuario_actual"] is None:
 
     import os
 
-    # ==========================================
-    # ESTILOS CSS VIP DORADOS Y RESPONSIVOS
+# ==========================================
+    # ESTILOS CSS VIP DORADOS Y RESPONSIVOS (2000% MEJORADO)
     # ==========================================
     st.markdown("""
     <style>
@@ -116,20 +116,23 @@ if st.session_state["usuario_actual"] is None:
         box-shadow: 0 0 15px rgba(212,175,55,0.6);
     }
     
-    /* 💎 MAGIA RESPONSIVA: EL ESPACIADOR INTELIGENTE 💎 */
+    /* 💎 MAGIA RESPONSIVA: ELIMINACIÓN DEL CRÁTER EN CELULARES 💎 */
     .espaciador-vip {
         height: 120px; /* En PC lo empuja para abajo para centrarlo con la foto */
     }
     
     @media (max-width: 768px) {
-        /* Si la pantalla es chica (Celular), el espaciador desaparece */
+        /* 1. Apagamos el espaciador de computadora */
         .espaciador-vip {
             height: 0px !important;
             display: none !important;
         }
-        /* Subimos un poquito las pestañas para que no queden tan separadas de la foto */
-        .stTabs {
-            margin-top: -15px !important;
+        
+        /* 2. TRACCIÓN VIP: Tiramos el login entero hacia arriba (-90px) para comernos el borde negro */
+        div[data-testid="stTabs"] {
+            margin-top: -100px !important; 
+            position: relative;
+            z-index: 99; /* Asegura que puedas hacer clic en las pestañas aunque invadan la foto */
         }
     }
     </style>
