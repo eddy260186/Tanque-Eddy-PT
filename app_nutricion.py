@@ -166,19 +166,31 @@ if st.session_state["usuario_actual"] is None:
             st.markdown("<br><p style='text-align:center; color:#888; font-style:italic;'>\"La excelencia no es un acto, es un hábito.<br>Tú eres tu único límite.\"</p>", unsafe_allow_html=True)
 
         with tab_registro:
-            nombre_reg = st.text_input("Nombre completo", key="reg_nombre")
-            email_reg = st.text_input("Correo electrónico", key="reg_email")
-            pass_reg = st.text_input("Contraseña", type="password", key="reg_pass")
-            genero = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero")
+            # --- Nombre ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-bottom:5px;'>👤 Nombre completo</p>", unsafe_allow_html=True)
+            nombre_reg = st.text_input("Nombre", key="reg_nombre", label_visibility="collapsed", placeholder="Ingresa tu nombre y apellido")
             
-            if st.button("CREAR CUENTA", type="primary", use_container_width=True):
+            # --- Correo ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>✉️ Correo electrónico</p>", unsafe_allow_html=True)
+            email_reg = st.text_input("Correo Reg", key="reg_email", label_visibility="collapsed", placeholder="Ingresa tu mejor correo")
+            
+            # --- Contraseña ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>🔒 Contraseña secreta</p>", unsafe_allow_html=True)
+            pass_reg = st.text_input("Pass Reg", type="password", key="reg_pass", label_visibility="collapsed", placeholder="Crea una contraseña fuerte")
+            
+            # --- Género ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>⚧️ Género</p>", unsafe_allow_html=True)
+            genero = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero", label_visibility="collapsed")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("CREAR MI CUENTA ELITE ➔", type="primary", use_container_width=True):
                 try:
                     email_final = email_reg.lower().strip()
                     respuesta = supabase.auth.sign_up({"email": email_final, "password": pass_reg})
                     supabase.table("perfiles_atletas").insert({"email": email_final, "nombre_completo": nombre_reg, "genero": "m" if genero == "Masculino" else "f"}).execute()
-                    st.success("Cuenta creada correctamente. Ya podés iniciar sesión.")
+                    st.success("✅ ¡Cuenta VIP creada correctamente! Volvé a la pestaña de Iniciar Sesión para entrar.")
                 except Exception as e:
-                    st.error(f"Error registro: {e}")
+                    st.error(f"Error en el registro: {e}")
 
     st.stop()
 # ==========================================
