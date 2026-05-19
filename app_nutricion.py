@@ -20,7 +20,7 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 
 from database.supabase_mgr import init_supabase
 from utils.biometria import calcular_biometria
-from utils.pdf_generator import build_pdf_v60_7
+from utils.pdf_generator_elite import build_pdf_ultra_elite
 from data.alimentos import alimentos_db
 from data.ejercicios import ejercicios_db, rutinas_elite
 from styles import aplicar_diseno_elite
@@ -722,15 +722,49 @@ if not st.session_state.pago_validado:
                     st.error(f"Hubo un error técnico: {e}")
 
 if st.session_state.pago_validado:
-    st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
-    payload = {"n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, "rfm": rfm, "k": cal_obj, "p": p_g_total, "c": c_g_total, "g": g_g_total, "m": diccionario_menus, "rutina": diccionario_rutinas, "meta": tipo_objetivo, "w": agua_total, "compras": lista_compras}
+        st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
+        
+        # 1. Empaquetamos toda la data (agregando los datos extra que pide el nuevo motor)
+        payload = {
+            "n": nombre,
+            "edad": edad,
+            "estatura": estatura,
+            "peso": peso_actual,
+            "rfm": rfm,
+            "k": cal_obj,
+            "p": p_g_total,
+            "c": c_g_total,
+            "g": g_g_total,
+            "meta": tipo_objetivo,
+            "nivel": nivel_experiencia,
+            "w": agua_total,
+            "entreno": tipo_entreno,
+            "m": diccionario_menus,
+            "rutina": diccionario_rutinas
+        }
 
-    with st.container():
-        with st.spinner("⏳ Ensamblando tu PDF Elite Gold..."):
-            try:
-                from utils.pdf_generator_elite import build_pdf_elite_design
-                pdf_elite = build_pdf_elite_design(payload, "logo_dorado.png" if os.path.exists("logo_dorado.png") else None)
-                if pdf_elite:
-                    st.download_button(label="🏆 DESCARGAR PLAN ELITE GOLD", data=pdf_elite, file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf", mime="application/pdf", type="primary", key="btn_descarga_pdf_final_seguro")
-            except Exception as e:
-                st.error(f"Error técnico en el servidor: {e}")
+        with st.container():
+            with st.spinner("⏳ Ensamblando tu PDF Ultra Elite..."):
+                try:
+                    # 2. Importamos la NUEVA función desde tu archivo
+                    from utils.pdf_generator_elite import build_pdf_ultra_elite
+                    
+                    # 3. Generamos el PDF pasándole el payload, el gráfico 3D y el género
+                    pdf_elite = build_pdf_ultra_elite(
+                        data=payload,
+                        grafico_b64=grafico_base64,
+                        genero=genero
+                    )
+                    
+                    # 4. Botón de descarga
+                    if pdf_elite:
+                        st.download_button(
+                            label="🏆 DESCARGAR PLAN ULTRA ELITE",
+                            data=pdf_elite,
+                            file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf",
+                            mime="application/pdf",
+                            type="primary",
+                            key="descarga_pdf"
+                        )
+                except Exception as e:
+                    st.error(f"❌ Error técnico en el servidor al generar PDF: {e}")
