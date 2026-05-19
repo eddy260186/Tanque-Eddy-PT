@@ -1,6 +1,5 @@
 # =========================================================
-# 🔥 EDDY ULTRA ELITE PDF ENGINE v100 - OPTIMIZED FOR WEASYPRINT
-# BLACK EBONY • GOLD • DIAMOND EDITION - INDESTRUCTIBLE
+# 🔥 EDDY ULTRA ELITE PDF ENGINE v100.2 - MASTER EDITION
 # =========================================================
 
 from weasyprint import HTML
@@ -8,10 +7,7 @@ from io import BytesIO
 from datetime import datetime
 import base64
 import os
-
-# =========================================================
-# HELPERS
-# =========================================================
+import re
 
 def safe_int(v):
     try:
@@ -25,38 +21,23 @@ def img_to_b64(path):
             return base64.b64encode(f.read()).decode()
     return ""
 
-# =========================================================
-# PDF ENGINE
-# =========================================================
-
 def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
 
-    # =====================================================
-    # THEME SYSTEM (DYNAMIC GENERO)
-    # =====================================================
     if genero == "f":
-        ACCENT = "#FF2D75"  # Neon Magenta Elite
-        GLOW = "rgba(255,45,117,0.18)"
+        ACCENT = "#FF2D75"
     else:
-        ACCENT = "#D4AF37"  # Gold Premium
-        GLOW = "rgba(212,175,55,0.18)"
+        ACCENT = "#D4AF37"
 
     WHITE = "#FFFFFF"
     BLACK = "#050505"
-    CARD = "#121212"  # Negro Obsidiana Sólido para máxima compatibilidad
-    BORDER = "rgba(255,255,255,0.08)"
+    CARD = "#111111"
+    BORDER = "rgba(255,255,255,0.15)"
     CYAN = "#00D9FF"
 
-    # =====================================================
-    # LOGOS & GRAPHICS
-    # =====================================================
     logo_path = "logo_tanque.png"
     logo_b64 = img_to_b64(logo_path)
     qr_b64 = img_to_b64("qr_code.png")
 
-    # =====================================================
-    # DATA EXTRACTION
-    # =====================================================
     nombre = data.get("n", "ATLETA")
     edad = safe_int(data.get("edad", 0))
     peso = safe_int(data.get("peso", 0))
@@ -76,12 +57,32 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     rutina = data.get("rutina", {})
 
     # =====================================================
-    # HTML MASTER TEMPLATE
+    # 🧠 SMART GROCERY LIST EXTRACTOR
+    # Extrae automáticamente los ingredientes de los menús
     # =====================================================
+    lista_compras = data.get("compras", [])
+    if not lista_compras and isinstance(menus, dict):
+        compras_set = set()
+        for comidas in menus.values():
+            if comidas and isinstance(comidas, list):
+                texto = str(comidas[0])
+                partes = texto.split('+')
+                for p in partes:
+                    p_clean = p.split('|')[0].strip()
+                    p_clean = re.sub(r'(?i)Opcion\s*\d+:\s*', '', p_clean)
+                    p_clean = re.sub(r'\d+\s*g\s*', '', p_clean).strip()
+                    if p_clean and p_clean.lower() not in ["infusion", "infusión"]:
+                        compras_set.add(p_clean.capitalize())
+        lista_compras = sorted(list(compras_set))
+        if not lista_compras:
+            lista_compras = ["Proteínas Magras", "Carbohidratos Complejos", "Grasas Saludables", "Vegetales Verdes"]
+
     html = f"""
+    <!DOCTYPE html>
     <html>
     <head>
     <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
     @page {{
         size: A4;
@@ -96,128 +97,139 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         padding: 0;
         background: {BLACK};
         color: white;
-        font-family: 'Segoe UI', Arial, sans-serif;
+        font-family: 'Montserrat', sans-serif;
     }}
-    /* Contenedores de Página Estrictos */
     .page {{
         width: 210mm;
         min-height: 297mm;
         position: relative;
         page-break-after: always;
-        background: radial-gradient(circle at top left, {GLOW}, transparent 45%), {BLACK};
+        background: {BLACK};
     }}
-    /* Páginas de contenido fluido (evita el colapso de datos largos) */
     .fluid-page {{
         width: 210mm;
         position: relative;
         page-break-inside: auto;
-        background: radial-gradient(circle at bottom right, rgba(0,217,255,0.04), transparent 40%), {BLACK};
-    }}
-    .overlay {{
-        position: absolute;
-        width: 700px;
-        right: -120px;
-        top: 120px;
-        opacity: 0.02;
-        z-index: 1;
+        background: {BLACK};
     }}
     .content {{
         position: relative;
         z-index: 2;
-        padding: 45px;
+        padding: 50px;
     }}
-    /* Componentes Premium de Diseño */
     .hero-logo {{
-        width: 240px;
-        margin-bottom: 10px;
+        width: 260px;
+        margin-bottom: 15px;
     }}
     .hero-title {{
-        font-size: 52px;
+        font-size: 58px;
         font-weight: 900;
-        letter-spacing: 5px;
-        margin-top: 15px;
-        margin-bottom: 5px;
+        letter-spacing: 4px;
+        margin-top: 10px;
+        margin-bottom: 0px;
         color: {ACCENT};
         text-transform: uppercase;
     }}
     .hero-sub {{
         color: #888;
-        letter-spacing: 4px;
-        font-size: 11px;
+        letter-spacing: 3px;
+        font-size: 12px;
         margin-top: 5px;
         font-weight: 700;
     }}
     .premium-card {{
-        background: linear-gradient(145deg, #161616, #0e0e0e);
+        background: {CARD};
         border: 1px solid {BORDER};
         border-top: 3px solid {ACCENT};
-        border-radius: 20px;
-        padding: 24px;
-        margin-bottom: 20px;
-        page-break-inside: avoid; /* Impide que la tarjeta se parta a la mitad entre páginas */
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        page-break-inside: avoid;
     }}
     .section-title {{
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 900;
         color: white;
         margin-top: 10px;
         margin-bottom: 25px;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
         text-transform: uppercase;
         border-left: 4px solid {ACCENT};
-        padding-left: 12px;
+        padding-left: 15px;
     }}
     .label {{
         color: {ACCENT};
         font-size: 11px;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
         text-transform: uppercase;
         font-weight: 700;
     }}
     .value {{
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 900;
         color: white;
-        margin-top: 6px;
+        margin-top: 5px;
     }}
-    /* Sistema de Barras de Macros Realistas */
     .macro-bar {{
         width: 100%;
-        height: 12px;
-        background: #1a1a1a;
-        border-radius: 30px;
-        overflow: hidden;
+        height: 10px;
+        background: #222;
+        border-radius: 10px;
         margin-top: 8px;
     }}
     .macro-fill {{
         height: 100%;
-        border-radius: 30px;
+        border-radius: 10px;
     }}
     .exercise {{
         padding: 12px 15px;
         border-left: 3px solid {ACCENT};
-        background: rgba(255,255,255,0.02);
+        background: #1A1A1A;
         margin-bottom: 8px;
-        border-radius: 8px;
+        border-radius: 6px;
         font-size: 13px;
-        color: #ddd;
+        color: #eee;
+        font-weight: bold;
     }}
-    /* Footer Ultra-Compatible con WeasyPrint (Estructura de Tabla) */
+    .checklist-item {{
+        background: rgba(255,255,255,0.03);
+        border: 1px solid {BORDER};
+        padding: 14px 18px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+    }}
+    .checkbox-box {{
+        width: 18px;
+        height: 18px;
+        border: 2px solid {ACCENT};
+        border-radius: 4px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 15px;
+    }}
+    .contract-box {{
+        border: 2px dashed {ACCENT};
+        padding: 40px;
+        text-align: center;
+        border-radius: 15px;
+        background: rgba(255,255,255,0.02);
+        margin-top: 20px;
+    }}
     .footer-container {{
         position: absolute;
         bottom: 30px;
-        left: 45px;
-        right: 45px;
+        left: 50px;
+        right: 50px;
         height: 40px;
     }}
     .footer-table {{
         width: 100%;
-        border-top: 1px solid rgba(255,255,255,0.08);
-        padding-top: 12px;
+        border-top: 1px solid rgba(255,255,255,0.15);
+        padding-top: 15px;
     }}
     .footer-left {{
         text-align: left;
-        color: #555;
+        color: #666;
         font-size: 10px;
         font-weight: bold;
     }}
@@ -232,23 +244,20 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     </head>
     <body>
 
-    # PORTADA (PAGE 1)
     <div class="page">
-        <img src="data:image/png;base64,{logo_b64}" class="overlay">
-        
-        <div class="content" style="text-align:center; padding-top:80px;">
+        <div class="content" style="text-align:center; padding-top:90px;">
             <img src="data:image/png;base64,{logo_b64}" class="hero-logo">
             <div class="hero-title">Elite System</div>
             <div class="hero-sub">INGENIERÍA CORPORAL DE ALTO RENDIMIENTO</div>
 
-            <div class="premium-card" style="margin-top:50px; text-align: left;">
+            <div class="premium-card" style="margin-top:60px; text-align: left;">
                 <div class="label">ATLETA AUTORIZADO</div>
-                <div class="value" style="font-size: 36px; color: white;">{nombre.upper()}</div>
+                <div class="value" style="font-size: 32px;">{nombre.upper()}</div>
                 <div style="margin-top:5px; color:#aaa; letter-spacing:2px; font-size:12px; font-weight: bold;">
                     NIVEL {nivel.upper()}
                 </div>
 
-                <table style="width:100%; margin-top:30px; border-spacing: 12px; margin-left: -12px; margin-right: -12px;">
+                <table style="width:100%; margin-top:35px; border-spacing: 15px; margin-left: -15px; margin-right: -15px;">
                     <tr>
                         <td class="premium-card" style="margin-bottom:0; width:50%;">
                             <div class="label">CALORÍAS</div>
@@ -271,12 +280,11 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                     </tr>
                 </table>
 
-                <div style="margin-top:30px; text-align: center;">
-                    <img src="data:image/png;base64,{qr_b64}" style="width:85px; background:white; padding:6px; border-radius:12px; border:2px solid {ACCENT};">
+                <div style="margin-top:35px; text-align: center;">
+                    <img src="data:image/png;base64,{qr_b64}" style="width:90px; background:white; padding:8px; border-radius:10px; border:2px solid {ACCENT};">
                 </div>
             </div>
         </div>
-
         <div class="footer-container">
             <table class="footer-table">
                 <tr>
@@ -287,12 +295,10 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         </div>
     </div>
 
-    # ANALÍTICA CORPORAL (PAGE 2)
     <div class="page">
         <div class="content">
             <div class="section-title">Analítica Corporal</div>
-
-            <table style="width:100%; border-spacing:12px; margin-left: -12px; margin-right: -12px; margin-bottom: 10px;">
+            <table style="width:100%; border-spacing:15px; margin-left: -15px; margin-right: -15px; margin-bottom: 10px;">
                 <tr>
                     <td class="premium-card" style="margin-bottom:0; text-align: center;">
                         <div class="label">EDAD</div>
@@ -316,15 +322,14 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
 
             <div class="premium-card">
                 <div class="label">AGUA / GRASA CORPORAL ESPERADA</div>
-                <div class="value">{agua}L <span style="font-size:16px; color:#888;">Hidratación</span> | {rfm}% <span style="font-size:16px; color:#888;">RFM</span></div>
+                <div class="value">{agua}L <span style="font-size:16px; color:#888;">Hidratación</span> &nbsp;|&nbsp; {rfm}% <span style="font-size:16px; color:#888;">RFM</span></div>
             </div>
 
             <div class="premium-card">
-                <div class="label">EVOLUCIÓN PROYECTADA ALTA PRECISIÓN</div>
-                <img src="data:image/png;base64,{grafico_b64}" style="width:100%; margin-top:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+                <div class="label" style="margin-bottom: 15px;">EVOLUCIÓN PROYECTADA ALTA PRECISIÓN</div>
+                <img src="data:image/png;base64,{grafico_b64}" style="width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
             </div>
         </div>
-
         <div class="footer-container">
             <table class="footer-table">
                 <tr>
@@ -335,41 +340,33 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         </div>
     </div>
 
-    # SISTEMA NUTRICIONAL (FLUID PAGE)
     <div class="fluid-page" style="page-break-after: always; padding-bottom: 60px;">
         <div class="content">
             <div class="section-title">Sistema Nutricional</div>
-
             <div class="premium-card">
                 <div class="label">PROTEÍNAS DIARIAS</div>
                 <div class="macro-bar"><div class="macro-fill" style="width:90%; background:{ACCENT};"></div></div>
                 <div class="value">{proteinas}G</div>
-                
                 <br>
-                
                 <div class="label">CARBOHIDRATOS DIARIOS</div>
                 <div class="macro-bar"><div class="macro-fill" style="width:75%; background:{CYAN};"></div></div>
                 <div class="value">{carbos}G</div>
-                
                 <br>
-                
                 <div class="label">GRASAS SALUDABLES</div>
                 <div class="macro-bar"><div class="macro-fill" style="width:55%; background:#FF9800;"></div></div>
                 <div class="value">{grasas}G</div>
             </div>
-
-            <div style="margin-top: 25px; margin-bottom: 15px; font-weight: 800; letter-spacing: 1px; color: #aaa; font-size: 12px; text-transform: uppercase;">
+            <div style="margin-top: 30px; margin-bottom: 20px; font-weight: 900; letter-spacing: 1px; color: #aaa; font-size: 14px; text-transform: uppercase;">
                 Distribución de Menús
             </div>
     """
 
-    # Bloque de Menús dinámicos con prevención de desbordes
     for comida, opciones in menus.items():
         opcion = str(opciones[0]) if opciones else "Planificación Nutricional Elite Personalizada."
         html += f"""
             <div class="premium-card">
                 <div class="label">{comida.upper()}</div>
-                <div style="margin-top:12px; color:#ddd; line-height:1.7; font-size:13px;">
+                <div style="margin-top:12px; color:#ccc; line-height:1.8; font-size:14px; font-weight: bold;">
                     {opcion}
                 </div>
             </div>
@@ -379,22 +376,39 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         </div>
     </div>
 
-    # PLAN DE ENTRENAMIENTO (FLUID PAGE)
-    <div class="fluid-page" style="padding-bottom: 60px;">
+    <div class="fluid-page" style="page-break-after: always; padding-bottom: 60px;">
+        <div class="content">
+            <div class="section-title">Protocolo de Abastecimiento</div>
+            <div style="margin-bottom: 25px; color: #888; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">
+                Checklist de Compras Inteligente
+            </div>
+    """
+
+    for item in lista_compras:
+        html += f"""
+            <div class="checklist-item">
+                <div class="checkbox-box"></div>
+                <span style="font-size:14px; font-weight:bold; color:#ddd;">{item}</span>
+            </div>
+        """
+
+    html += f"""
+        </div>
+    </div>
+
+    <div class="fluid-page" style="page-break-after: always; padding-bottom: 60px;">
         <div class="content">
             <div class="section-title">Entrenamiento Elite</div>
-
             <div class="premium-card">
                 <div class="label">SISTEMA DE ENTRENAMIENTO ASIGNADO</div>
                 <div class="value" style="color: {WHITE};">{str(data.get("entreno","")).upper()}</div>
             </div>
     """
 
-    # Bloque de Rutinas dinámicas con prevención de cortes extraños
     for dia, ejercicios in rutina.items():
         html += f"""
             <div class="premium-card">
-                <div class="label" style="margin-bottom: 12px; font-size: 13px; color: {ACCENT};">{dia.upper()}</div>
+                <div class="label" style="margin-bottom: 15px; font-size: 14px; color: {ACCENT};">{dia.upper()}</div>
         """
         for e in ejercicios:
             html += f"""
@@ -402,13 +416,40 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
             """
         html += "</div>"
 
-    html += """
+    html += f"""
         </div>
+    </div>
+
+    <div class="page">
+        <div class="content" style="padding-top: 80px;">
+            <div class="section-title">Mentalidad Elite</div>
+            
+            <div class="contract-box">
+                <h2 style="color:{ACCENT}; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 30px;">Contrato de Disciplina</h2>
+                <p style="color:#ddd; font-size: 16px; line-height: 2; font-style: italic; margin-bottom: 50px;">
+                    "Yo, <strong>{nombre.upper()}</strong>, me comprometo a seguir este protocolo con disciplina inquebrantable. Entiendo que los resultados excepcionales requieren un esfuerzo excepcional. No hay excusas, solo ejecución. Mi transformación física y mental empieza hoy."
+                </p>
+                
+                <div style="border-bottom: 1px solid #555; width: 70%; margin: 0 auto;"></div>
+                <div style="margin-top: 15px; color: #888; font-size: 12px; letter-spacing: 3px; font-weight: bold;">FIRMA DEL ATLETA</div>
+                
+                <div style="margin-top: 50px;">
+                    <img src="data:image/png;base64,{logo_b64}" style="width: 120px; opacity: 0.3;">
+                </div>
+            </div>
+        </div>
+        <div class="footer-container">
+            <table class="footer-table">
+                <tr>
+                    <td class="footer-left">EDDY ELITE SYSTEM</td>
+                    <td class="footer-right">COMPROMISO</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
     </body>
     </html>
     """
 
-    # =====================================================
-    # GENERAR COMPILACIÓN PDF VIA WEASYPRINT
-    # =====================================================
     return HTML(string=html).write_pdf()
