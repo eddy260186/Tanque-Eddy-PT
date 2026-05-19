@@ -440,8 +440,7 @@ agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 
 with st.sidebar:
     st.markdown("<p style='text-align: center; color: #d4af37; font-weight: bold; font-size: 18px; margin-top: 10px; margin-bottom: -10px;'>📊 Distribución de Macros</p>", unsafe_allow_html=True)
     
-    # Usamos tus variables reales que se acaban de calcular arriba
-# Usamos tus variables y las redondeamos a enteros exactos
+# Nombres completos con máximo espacio interior
     labels = ['Proteínas', 'Carbohidratos', 'Grasas']
     valores = [int(round(p_g_total)), int(round(c_g_total)), int(round(g_g_total))]
     colores_vip = ['#00d1ff', '#00ff88', '#ffd700'] # Azul, Verde, Dorado
@@ -449,26 +448,33 @@ with st.sidebar:
     fig = go.Figure(data=[go.Pie(
         labels=labels, 
         values=valores, 
-        hole=.6, 
+        hole=.22, # 💎 ENCOGEMOS EL CENTRO
         marker=dict(colors=colores_vip, line=dict(color='#000000', width=2)),
         texttemplate="<b>%{value} g</b><br>%{label}", 
         textposition="inside", 
-        textfont=dict(color="black", size=12, family="Arial"), 
-        insidetextorientation="radial", # 💎 LA MAGIA: Texto acomodado a lo largo de la porción
+        textfont=dict(color="black", size=11, family="Arial"), 
+        insidetextorientation="horizontal", 
         hoverinfo='label+percent'
     )])
 
+    # Estilo transparente con el nuevo texto central en dos renglones
     fig.update_layout(
         showlegend=False,
         margin=dict(t=30, b=10, l=0, r=0),
         height=250,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        annotations=[dict(text='MACROS', x=0.5, y=0.5, font_size=14, showarrow=False, font_color='#d4af37')]
+        annotations=[dict(
+            text='<b>Macro-<br>nutrientes</b>', 
+            x=0.5, 
+            y=0.5, 
+            font_size=10, 
+            showarrow=False, 
+            font_color='#d4af37'
+        )]
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
 # ==========================================
 # 5. CRM Y GRÁFICO INTERACTIVO
 # ==========================================
