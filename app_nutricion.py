@@ -437,22 +437,22 @@ agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 
 # =========================================
     # GRÁFICO DE MACROS ELITE (GLASSMORPHISM 3D)
     # =========================================
-    st.markdown("""
+st.markdown("""
     <h2 style="text-align:center; color:#d4af37; font-weight:800; font-size:24px; margin-top:10px; margin-bottom:-15px; text-shadow:0px 0px 18px rgba(212,175,55,0.55);">
     📊 Distribución de Macros
     </h2>
     """, unsafe_allow_html=True)
 
     # Contenedor de Cristal (Glassmorphism)
-    st.markdown("""
+st.markdown("""
     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,215,0,0.18); padding:10px; border-radius:24px; backdrop-filter:blur(14px); box-shadow:0 0 35px rgba(0,0,0,0.35); margin-bottom: 15px;">
     """, unsafe_allow_html=True)
 
-    labels = ['Proteínas', 'Carbohidratos', 'Grasas']
-    valores = [int(round(p_g_total)), int(round(c_g_total)), int(round(g_g_total))]
-    colores_vip = ['#00d9ff', '#00ff95', '#ffd700'] # Cyan, Esmeralda, Oro
+labels = ['Proteínas', 'Carbohidratos', 'Grasas']
+valores = [int(round(p_g_total)), int(round(c_g_total)), int(round(g_g_total))]
+colores_vip = ['#00d9ff', '#00ff95', '#ffd700'] # Cyan, Esmeralda, Oro
 
-    fig = go.Figure(data=[go.Pie(
+fig = go.Figure(data=[go.Pie(
         labels=labels,
         values=valores,
         hole=0.52,
@@ -470,7 +470,7 @@ agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 
         pull=[0.02, 0.02, 0.02] # 💎 MAGIA 3D: Separa las porciones
     )])
 
-    fig.update_layout(
+fig.update_layout(
         height=380, # Altura optimizada para la barra lateral
         margin=dict(t=20, b=20, l=10, r=10),
         paper_bgcolor='rgba(0,0,0,0)',
@@ -487,23 +487,23 @@ agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 
         ]
     )
 
-    fig.update_traces(
+fig.update_traces(
         rotation=90,
         hoverlabel=dict(bgcolor="#111111", bordercolor="#d4af37", font_size=15, font_family="Poppins, Arial")
     )
 
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-    st.markdown("</div>", unsafe_allow_html=True) # Cierra el contenedor de cristal
+st.markdown("</div>", unsafe_allow_html=True) # Cierra el contenedor de cristal
 # ==========================================
 # 5. CRM Y GRÁFICO INTERACTIVO
 # ==========================================
-    accent_color = "#FFB6C1" if genero == "f" else "#d4af37"
-    bg_plot = "#1A1A1A"
+accent_color = "#FFB6C1" if genero == "f" else "#d4af37"
+bg_plot = "#1A1A1A"
 
-    with st.sidebar:
+with st.sidebar:
         st.divider()
-    if st.button("💾 Guardar Progreso en Supabase", type="primary", use_container_width=True):
+if st.button("💾 Guardar Progreso en Supabase", type="primary", use_container_width=True):
         if nombre:
             try:
                 email_usuario = st.session_state["usuario_actual"]
