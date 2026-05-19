@@ -435,11 +435,30 @@ else:
 agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
 
 # =========================================
-# GRÁFICO DE MACROS ELITE (GLASSMORPHISM 3D) - AL RAS
+# GRÁFICO DE MACROS ELITE (GLASSMORPHISM 3D + ANIMACIÓN)
 # =========================================
 st.sidebar.markdown("""
-<h2 style="text-align:center; color:#d4af37; font-weight:800; font-size:24px; margin-top:10px; margin-bottom:-15px; text-shadow:0px 0px 18px rgba(212,175,55,0.55);">
-📊 Distribución de Macros
+<style>
+/* Animación del resplandor */
+@keyframes eliteGlow {
+    0% { filter: drop-shadow(0 0 5px rgba(255,215,0,0.4)); }
+    100% { filter: drop-shadow(0 0 15px rgba(0,255,150,0.8)); }
+}
+</style>
+
+<h2 style="
+text-align:center;
+background:linear-gradient(90deg, #ffd700, #ffffff, #00ff95);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+font-weight:900;
+font-size:28px;
+margin-top:10px;
+margin-bottom:-10px;
+letter-spacing:1px;
+animation: eliteGlow 2s infinite alternate;
+">
+⚡ AI Elite Macros
 </h2>
 """, unsafe_allow_html=True)
 
