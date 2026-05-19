@@ -478,7 +478,7 @@ fig.update_layout(
     showlegend=False,
     annotations=[
         dict(
-            text="<b style='font-size:20px'>MACROS</b><br><span style='font-size:13px;color:#d4af37'>Nutrientes</span>",
+            text="<b style='font-size:30px'>AI</b><br><span style='font-size:16px;color:#d4af37'>MACROS</span>",
             x=0.5,
             y=0.5,
             showarrow=False,
