@@ -690,24 +690,29 @@ if "pago_validado" not in st.session_state:
     st.session_state.pago_validado = False
 
 if not st.session_state.pago_validado:
-    st.info("Para descargar tu Plan Elite, ingresa el número de operación de tu pago.")
+    st.info("Para descargar tu Plan Elite, ingresa el número de operación de tu pago o tu Código VIP.")
     col_p, col_v = st.columns(2)
     with col_p:
         st.link_button("💳 REALIZAR PAGO ($10.000)", "https://mpago.la/27TKbMf", type="primary")
     with col_v:
-        nro_operacion = st.text_input("Ingresá el # de Operación (Ej: 156877505264):")
+        nro_operacion = st.text_input("Ingresá el # de Operación o Código VIP:")
         if st.button("🔓 Validar y Descargar"):
             if nro_operacion:
                 nro_limpio = nro_operacion.replace("#", "").strip()
+                
+                # 🔥 EL CÓDIGO MAESTRO DEL CEO
                 if nro_limpio == "TANQUEVIP":
                     st.session_state.pago_validado = True
                     st.rerun()
+                
+                # Validación normal de Mercado Pago
                 try:
                     token = st.secrets["MERCADO_PAGO_TOKEN"]
                     res = requests.get(f"https://api.mercadopago.com/v1/payments/{nro_limpio}", headers={"Authorization": f"Bearer {token}"})
                     if res.status_code == 200:
                         status = res.json().get("status")
                         if status == "approved":
+                            # Verificamos que no se haya usado antes en Supabase
                             if len(supabase.table("pagos_verificados").select("*").eq("id_pago", nro_limpio).execute().data) == 0:
                                 supabase.table("pagos_verificados").insert({"id_pago": nro_limpio, "usuario": st.session_state["usuario_actual"]}).execute()
                                 st.session_state.pago_validado = True
@@ -719,52 +724,55 @@ if not st.session_state.pago_validado:
                     else:
                         st.error("❌ Número de operación no encontrado en Mercado Pago.")
                 except Exception as e:
-                    st.error(f"Hubo un error técnico: {e}")
+                    st.error(f"❌ Hubo un error técnico con Mercado Pago: {e}")
 
+# ==========================================
+# ZONA DESBLOQUEADA: GENERACIÓN DEL PDF
+# ==========================================
 if st.session_state.pago_validado:
-        st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
-        
-        # 1. Empaquetamos toda la data (agregando los datos extra que pide el nuevo motor)
-        payload = {
-            "n": nombre,
-            "edad": edad,
-            "estatura": estatura,
-            "peso": peso_actual,
-            "rfm": rfm,
-            "k": cal_obj,
-            "p": p_g_total,
-            "c": c_g_total,
-            "g": g_g_total,
-            "meta": tipo_objetivo,
-            "nivel": nivel_experiencia,
-            "w": agua_total,
-            "entreno": tipo_entreno,
-            "m": diccionario_menus,
-            "rutina": diccionario_rutinas
-        }
+    st.success("✅ ¡Acceso Autorizado! Tu Plan Elite ha sido desbloqueado.")
+    
+    # 1. Empaquetamos toda la data exacta
+    payload = {
+        "n": nombre,
+        "edad": edad,
+        "estatura": estatura,
+        "peso": peso_actual,
+        "rfm": rfm,
+        "k": cal_obj,
+        "p": p_g_total,
+        "c": c_g_total,
+        "g": g_g_total,
+        "meta": tipo_objetivo,
+        "nivel": nivel_experiencia,
+        "w": agua_total,
+        "entreno": tipo_entreno,
+        "m": diccionario_menus,
+        "rutina": diccionario_rutinas
+    }
 
-        with st.container():
-            with st.spinner("⏳ Ensamblando tu PDF Ultra Elite..."):
-                try:
-                    # 2. Importamos la NUEVA función desde tu archivo
-                    from utils.pdf_generator_elite import build_pdf_ultra_elite
-                    
-                    # 3. Generamos el PDF pasándole el payload, el gráfico 3D y el género
-                    pdf_elite = build_pdf_ultra_elite(
-                        data=payload,
-                        grafico_b64=grafico_base64,
-                        genero=genero
+    with st.container():
+        with st.spinner("⏳ Ensamblando tu PDF Ultra Elite..."):
+            try:
+                # 2. Importamos el NUEVO motor
+                from utils.pdf_generator_elite import build_pdf_ultra_elite
+                
+                # 3. Generamos el PDF pasándole el payload, el gráfico 3D y el género
+                pdf_elite = build_pdf_ultra_elite(
+                    data=payload,
+                    grafico_b64=grafico_base64,
+                    genero=genero
+                )
+                
+                # 4. Botón de descarga premium
+                if pdf_elite:
+                    st.download_button(
+                        label="🏆 DESCARGAR PLAN ULTRA ELITE",
+                        data=pdf_elite,
+                        file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf",
+                        mime="application/pdf",
+                        type="primary",
+                        key="descarga_pdf_elite"
                     )
-                    
-                    # 4. Botón de descarga
-                    if pdf_elite:
-                        st.download_button(
-                            label="🏆 DESCARGAR PLAN ULTRA ELITE",
-                            data=pdf_elite,
-                            file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf",
-                            mime="application/pdf",
-                            type="primary",
-                            key="descarga_pdf"
-                        )
-                except Exception as e:
-                    st.error(f"❌ Error técnico en el servidor al generar PDF: {e}")
+            except Exception as e:
+                st.error(f"❌ Error técnico en el servidor al generar PDF: {e}")
