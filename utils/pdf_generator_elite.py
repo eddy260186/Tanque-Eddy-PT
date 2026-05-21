@@ -1,5 +1,6 @@
 # =========================================================
-# 🔥 EDDY ULTRA ELITE PDF ENGINE v100.2 - MASTER EDITION
+# 🔥 EDDY ULTRA ELITE PDF ENGINE v100.3 - PRODUCTION READY
+# COMPRAS MENSUALES EN KG + GRÁFICOS PARALELOS + LOGOS DE GÉNERO
 # =========================================================
 
 from weasyprint import HTML
@@ -23,10 +24,21 @@ def img_to_b64(path):
 
 def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
 
+    # =====================================================
+    # SISTEMA DINÁMICO DE TEMAS Y LOGOS POR GÉNERO
+    # =====================================================
     if genero == "f":
-        ACCENT = "#FF2D75"
+        ACCENT = "#FF2D75"       # Magenta Neón Elite
+        logo_path = "logo_rosa.png"
+        footer_text = "EDICIÓN ELITE FEMENINA"
     else:
-        ACCENT = "#D4AF37"
+        ACCENT = "#D4AF37"       # Dorado VIP
+        logo_path = "logo_dorado.png"
+        footer_text = "EDICIÓN ELITE MASCULINA"
+
+    # Fallback por si no encuentra el logo específico de género
+    if not os.path.exists(logo_path):
+        logo_path = "logo_tanque.png"
 
     WHITE = "#FFFFFF"
     BLACK = "#050505"
@@ -34,10 +46,10 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     BORDER = "rgba(255,255,255,0.15)"
     CYAN = "#00D9FF"
 
-    logo_path = "logo_tanque.png"
     logo_b64 = img_to_b64(logo_path)
     qr_b64 = img_to_b64("qr_code.png")
 
+    # Extracción segura de variables
     nombre = data.get("n", "ATLETA")
     edad = safe_int(data.get("edad", 0))
     peso = safe_int(data.get("peso", 0))
@@ -57,26 +69,55 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     rutina = data.get("rutina", {})
 
     # =====================================================
-    # 🧠 SMART GROCERY LIST EXTRACTOR
-    # Extrae automáticamente los ingredientes de los menús
+    # MATEMÁTICA Y PORCENTAJES PARA GRÁFICO SVG PASTEL
     # =====================================================
-    lista_compras = data.get("compras", [])
-    if not lista_compras and isinstance(menus, dict):
-        compras_set = set()
-        for comidas in menus.values():
-            if comidas and isinstance(comidas, list):
-                texto = str(comidas[0])
-                partes = texto.split('+')
-                for p in partes:
-                    p_clean = p.split('|')[0].strip()
-                    p_clean = re.sub(r'(?i)Opcion\s*\d+:\s*', '', p_clean)
-                    p_clean = re.sub(r'\d+\s*g\s*', '', p_clean).strip()
-                    if p_clean and p_clean.lower() not in ["infusion", "infusión"]:
-                        compras_set.add(p_clean.capitalize())
-        lista_compras = sorted(list(compras_set))
-        if not lista_compras:
-            lista_compras = ["Proteínas Magras", "Carbohidratos Complejos", "Grasas Saludables", "Vegetales Verdes"]
+    total_macros = proteinas + carbos + grasas
+    if total_macros == 0: total_macros = 1
+    
+    pct_p = (proteinas / total_macros) * 100
+    pct_c = (carbos / total_macros) * 100
+    pct_g = (grasas / total_macros) * 100
 
+    offset_p = 25
+    offset_c = 25 - pct_p
+    offset_g = 25 - pct_p - pct_c
+
+    # =====================================================
+    # 🧠 CALCULADORA DE COMPRAS MENSUAL (CONVERSIÓN A KG)
+    # =====================================================
+    compras_mensuales = {}
+    if isinstance(menus, dict):
+        for opciones in menus.values():
+            if opciones and isinstance(opciones, list):
+                # Tomamos la opción base del menú para estandarizar un día de consumo
+                texto_dia = str(opciones[0])
+                componentes = texto_dia.split('+')
+                for comp in componentes:
+                    match = re.search(r'(\d+)\s*g', comp)
+                    if match:
+                        gramos_diarios = int(match.group(1))
+                        nombre_item = comp.split('|')[0]
+                        nombre_item = re.sub(r'(?i)Opcion\s*\d+:\s*', '', nombre_item)
+                        nombre_item = re.sub(r'\d+\s*g\s*', '', nombre_item).strip().capitalize()
+                        
+                        if nombre_item and "infusion" not in nombre_item.lower() and "infusión" not in nombre_item.lower():
+                            compras_mensuales[nombre_item] = compras_mensuales.get(nombre_item, 0) + gramos_diarios
+
+    lista_compras_final = []
+    for alimento, gramos_totales in compras_mensuales.items():
+        total_mes = gramos_totales * 30
+        if total_mes >= 1000:
+            lista_compras_final.append(f"{alimento} ({total_mes/1000:.1f} KG)")
+        else:
+            lista_compras_final.append(f"{alimento} ({total_mes} Gramos)")
+            
+    lista_compras_final.sort()
+    if not lista_compras_final:
+        lista_compras_final = ["Proteínas Magras (Asegurar fuentes)", "Carbohidratos Complejos", "Grasas Saludables"]
+
+    # =====================================================
+    # MAQUETADO HTML + CSS REFORZADO PARA WEASYPRINT
+    # =====================================================
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -116,6 +157,16 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         position: relative;
         z-index: 2;
         padding: 50px;
+    }}
+    .qr-corner {{
+        position: absolute;
+        top: 40px;
+        right: 40px;
+        width: 80px;
+        background: white;
+        padding: 6px;
+        border-radius: 10px;
+        border: 2px solid {ACCENT};
     }}
     .hero-logo {{
         width: 260px;
@@ -240,12 +291,24 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         font-weight: bold;
         text-transform: uppercase;
     }}
+    /* Tabla limpia para colocar los gráficos cara a cara */
+    .graphics-table {{
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }}
+    .graphics-table td {{
+        padding: 0;
+        vertical-align: middle;
+    }}
     </style>
     </head>
     <body>
 
     <div class="page">
-        <div class="content" style="text-align:center; padding-top:90px;">
+        <img src="data:image/png;base64,{qr_b64}" class="qr-corner">
+        
+        <div class="content" style="text-align:center; padding-top:100px;">
             <img src="data:image/png;base64,{logo_b64}" class="hero-logo">
             <div class="hero-title">Elite System</div>
             <div class="hero-sub">INGENIERÍA CORPORAL DE ALTO RENDIMIENTO</div>
@@ -279,17 +342,13 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                         </td>
                     </tr>
                 </table>
-
-                <div style="margin-top:35px; text-align: center;">
-                    <img src="data:image/png;base64,{qr_b64}" style="width:90px; background:white; padding:8px; border-radius:10px; border:2px solid {ACCENT};">
-                </div>
             </div>
         </div>
         <div class="footer-container">
             <table class="footer-table">
                 <tr>
                     <td class="footer-left">EDDY ELITE SYSTEM © {datetime.now().year}</td>
-                    <td class="footer-right">BLACK EBONY EDITION</td>
+                    <td class="footer-right">{footer_text}</td>
                 </tr>
             </table>
         </div>
@@ -326,8 +385,29 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
             </div>
 
             <div class="premium-card">
-                <div class="label" style="margin-bottom: 15px;">EVOLUCIÓN PROYECTADA ALTA PRECISIÓN</div>
-                <img src="data:image/png;base64,{grafico_b64}" style="width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+                <div class="label" style="margin-bottom: 15px;">MÉTRICAS COLECTIVAS DE RENDIMIENTO</div>
+                <table class="graphics-table">
+                    <tr>
+                        <td style="width: 38%; text-align: center; border-right: 1px solid rgba(255,255,255,0.08); padding-right: 15px;">
+                            <svg viewBox="0 0 42 42" style="width: 125px; height: 125px; margin: 0 auto; display: block;">
+                                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#222" stroke-width="5" />
+                                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{ACCENT}" stroke-width="5" stroke-dasharray="{pct_p} {100-pct_p}" stroke-dashoffset="{offset_p}" />
+                                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{CYAN}" stroke-width="5" stroke-dasharray="{pct_c} {100-pct_c}" stroke-dashoffset="{offset_c}" />
+                                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#FF9800" stroke-width="5" stroke-dasharray="{pct_g} {100-pct_g}" stroke-dashoffset="{offset_g}" />
+                                <text x="21" y="20" fill="white" font-size="6" font-weight="900" text-anchor="middle">AI</text>
+                                <text x="21" y="25" fill="{ACCENT}" font-size="3.5" font-weight="bold" text-anchor="middle">MACROS</text>
+                            </svg>
+                            <div style="margin-top: 15px; font-size: 11px; font-weight: bold; line-height: 1.5; color: #aaa;">
+                                <span style="color:{ACCENT};">■</span> {pct_p:.0f}% P &nbsp;
+                                <span style="color:{CYAN};">■</span> {pct_c:.0f}% C &nbsp;
+                                <span style="color:#FF9800;">■</span> {pct_g:.0f}% G
+                            </div>
+                        </td>
+                        <td style="width: 62%; padding-left: 20px; text-align: center;">
+                            <img src="data:image/png;base64,{grafico_b64}" style="width:100%; border-radius:6px;">
+                        </td>
+                    </tr>
+                </table>
             </div>
         </div>
         <div class="footer-container">
@@ -357,7 +437,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                 <div class="value">{grasas}G</div>
             </div>
             <div style="margin-top: 30px; margin-bottom: 20px; font-weight: 900; letter-spacing: 1px; color: #aaa; font-size: 14px; text-transform: uppercase;">
-                Distribución de Menús
+                Distribución de Menús Dinámicos
             </div>
     """
 
@@ -380,11 +460,11 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         <div class="content">
             <div class="section-title">Protocolo de Abastecimiento</div>
             <div style="margin-bottom: 25px; color: #888; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">
-                Checklist de Compras Inteligente
+                Requerimiento Estimado para el Mes Completo (30 Días)
             </div>
     """
 
-    for item in lista_compras:
+    for item in lista_compras_final:
         html += f"""
             <div class="checklist-item">
                 <div class="checkbox-box"></div>
