@@ -599,7 +599,7 @@ fig_plotly.update_layout(title=dict(text="Proyección de Evolución Corporal", f
 st.plotly_chart(fig_plotly, use_container_width=True, key="grafico_evolucion_corporal_elite")
 
 # ==========================================
-# 📈 DASHBOARD DE EVOLUCIÓN HISTÓRICA (VIP USER-FRIENDLY)
+# 📈 DASHBOARD DE EVOLUCIÓN HISTÓRICA (VIP & AMIGABLE)
 # ==========================================
 st.divider()
 st.markdown("### 📈 Tu Evolución Histórica")
@@ -613,52 +613,72 @@ if perfil_id:
             df_hist = pd.DataFrame(historial.data)
             df_hist['fecha_registro'] = pd.to_datetime(df_hist['fecha_registro']).dt.strftime('%d/%m/%Y')
             
-            # --- 🚀 MEJORA VIP 1: TARJETAS DE IMPACTO (CÁLCULO AUTOMÁTICO) ---
-            peso_inicial = df_hist['peso'].iloc[0]
-            peso_actual = df_hist['peso'].iloc[-1]
+            # --- 🧹 LIMPIEZA DE DATOS (Evitamos errores "nan") ---
+            # Rellenamos los datos vacíos de registros antiguos con los datos actuales para que no dé error
+            df_hist = df_hist.fillna(method='bfill').fillna(0) 
+            
+            peso_inicial = float(df_hist['peso'].iloc[0])
+            peso_actual = float(df_hist['peso'].iloc[-1])
             dif_peso = peso_actual - peso_inicial
             
-            grasa_inicial = df_hist['rfm'].iloc[0]
-            grasa_actual = df_hist['rfm'].iloc[-1]
+            grasa_inicial = float(df_hist['rfm'].iloc[0])
+            grasa_actual = float(df_hist['rfm'].iloc[-1])
             dif_grasa = grasa_actual - grasa_inicial
             
-            # Dibujamos las 3 tarjetas resumen
-            c1, c2, c3 = st.columns(3)
-            c1.metric("⚖️ Evolución de Peso", f"{peso_actual} kg", f"{dif_peso:+.1f} kg desde el inicio", delta_color="inverse" if "Pérdida" in tipo_objetivo else "normal")
-            c2.metric("🔥 Grasa Corporal", f"{grasa_actual}%", f"{dif_grasa:+.1f}% desde el inicio", delta_color="inverse")
+            brazo_ini = float(df_hist['brazos'].iloc[0]) if 'brazos' in df_hist.columns else 0
+            brazo_act = float(df_hist['brazos'].iloc[-1]) if 'brazos' in df_hist.columns else 0
+            dif_brazo = brazo_act - brazo_ini
+
+            # --- 🗣️ RESUMEN DINÁMICO Y AMIGABLE (EDDY TE HABLA) ---
+            st.markdown("""
+            <div style="background-color: rgba(212, 175, 55, 0.1); border-left: 4px solid #d4af37; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <h4 style="color: #d4af37; margin-top: 0;">🤖 Análisis de tu progreso:</h4>
+            """, unsafe_allow_html=True)
             
-            if 'brazos' in df_hist.columns and not df_hist['brazos'].isnull().all():
-                brazo_ini = df_hist['brazos'].iloc[0]
-                brazo_act = df_hist['brazos'].iloc[-1]
-                dif_brazo = brazo_act - brazo_ini
-                c3.metric("💪 Crecimiento Brazos", f"{brazo_act} cm", f"{dif_brazo:+.1f} cm ganados")
+            mensaje = ""
+            if dif_peso < 0:
+                mensaje += f"🔥 ¡Excelente trabajo! Has **bajado {abs(dif_peso):.1f} kg** desde que empezaste. "
+            elif dif_peso > 0:
+                mensaje += f"💪 Has **subido {abs(dif_peso):.1f} kg**. Si estás en etapa de volumen, ¡vamos por muy buen camino! "
             else:
-                c3.metric("💪 Crecimiento Brazos", "Sin datos", "0 cm")
+                mensaje += "⚖️ Te has mantenido en tu peso exacto, ideal para una recomposición corporal. "
+                
+            if dif_grasa < 0:
+                mensaje += f"Además, lograste quemar un **{abs(dif_grasa):.1f}% de tu grasa corporal**. "
+                
+            if dif_brazo > 0:
+                mensaje += f"Y lo mejor de todo: ¡Tus brazos crecieron **{dif_brazo:.1f} centímetros**! "
+                
+            st.markdown(f"<p style='color: #ffffff; font-size: 16px; margin-bottom: 0;'>{mensaje}</p></div>", unsafe_allow_html=True)
+
+            # --- 🚀 TARJETAS VISUALES CLARAS ---
+            c1, c2, c3 = st.columns(3)
+            c1.metric("⚖️ Peso Actual", f"{peso_actual} kg", f"{dif_peso:+.1f} kg" if dif_peso != 0 else "Sin cambios", delta_color="inverse" if "Pérdida" in tipo_objetivo else "normal")
+            c2.metric("🔥 Grasa Corporal", f"{grasa_actual}%", f"{dif_grasa:+.1f}%" if dif_grasa != 0 else "Sin cambios", delta_color="inverse")
+            if brazo_act > 0:
+                c3.metric("💪 Brazos", f"{brazo_act} cm", f"{dif_brazo:+.1f} cm" if dif_brazo != 0 else "Sin cambios")
+            else:
+                c3.metric("💪 Brazos", "Sin registro", "")
                 
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- 🚀 MEJORA VIP 2: GRÁFICOS MÁS LEGIBLES Y CON NÚMEROS ---
+            # --- 🚀 GRÁFICOS INTERACTIVOS Y LIMPIOS (SIN TEXTOS AMONTONADOS) ---
             tab_peso, tab_medidas = st.tabs(["⚖️ Curva de Peso y Grasa", "💪 Evolución Muscular"])
             
             with tab_peso:
                 fig1 = go.Figure()
-                
-                # Línea de peso sombreada y con el número escrito directamente en el gráfico
+                # Quitamos el texto fijo y dejamos solo la línea limpia con área sombreada
                 fig1.add_trace(go.Scatter(
                     x=df_hist['fecha_registro'], y=df_hist['peso'], 
-                    mode='lines+markers+text', # Activa el texto
-                    name='Peso (kg)', 
-                    text=df_hist['peso'].apply(lambda x: f"{x}kg"), # Escribe el número en el punto
-                    textposition="top center",
-                    line=dict(color='#00D9FF', width=4), 
-                    marker=dict(size=12),
-                    fill='tozeroy', fillcolor='rgba(0, 217, 255, 0.1)', # Sombreado premium
+                    mode='lines+markers', name='Peso (kg)', 
+                    line=dict(color='#00D9FF', width=4, shape='spline'), # Línea curva suave
+                    marker=dict(size=10, color='white', line=dict(width=2, color='#00D9FF')),
+                    fill='tozeroy', fillcolor='rgba(0, 217, 255, 0.1)',
                     hovertemplate='<b>Día:</b> %{x}<br><b>Peso:</b> %{y} kg<extra></extra>'
                 ))
                 fig1.update_layout(
                     plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
-                    hovermode="x unified", # Hace que se lea más fácil con el mouse
-                    margin=dict(l=10, r=10, t=30, b=20),
+                    hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
                 )
                 st.plotly_chart(fig1, use_container_width=True)
@@ -668,36 +688,29 @@ if perfil_id:
                     fig2 = go.Figure()
                     fig2.add_trace(go.Scatter(
                         x=df_hist['fecha_registro'], y=df_hist['brazos'], 
-                        mode='lines+markers+text', 
-                        name='Brazos (cm)', 
-                        text=df_hist['brazos'].apply(lambda x: f"{x}cm"),
-                        textposition="top center",
-                        line=dict(color='#D4AF37', width=4), 
-                        marker=dict(size=12),
-                        hovertemplate='<b>Brazos:</b> %{y} cm<extra></extra>'
+                        mode='lines+markers', name='Brazos (cm)', 
+                        line=dict(color='#D4AF37', width=4, shape='spline'), 
+                        marker=dict(size=10, color='white', line=dict(width=2, color='#D4AF37')),
+                        hovertemplate='<b>Día:</b> %{x}<br><b>Brazos:</b> %{y} cm<extra></extra>'
                     ))
                     fig2.add_trace(go.Scatter(
                         x=df_hist['fecha_registro'], y=df_hist['piernas'], 
-                        mode='lines+markers+text', 
-                        name='Piernas (cm)', 
-                        text=df_hist['piernas'].apply(lambda x: f"{x}cm"),
-                        textposition="bottom center",
-                        line=dict(color='#00FF00', width=4), 
-                        marker=dict(size=12),
-                        hovertemplate='<b>Piernas:</b> %{y} cm<extra></extra>'
+                        mode='lines+markers', name='Piernas (cm)', 
+                        line=dict(color='#00FF00', width=4, shape='spline'), 
+                        marker=dict(size=10, color='white', line=dict(width=2, color='#00FF00')),
+                        hovertemplate='<b>Día:</b> %{x}<br><b>Piernas:</b> %{y} cm<extra></extra>'
                     ))
                     fig2.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
-                        hovermode="x unified",
-                        margin=dict(l=10, r=10, t=30, b=20),
+                        hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
                     )
                     st.plotly_chart(fig2, use_container_width=True)
                     
         elif len(historial.data) == 1:
-            st.info("📌 ¡Felicidades por tu primer registro! El sistema necesita un segundo registro (el mes que viene) para poder trazar y dibujar tu curva de evolución. ¡A darle duro!")
+            st.info("📌 ¡Felicidades por tu primer registro! Guardá tus medidas el próximo mes para ver tu evolución en gráficos.")
         else:
-            st.warning("⚠️ Todavía no hay historial en tu cuenta. Cargá tus medidas y tocá 'Guardar Progreso'.")
+            st.warning("⚠️ Aún no hay datos de tu evolución. Guardá tu progreso para empezar a medirte.")
     except Exception as e:
         st.error(f"❌ Error al cargar historial: {e}")
 
