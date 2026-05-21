@@ -609,108 +609,130 @@ if perfil_id:
         # Traemos el historial de Supabase
         historial = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", perfil_id).order("fecha_registro").execute()
         
-        if len(historial.data) > 1:
+        if len(historial.data) > 0:
             df_hist = pd.DataFrame(historial.data)
-            df_hist['fecha_registro'] = pd.to_datetime(df_hist['fecha_registro']).dt.strftime('%d/%m/%Y')
             
-            # --- 🧹 LIMPIEZA DE DATOS (Evitamos errores "nan") ---
-            # Rellenamos los datos vacíos de registros antiguos con los datos actuales para que no dé error
-            df_hist = df_hist.fillna(method='bfill').fillna(0) 
+            # --- 🧹 LIMPIEZA TOTAL DE DATOS (LA CLAVE DEL ÉXITO) ---
+            # 1. Filtramos registros que tengan peso 0 o nulo para no arruinar la data
+            df_hist = df_hist[df_hist['peso'] > 0]
             
-            peso_inicial = float(df_hist['peso'].iloc[0])
-            peso_actual = float(df_hist['peso'].iloc[-1])
-            dif_peso = peso_actual - peso_inicial
+            # 2. Si hay varios guardados el MISMO DÍA, nos quedamos solo con el último (elimina caídas a pique)
+            df_hist = df_hist.groupby('fecha_registro').last().reset_index()
             
-            grasa_inicial = float(df_hist['rfm'].iloc[0])
-            grasa_actual = float(df_hist['rfm'].iloc[-1])
-            dif_grasa = grasa_actual - grasa_inicial
+            # 3. Formateamos la fecha linda
+            df_hist['fecha_registro_str'] = pd.to_datetime(df_hist['fecha_registro']).dt.strftime('%d/%m/%Y')
             
-            brazo_ini = float(df_hist['brazos'].iloc[0]) if 'brazos' in df_hist.columns else 0
-            brazo_act = float(df_hist['brazos'].iloc[-1]) if 'brazos' in df_hist.columns else 0
-            dif_brazo = brazo_act - brazo_ini
+            if len(df_hist) > 1:
+                peso_inicial = float(df_hist['peso'].iloc[0])
+                peso_actual = float(df_hist['peso'].iloc[-1])
+                dif_peso = peso_actual - peso_inicial
+                
+                grasa_inicial = float(df_hist['rfm'].iloc[0])
+                grasa_actual = float(df_hist['rfm'].iloc[-1])
+                dif_grasa = grasa_actual - grasa_inicial
+                
+                # Extraemos datos de brazos limpios (ignorando los 0 de registros viejos)
+                if 'brazos' in df_hist.columns:
+                    df_brazos = df_hist[df_hist['brazos'] > 0]
+                    if not df_brazos.empty:
+                        brazo_ini = float(df_brazos['brazos'].iloc[0])
+                        brazo_act = float(df_brazos['brazos'].iloc[-1])
+                        dif_brazo = brazo_act - brazo_ini
+                    else:
+                        brazo_act = 0
+                        dif_brazo = 0
+                else:
+                    brazo_act = 0
+                    dif_brazo = 0
 
-            # --- 🗣️ RESUMEN DINÁMICO Y AMIGABLE (EDDY TE HABLA) ---
-            st.markdown("""
-            <div style="background-color: rgba(212, 175, 55, 0.1); border-left: 4px solid #d4af37; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                <h4 style="color: #d4af37; margin-top: 0;">🤖 Análisis de tu progreso:</h4>
-            """, unsafe_allow_html=True)
-            
-            mensaje = ""
-            if dif_peso < 0:
-                mensaje += f"🔥 ¡Excelente trabajo! Has **bajado {abs(dif_peso):.1f} kg** desde que empezaste. "
-            elif dif_peso > 0:
-                mensaje += f"💪 Has **subido {abs(dif_peso):.1f} kg**. Si estás en etapa de volumen, ¡vamos por muy buen camino! "
-            else:
-                mensaje += "⚖️ Te has mantenido en tu peso exacto, ideal para una recomposición corporal. "
+                # --- 🗣️ RESUMEN DINÁMICO Y AMIGABLE (EDDY TE HABLA LIMPIO) ---
+                st.markdown("""
+                <div style="background-color: rgba(212, 175, 55, 0.1); border-left: 4px solid #d4af37; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <h4 style="color: #d4af37; margin-top: 0; margin-bottom: 10px;">🤖 Análisis de tu progreso:</h4>
+                """, unsafe_allow_html=True)
                 
-            if dif_grasa < 0:
-                mensaje += f"Además, lograste quemar un **{abs(dif_grasa):.1f}% de tu grasa corporal**. "
-                
-            if dif_brazo > 0:
-                mensaje += f"Y lo mejor de todo: ¡Tus brazos crecieron **{dif_brazo:.1f} centímetros**! "
-                
-            st.markdown(f"<p style='color: #ffffff; font-size: 16px; margin-bottom: 0;'>{mensaje}</p></div>", unsafe_allow_html=True)
+                mensaje = ""
+                if dif_peso < 0:
+                    mensaje += f"🔥 ¡Excelente trabajo! Has <b>bajado {abs(dif_peso):.1f} kg</b> desde que empezaste. "
+                elif dif_peso > 0:
+                    mensaje += f"💪 Has <b>subido {abs(dif_peso):.1f} kg</b>. Si estás en etapa de volumen, ¡vamos por muy buen camino! "
+                else:
+                    mensaje += "⚖️ Te has mantenido en tu peso exacto. Ideal para una recomposición corporal. "
+                    
+                if dif_grasa < 0:
+                    mensaje += f"Además, lograste quemar un <b>{abs(dif_grasa):.1f}% de tu grasa corporal</b>. "
+                    
+                if dif_brazo > 0:
+                    mensaje += f"Y lo mejor de todo: ¡Tus brazos crecieron <b>{dif_brazo:.1f} centímetros</b>! "
+                    
+                st.markdown(f"<p style='color: #ffffff; font-size: 16px; margin-bottom: 0; line-height: 1.5;'>{mensaje}</p></div>", unsafe_allow_html=True)
 
-            # --- 🚀 TARJETAS VISUALES CLARAS ---
-            c1, c2, c3 = st.columns(3)
-            c1.metric("⚖️ Peso Actual", f"{peso_actual} kg", f"{dif_peso:+.1f} kg" if dif_peso != 0 else "Sin cambios", delta_color="inverse" if "Pérdida" in tipo_objetivo else "normal")
-            c2.metric("🔥 Grasa Corporal", f"{grasa_actual}%", f"{dif_grasa:+.1f}%" if dif_grasa != 0 else "Sin cambios", delta_color="inverse")
-            if brazo_act > 0:
-                c3.metric("💪 Brazos", f"{brazo_act} cm", f"{dif_brazo:+.1f} cm" if dif_brazo != 0 else "Sin cambios")
-            else:
-                c3.metric("💪 Brazos", "Sin registro", "")
+                # --- 🚀 TARJETAS VISUALES CLARAS ---
+                c1, c2, c3 = st.columns(3)
+                c1.metric("⚖️ Peso Actual", f"{peso_actual} kg", f"{dif_peso:+.1f} kg" if dif_peso != 0 else "Sin cambios", delta_color="inverse" if "Pérdida" in tipo_objetivo else "normal")
+                c2.metric("🔥 Grasa Corporal", f"{grasa_actual}%", f"{dif_grasa:+.1f}%" if dif_grasa != 0 else "Sin cambios", delta_color="inverse")
+                if brazo_act > 0:
+                    c3.metric("💪 Brazos", f"{brazo_act} cm", f"{dif_brazo:+.1f} cm" if dif_brazo != 0 else "Sin cambios")
+                else:
+                    c3.metric("💪 Brazos", "Aún sin registro", "")
+                    
+                st.markdown("<br>", unsafe_allow_html=True)
                 
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            # --- 🚀 GRÁFICOS INTERACTIVOS Y LIMPIOS (SIN TEXTOS AMONTONADOS) ---
-            tab_peso, tab_medidas = st.tabs(["⚖️ Curva de Peso y Grasa", "💪 Evolución Muscular"])
-            
-            with tab_peso:
-                fig1 = go.Figure()
-                # Quitamos el texto fijo y dejamos solo la línea limpia con área sombreada
-                fig1.add_trace(go.Scatter(
-                    x=df_hist['fecha_registro'], y=df_hist['peso'], 
-                    mode='lines+markers', name='Peso (kg)', 
-                    line=dict(color='#00D9FF', width=4, shape='spline'), # Línea curva suave
-                    marker=dict(size=10, color='white', line=dict(width=2, color='#00D9FF')),
-                    fill='tozeroy', fillcolor='rgba(0, 217, 255, 0.1)',
-                    hovertemplate='<b>Día:</b> %{x}<br><b>Peso:</b> %{y} kg<extra></extra>'
-                ))
-                fig1.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
-                    hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
-                )
-                st.plotly_chart(fig1, use_container_width=True)
-            
-            with tab_medidas:
-                if 'brazos' in df_hist.columns and 'piernas' in df_hist.columns:
-                    fig2 = go.Figure()
-                    fig2.add_trace(go.Scatter(
-                        x=df_hist['fecha_registro'], y=df_hist['brazos'], 
-                        mode='lines+markers', name='Brazos (cm)', 
-                        line=dict(color='#D4AF37', width=4, shape='spline'), 
-                        marker=dict(size=10, color='white', line=dict(width=2, color='#D4AF37')),
-                        hovertemplate='<b>Día:</b> %{x}<br><b>Brazos:</b> %{y} cm<extra></extra>'
+                # --- 🚀 GRÁFICOS INTERACTIVOS (CURVAS SUAVES Y PRECISAS) ---
+                tab_peso, tab_medidas = st.tabs(["⚖️ Curva de Peso y Grasa", "💪 Evolución Muscular"])
+                
+                with tab_peso:
+                    fig1 = go.Figure()
+                    fig1.add_trace(go.Scatter(
+                        x=df_hist['fecha_registro_str'], y=df_hist['peso'], 
+                        mode='lines+markers', name='Peso (kg)', 
+                        line=dict(color='#00D9FF', width=4, shape='spline'), 
+                        marker=dict(size=10, color='white', line=dict(width=2, color='#00D9FF')),
+                        fill='tozeroy', fillcolor='rgba(0, 217, 255, 0.1)',
+                        hovertemplate='<b>Día:</b> %{x}<br><b>Peso:</b> %{y} kg<extra></extra>'
                     ))
-                    fig2.add_trace(go.Scatter(
-                        x=df_hist['fecha_registro'], y=df_hist['piernas'], 
-                        mode='lines+markers', name='Piernas (cm)', 
-                        line=dict(color='#00FF00', width=4, shape='spline'), 
-                        marker=dict(size=10, color='white', line=dict(width=2, color='#00FF00')),
-                        hovertemplate='<b>Día:</b> %{x}<br><b>Piernas:</b> %{y} cm<extra></extra>'
-                    ))
-                    fig2.update_layout(
+                    fig1.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
                         hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
                     )
-                    st.plotly_chart(fig2, use_container_width=True)
-                    
-        elif len(historial.data) == 1:
-            st.info("📌 ¡Felicidades por tu primer registro! Guardá tus medidas el próximo mes para ver tu evolución en gráficos.")
+                    st.plotly_chart(fig1, use_container_width=True)
+                
+                with tab_medidas:
+                    if 'brazos' in df_hist.columns and 'piernas' in df_hist.columns:
+                        fig2 = go.Figure()
+                        
+                        # Graficamos solo los puntos que tengan valores reales (mayores a cero)
+                        df_graf_brazos = df_hist[df_hist['brazos'] > 0]
+                        df_graf_piernas = df_hist[df_hist['piernas'] > 0]
+                        
+                        if not df_graf_brazos.empty:
+                            fig2.add_trace(go.Scatter(
+                                x=df_graf_brazos['fecha_registro_str'], y=df_graf_brazos['brazos'], 
+                                mode='lines+markers', name='Brazos (cm)', 
+                                line=dict(color='#D4AF37', width=4, shape='spline'), 
+                                marker=dict(size=10, color='white', line=dict(width=2, color='#D4AF37')),
+                                hovertemplate='<b>Día:</b> %{x}<br><b>Brazos:</b> %{y} cm<extra></extra>'
+                            ))
+                        if not df_graf_piernas.empty:
+                            fig2.add_trace(go.Scatter(
+                                x=df_graf_piernas['fecha_registro_str'], y=df_graf_piernas['piernas'], 
+                                mode='lines+markers', name='Piernas (cm)', 
+                                line=dict(color='#00FF00', width=4, shape='spline'), 
+                                marker=dict(size=10, color='white', line=dict(width=2, color='#00FF00')),
+                                hovertemplate='<b>Día:</b> %{x}<br><b>Piernas:</b> %{y} cm<extra></extra>'
+                            ))
+                        fig2.update_layout(
+                            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                            hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
+                            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                        )
+                        st.plotly_chart(fig2, use_container_width=True)
+                        
+            elif len(df_hist) == 1:
+                st.info("📌 ¡Felicidades por tu primer registro! Guardá tus medidas el próximo mes para ver tu evolución en gráficos.")
         else:
-            st.warning("⚠️ Aún no hay datos de tu evolución. Guardá tu progreso para empezar a medirte.")
+            st.warning("⚠️ Aún no hay datos de tu evolución en la bóveda. Llená tus medidas y tocá 'Guardar Progreso'.")
     except Exception as e:
         st.error(f"❌ Error al cargar historial: {e}")
 
