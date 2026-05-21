@@ -244,8 +244,10 @@ email_limpio = email_usuario.lower().strip() if email_usuario else ""
 
 res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_limpio).execute()
 
+perfil_id = None # <-- ESTA ES LA CLAVE PARA QUE NO DE ERROR
 if len(res_perfil.data) > 0:
     perfil_db = res_perfil.data[0]
+    perfil_id = perfil_db.get("id") # <-- Extraemos su ID apenas inicia sesión
     nombre_default = perfil_db.get("nombre_completo", "")
     pais_default = perfil_db.get("pais", "Argentina")
     genero_db = perfil_db.get("genero")
@@ -597,63 +599,107 @@ fig_plotly.update_layout(title=dict(text="Proyección de Evolución Corporal", f
 st.plotly_chart(fig_plotly, use_container_width=True, key="grafico_evolucion_corporal_elite")
 
 # ==========================================
-# 📈 DASHBOARD DE EVOLUCIÓN HISTÓRICA
+# 📈 DASHBOARD DE EVOLUCIÓN HISTÓRICA (VIP USER-FRIENDLY)
 # ==========================================
 st.divider()
 st.markdown("### 📈 Tu Evolución Histórica")
 
-try:
-    # 1. Traemos el historial de Supabase ordenado por fecha de registro
-    historial = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", perfil_id).order("fecha_registro").execute()
-    
-    # 2. Verificamos si hay suficientes datos para armar una curva (mínimo 2 registros)
-    if len(historial.data) > 1:
-        # Convertimos los datos a un DataFrame de Pandas para graficar fácil
-        df_hist = pd.DataFrame(historial.data)
+if perfil_id:
+    try:
+        # Traemos el historial de Supabase
+        historial = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", perfil_id).order("fecha_registro").execute()
         
-        # Formateamos la fecha para que se lea linda (Día/Mes/Año)
-        df_hist['fecha_registro'] = pd.to_datetime(df_hist['fecha_registro']).dt.strftime('%d/%m/%Y')
-        
-        # 3. Creamos Pestañas (Tabs) para organizar los gráficos
-        tab_peso, tab_medidas = st.tabs(["⚖️ Peso y Grasa", "💪 Medidas Musculares"])
-        
-        # --- GRÁFICO 1: PESO VS GRASA ---
-        with tab_peso:
-            fig1 = go.Figure()
-            fig1.add_trace(go.Scatter(x=df_hist['fecha_registro'], y=df_hist['peso'], mode='lines+markers', name='Peso (kg)', line=dict(color='#00D9FF', width=3), marker=dict(size=8)))
-            fig1.add_trace(go.Scatter(x=df_hist['fecha_registro'], y=df_hist['rfm'], mode='lines+markers', name='Grasa (RFM %)', line=dict(color='#FF2D75', width=3), marker=dict(size=8)))
+        if len(historial.data) > 1:
+            df_hist = pd.DataFrame(historial.data)
+            df_hist['fecha_registro'] = pd.to_datetime(df_hist['fecha_registro']).dt.strftime('%d/%m/%Y')
             
-            fig1.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
-                margin=dict(l=20, r=20, t=30, b=20),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-            )
-            st.plotly_chart(fig1, use_container_width=True)
-        
-        # --- GRÁFICO 2: MEDIDAS MUSCULARES ---
-        with tab_medidas:
-            fig2 = go.Figure()
-            # Verificamos si existen los datos de brazos/piernas antes de graficar (por si hay registros viejos)
-            if 'brazos' in df_hist.columns and 'piernas' in df_hist.columns:
-                fig2.add_trace(go.Scatter(x=df_hist['fecha_registro'], y=df_hist['brazos'], mode='lines+markers', name='Brazos (cm)', line=dict(color='#D4AF37', width=3), marker=dict(size=8)))
-                fig2.add_trace(go.Scatter(x=df_hist['fecha_registro'], y=df_hist['piernas'], mode='lines+markers', name='Piernas (cm)', line=dict(color='#00FF00', width=3), marker=dict(size=8)))
-                
-                fig2.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
-                    margin=dict(l=20, r=20, t=30, b=20),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                )
-                st.plotly_chart(fig2, use_container_width=True)
+            # --- 🚀 MEJORA VIP 1: TARJETAS DE IMPACTO (CÁLCULO AUTOMÁTICO) ---
+            peso_inicial = df_hist['peso'].iloc[0]
+            peso_actual = df_hist['peso'].iloc[-1]
+            dif_peso = peso_actual - peso_inicial
+            
+            grasa_inicial = df_hist['rfm'].iloc[0]
+            grasa_actual = df_hist['rfm'].iloc[-1]
+            dif_grasa = grasa_actual - grasa_inicial
+            
+            # Dibujamos las 3 tarjetas resumen
+            c1, c2, c3 = st.columns(3)
+            c1.metric("⚖️ Evolución de Peso", f"{peso_actual} kg", f"{dif_peso:+.1f} kg desde el inicio", delta_color="inverse" if "Pérdida" in tipo_objetivo else "normal")
+            c2.metric("🔥 Grasa Corporal", f"{grasa_actual}%", f"{dif_grasa:+.1f}% desde el inicio", delta_color="inverse")
+            
+            if 'brazos' in df_hist.columns and not df_hist['brazos'].isnull().all():
+                brazo_ini = df_hist['brazos'].iloc[0]
+                brazo_act = df_hist['brazos'].iloc[-1]
+                dif_brazo = brazo_act - brazo_ini
+                c3.metric("💪 Crecimiento Brazos", f"{brazo_act} cm", f"{dif_brazo:+.1f} cm ganados")
             else:
-                st.info("Faltan datos de medidas en tus registros anteriores.")
-
-    elif len(historial.data) == 1:
-        st.info("📌 Tenés 1 registro guardado en la bóveda. Guardá tu progreso el próximo mes para generar tu curva de evolución.")
-    else:
-        st.warning("⚠️ Aún no guardaste ningún progreso. Llená tus datos en la barra lateral y presioná 'Guardar Progreso'.")
-
-except Exception as e:
-    st.error(f"❌ Error interno al cargar el historial: {e}")
+                c3.metric("💪 Crecimiento Brazos", "Sin datos", "0 cm")
+                
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # --- 🚀 MEJORA VIP 2: GRÁFICOS MÁS LEGIBLES Y CON NÚMEROS ---
+            tab_peso, tab_medidas = st.tabs(["⚖️ Curva de Peso y Grasa", "💪 Evolución Muscular"])
+            
+            with tab_peso:
+                fig1 = go.Figure()
+                
+                # Línea de peso sombreada y con el número escrito directamente en el gráfico
+                fig1.add_trace(go.Scatter(
+                    x=df_hist['fecha_registro'], y=df_hist['peso'], 
+                    mode='lines+markers+text', # Activa el texto
+                    name='Peso (kg)', 
+                    text=df_hist['peso'].apply(lambda x: f"{x}kg"), # Escribe el número en el punto
+                    textposition="top center",
+                    line=dict(color='#00D9FF', width=4), 
+                    marker=dict(size=12),
+                    fill='tozeroy', fillcolor='rgba(0, 217, 255, 0.1)', # Sombreado premium
+                    hovertemplate='<b>Día:</b> %{x}<br><b>Peso:</b> %{y} kg<extra></extra>'
+                ))
+                fig1.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                    hovermode="x unified", # Hace que se lea más fácil con el mouse
+                    margin=dict(l=10, r=10, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                )
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            with tab_medidas:
+                if 'brazos' in df_hist.columns and 'piernas' in df_hist.columns:
+                    fig2 = go.Figure()
+                    fig2.add_trace(go.Scatter(
+                        x=df_hist['fecha_registro'], y=df_hist['brazos'], 
+                        mode='lines+markers+text', 
+                        name='Brazos (cm)', 
+                        text=df_hist['brazos'].apply(lambda x: f"{x}cm"),
+                        textposition="top center",
+                        line=dict(color='#D4AF37', width=4), 
+                        marker=dict(size=12),
+                        hovertemplate='<b>Brazos:</b> %{y} cm<extra></extra>'
+                    ))
+                    fig2.add_trace(go.Scatter(
+                        x=df_hist['fecha_registro'], y=df_hist['piernas'], 
+                        mode='lines+markers+text', 
+                        name='Piernas (cm)', 
+                        text=df_hist['piernas'].apply(lambda x: f"{x}cm"),
+                        textposition="bottom center",
+                        line=dict(color='#00FF00', width=4), 
+                        marker=dict(size=12),
+                        hovertemplate='<b>Piernas:</b> %{y} cm<extra></extra>'
+                    ))
+                    fig2.update_layout(
+                        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                        hovermode="x unified",
+                        margin=dict(l=10, r=10, t=30, b=20),
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                    )
+                    st.plotly_chart(fig2, use_container_width=True)
+                    
+        elif len(historial.data) == 1:
+            st.info("📌 ¡Felicidades por tu primer registro! El sistema necesita un segundo registro (el mes que viene) para poder trazar y dibujar tu curva de evolución. ¡A darle duro!")
+        else:
+            st.warning("⚠️ Todavía no hay historial en tu cuenta. Cargá tus medidas y tocá 'Guardar Progreso'.")
+    except Exception as e:
+        st.error(f"❌ Error al cargar historial: {e}")
 
 # ==========================================
 # 6. SUPLEMENTACIÓN
