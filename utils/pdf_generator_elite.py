@@ -1,6 +1,6 @@
 # =========================================================
-# 🔥 EDDY ULTRA ELITE PDF ENGINE v100.7 - TOTAL GROCERY MASTER
-# COMPRAS MENSUALES DETALLADAS (KG + CONSUMO LIBRE) • WEASYPRINT SAFE
+# 🔥 EDDY ULTRA ELITE PDF ENGINE v100.8 - MINIMALIST EDITION
+# COMPRAS MENSUALES EN KG • GRÁFICOS PARALELOS • SIN FOOTERS
 # =========================================================
 
 from weasyprint import HTML
@@ -30,11 +30,9 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     if genero == "f":
         ACCENT = "#FF2D75"       # Magenta Neón Elite
         logo_path = "logo_rosa.png"
-        footer_text = "EDICIÓN ELITE FEMENINA"
     else:
         ACCENT = "#D4AF37"       # Dorado VIP
         logo_path = "logo_dorado.png"
-        footer_text = "EDICIÓN ELITE MASCULINA"
 
     if not os.path.exists(logo_path):
         logo_path = "logo_tanque.png"
@@ -82,7 +80,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     offset_g = 25 - pct_p - pct_c
 
     # =====================================================
-    # 🧠 ALGORITMO DE EXTRACCIÓN TOTAL DE COMPRAS (TODO)
+    # 🧠 ALGORITMO DE EXTRACCIÓN TOTAL DE COMPRAS
     # =====================================================
     compras_mensuales_gramos = {}
     articulos_consumo_libre = set()
@@ -90,14 +88,11 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     if isinstance(menus, dict):
         for opciones in menus.values():
             if opciones and isinstance(opciones, list):
-                # Procesamos la opción principal para las métricas exactas
                 texto_dia = str(opciones[0]).replace('\n', ' ')
-                # Dividimos tanto por el símbolo "+" como por la barra "|" de las infusiones
                 componentes = re.split(r'[\+|]', texto_dia)
                 
                 for comp in componentes:
                     comp = comp.strip()
-                    # Limpieza exhaustiva de prefijos del sistema
                     comp = re.sub(r'(?i)^Opcion\s*\d+:\s*', '', comp)
                     comp = re.sub(r'(?i)^Infusion\s*:\s*', '', comp)
                     comp = re.sub(r'(?i)^Infusión\s*:\s*', '', comp)
@@ -106,24 +101,18 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                     if not comp:
                         continue
                     
-                    # 1. Verificar si el ingrediente tiene gramaje especificado
                     match = re.search(r'(\d+)\s*g', comp)
                     if match:
                         gramos_diarios = int(match.group(1))
-                        # Extraemos el nombre limpio quitándole los gramos
                         nombre_item = re.sub(r'\d+\s*g\s*', '', comp).strip().capitalize()
                         if nombre_item:
                             compras_mensuales_gramos[nombre_item] = compras_mensuales_gramos.get(nombre_item, 0) + gramos_diarios
                     else:
-                        # 2. Si no tiene gramos (ej: "Mate amargo", "Aceite de oliva"), va a consumo libre
                         nombre_libre = comp.capitalize()
                         if nombre_libre and len(nombre_libre) > 2:
                             articulos_consumo_libre.add(nombre_libre)
 
-    # Consolidación final de la lista de compras combinada
     lista_compras_final = []
-    
-    # Añadimos los elementos calculados en KG
     for alimento, gramos_totales in compras_mensuales_gramos.items():
         total_mes = gramos_totales * 30
         if total_mes >= 1000:
@@ -131,7 +120,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         else:
             lista_compras_final.append(f"{alimento} ({total_mes} Gramos)")
             
-    # Añadimos las infusiones y artículos libres (evitando duplicar nombres)
     for articulo in articulos_consumo_libre:
         if articulo.lower() not in [k.lower() for k in compras_mensuales_gramos.keys()]:
             lista_compras_final.append(f"{articulo} (Cantidad al gusto / Mes)")
@@ -142,7 +130,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         lista_compras_final = ["Proteínas Magras de Alta Calidad", "Carbohidratos Complejos", "Fuentes de Grasas Saludables"]
 
     # =====================================================
-    # MAQUETADO HTML + CSS REFORZADO PARA WEASYPRINT
+    # MAQUETADO HTML + CSS REFORZADO (PIES DE PÁGINA ELIMINADOS)
     # =====================================================
     html = f"""
     <!DOCTYPE html>
@@ -182,7 +170,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     .content {{
         position: relative;
         z-index: 2;
-        padding: 50px;
+        padding: 55px;
     }}
     .qr-corner {{
         position: absolute;
@@ -276,31 +264,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         background: rgba(255,255,255,0.02);
         margin-top: 20px;
     }}
-    .footer-container {{
-        position: absolute;
-        bottom: 30px;
-        left: 50px;
-        right: 50px;
-        height: 40px;
-    }}
-    .footer-table {{
-        width: 100%;
-        border-top: 1px solid rgba(255,255,255,0.15);
-        padding-top: 15px;
-    }}
-    .footer-left {{
-        text-align: left;
-        color: #666;
-        font-size: 10px;
-        font-weight: bold;
-    }}
-    .footer-right {{
-        text-align: right;
-        color: {ACCENT};
-        font-size: 10px;
-        font-weight: bold;
-        text-transform: uppercase;
-    }}
     .graphics-table {{
         width: 100%;
         border-collapse: collapse;
@@ -311,7 +274,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         vertical-align: middle;
     }}
     
-    /* Estructura de tabla blindada para la checklist */
     .checklist-table {{
         width: 100%;
         border-collapse: collapse;
@@ -345,7 +307,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     <div class="page">
         <img src="data:image/png;base64,{qr_b64}" class="qr-corner">
         
-        <div class="content" style="text-align:center; padding-top:110px;">
+        <div class="content" style="text-align:center; padding-top:120px;">
             <img src="data:image/png;base64,{logo_b64}" class="hero-logo">
             <div class="hero-title">Elite System</div>
             <div class="hero-sub">INGENIERÍA CORPORAL DE ALTO RENDIMIENTO</div>
@@ -380,14 +342,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                     </tr>
                 </table>
             </div>
-        </div>
-        <div class="footer-container">
-            <table class="footer-table">
-                <tr>
-                    <td class="footer-left">EDDY ELITE SYSTEM © {datetime.now().year}</td>
-                    <td class="footer-right">{footer_text}</td>
-                </tr>
-            </table>
         </div>
     </div>
 
@@ -446,14 +400,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                     </tr>
                 </table>
             </div>
-        </div>
-        <div class="footer-container">
-            <table class="footer-table">
-                <tr>
-                    <td class="footer-left">EDDY ELITE SYSTEM</td>
-                    <td class="footer-right">BIOMETRÍA</td>
-                </tr>
-            </table>
         </div>
     </div>
 
@@ -544,7 +490,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     </div>
 
     <div class="page">
-        <div class="content" style="padding-top: 80px;">
+        <div class="content" style="padding-top: 90px;">
             <div class="section-title">Mentalidad Elite</div>
             
             <div class="contract-box">
@@ -560,14 +506,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                     <img src="data:image/png;base64,{logo_b64}" style="width: 120px; opacity: 0.3;">
                 </div>
             </div>
-        </div>
-        <div class="footer-container">
-            <table class="footer-table">
-                <tr>
-                    <td class="footer-left">EDDY ELITE SYSTEM</td>
-                    <td class="footer-right">COMPROMISO</td>
-                </tr>
-            </table>
         </div>
     </div>
 
