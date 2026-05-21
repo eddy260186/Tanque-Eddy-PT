@@ -1,6 +1,6 @@
 # =========================================================
-# 🔥 EDDY ULTRA ELITE PDF ENGINE v100.3 - PRODUCTION READY
-# COMPRAS MENSUALES EN KG + GRÁFICOS PARALELOS + LOGOS DE GÉNERO
+# 🔥 EDDY ULTRA ELITE PDF ENGINE v100.7 - TOTAL GROCERY MASTER
+# COMPRAS MENSUALES DETALLADAS (KG + CONSUMO LIBRE) • WEASYPRINT SAFE
 # =========================================================
 
 from weasyprint import HTML
@@ -36,7 +36,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         logo_path = "logo_dorado.png"
         footer_text = "EDICIÓN ELITE MASCULINA"
 
-    # Fallback por si no encuentra el logo específico de género
     if not os.path.exists(logo_path):
         logo_path = "logo_tanque.png"
 
@@ -83,37 +82,64 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     offset_g = 25 - pct_p - pct_c
 
     # =====================================================
-    # 🧠 CALCULADORA DE COMPRAS MENSUAL (CONVERSIÓN A KG)
+    # 🧠 ALGORITMO DE EXTRACCIÓN TOTAL DE COMPRAS (TODO)
     # =====================================================
-    compras_mensuales = {}
+    compras_mensuales_gramos = {}
+    articulos_consumo_libre = set()
+
     if isinstance(menus, dict):
         for opciones in menus.values():
             if opciones and isinstance(opciones, list):
-                # Tomamos la opción base del menú para estandarizar un día de consumo
-                texto_dia = str(opciones[0])
-                componentes = texto_dia.split('+')
+                # Procesamos la opción principal para las métricas exactas
+                texto_dia = str(opciones[0]).replace('\n', ' ')
+                # Dividimos tanto por el símbolo "+" como por la barra "|" de las infusiones
+                componentes = re.split(r'[\+|]', texto_dia)
+                
                 for comp in componentes:
+                    comp = comp.strip()
+                    # Limpieza exhaustiva de prefijos del sistema
+                    comp = re.sub(r'(?i)^Opcion\s*\d+:\s*', '', comp)
+                    comp = re.sub(r'(?i)^Infusion\s*:\s*', '', comp)
+                    comp = re.sub(r'(?i)^Infusión\s*:\s*', '', comp)
+                    comp = comp.strip()
+                    
+                    if not comp:
+                        continue
+                    
+                    # 1. Verificar si el ingrediente tiene gramaje especificado
                     match = re.search(r'(\d+)\s*g', comp)
                     if match:
                         gramos_diarios = int(match.group(1))
-                        nombre_item = comp.split('|')[0]
-                        nombre_item = re.sub(r'(?i)Opcion\s*\d+:\s*', '', nombre_item)
-                        nombre_item = re.sub(r'\d+\s*g\s*', '', nombre_item).strip().capitalize()
-                        
-                        if nombre_item and "infusion" not in nombre_item.lower() and "infusión" not in nombre_item.lower():
-                            compras_mensuales[nombre_item] = compras_mensuales.get(nombre_item, 0) + gramos_diarios
+                        # Extraemos el nombre limpio quitándole los gramos
+                        nombre_item = re.sub(r'\d+\s*g\s*', '', comp).strip().capitalize()
+                        if nombre_item:
+                            compras_mensuales_gramos[nombre_item] = compras_mensuales_gramos.get(nombre_item, 0) + gramos_diarios
+                    else:
+                        # 2. Si no tiene gramos (ej: "Mate amargo", "Aceite de oliva"), va a consumo libre
+                        nombre_libre = comp.capitalize()
+                        if nombre_libre and len(nombre_libre) > 2:
+                            articulos_consumo_libre.add(nombre_libre)
 
+    # Consolidación final de la lista de compras combinada
     lista_compras_final = []
-    for alimento, gramos_totales in compras_mensuales.items():
+    
+    # Añadimos los elementos calculados en KG
+    for alimento, gramos_totales in compras_mensuales_gramos.items():
         total_mes = gramos_totales * 30
         if total_mes >= 1000:
             lista_compras_final.append(f"{alimento} ({total_mes/1000:.1f} KG)")
         else:
             lista_compras_final.append(f"{alimento} ({total_mes} Gramos)")
             
+    # Añadimos las infusiones y artículos libres (evitando duplicar nombres)
+    for articulo in articulos_consumo_libre:
+        if articulo.lower() not in [k.lower() for k in compras_mensuales_gramos.keys()]:
+            lista_compras_final.append(f"{articulo} (Cantidad al gusto / Mes)")
+            
     lista_compras_final.sort()
+    
     if not lista_compras_final:
-        lista_compras_final = ["Proteínas Magras (Asegurar fuentes)", "Carbohidratos Complejos", "Grasas Saludables"]
+        lista_compras_final = ["Proteínas Magras de Alta Calidad", "Carbohidratos Complejos", "Fuentes de Grasas Saludables"]
 
     # =====================================================
     # MAQUETADO HTML + CSS REFORZADO PARA WEASYPRINT
@@ -160,8 +186,8 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     }}
     .qr-corner {{
         position: absolute;
-        top: 40px;
-        right: 40px;
+        top: 45px;
+        right: 45px;
         width: 80px;
         background: white;
         padding: 6px;
@@ -173,7 +199,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         margin-bottom: 15px;
     }}
     .hero-title {{
-        font-size: 58px;
+        font-size: 54px;
         font-weight: 900;
         letter-spacing: 4px;
         margin-top: 10px;
@@ -242,22 +268,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         color: #eee;
         font-weight: bold;
     }}
-    .checklist-item {{
-        background: rgba(255,255,255,0.03);
-        border: 1px solid {BORDER};
-        padding: 14px 18px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-    }}
-    .checkbox-box {{
-        width: 18px;
-        height: 18px;
-        border: 2px solid {ACCENT};
-        border-radius: 4px;
-        display: inline-block;
-        vertical-align: middle;
-        margin-right: 15px;
-    }}
     .contract-box {{
         border: 2px dashed {ACCENT};
         padding: 40px;
@@ -291,7 +301,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         font-weight: bold;
         text-transform: uppercase;
     }}
-    /* Tabla limpia para colocar los gráficos cara a cara */
     .graphics-table {{
         width: 100%;
         border-collapse: collapse;
@@ -301,6 +310,34 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         padding: 0;
         vertical-align: middle;
     }}
+    
+    /* Estructura de tabla blindada para la checklist */
+    .checklist-table {{
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid {BORDER};
+        margin-bottom: 10px;
+        border-radius: 8px;
+    }}
+    .checklist-td-box {{
+        padding: 14px 0 14px 18px;
+        width: 35px;
+        vertical-align: middle;
+    }}
+    .checklist-td-text {{
+        padding: 14px 18px 14px 0;
+        vertical-align: middle;
+        font-size: 14px;
+        font-weight: bold;
+        color: #ddd;
+    }}
+    .checkbox-indicator {{
+        width: 16px;
+        height: 16px;
+        border: 2px solid {ACCENT};
+        border-radius: 4px;
+    }}
     </style>
     </head>
     <body>
@@ -308,7 +345,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     <div class="page">
         <img src="data:image/png;base64,{qr_b64}" class="qr-corner">
         
-        <div class="content" style="text-align:center; padding-top:100px;">
+        <div class="content" style="text-align:center; padding-top:110px;">
             <img src="data:image/png;base64,{logo_b64}" class="hero-logo">
             <div class="hero-title">Elite System</div>
             <div class="hero-sub">INGENIERÍA CORPORAL DE ALTO RENDIMIENTO</div>
@@ -397,9 +434,9 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                                 <text x="21" y="20" fill="white" font-size="6" font-weight="900" text-anchor="middle">AI</text>
                                 <text x="21" y="25" fill="{ACCENT}" font-size="3.5" font-weight="bold" text-anchor="middle">MACROS</text>
                             </svg>
-                            <div style="margin-top: 15px; font-size: 11px; font-weight: bold; line-height: 1.5; color: #aaa;">
-                                <span style="color:{ACCENT};">■</span> {pct_p:.0f}% P &nbsp;
-                                <span style="color:{CYAN};">■</span> {pct_c:.0f}% C &nbsp;
+                            <div style="margin-top: 15px; font-size: 11px; font-weight: bold; line-height: 1.5; text-align: center; color: #aaa; white-space: nowrap;">
+                                <span style="color:{ACCENT};">■</span> {pct_p:.0f}% P &nbsp;&nbsp;&nbsp;&nbsp;
+                                <span style="color:{CYAN};">■</span> {pct_c:.0f}% C &nbsp;&nbsp;&nbsp;&nbsp;
                                 <span style="color:#FF9800;">■</span> {pct_g:.0f}% G
                             </div>
                         </td>
@@ -460,16 +497,22 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         <div class="content">
             <div class="section-title">Protocolo de Abastecimiento</div>
             <div style="margin-bottom: 25px; color: #888; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">
-                Requerimiento Estimado para el Mes Completo (30 Días)
+                Lista Completa y Detallada para el Mes Completo (30 Días)
             </div>
     """
 
     for item in lista_compras_final:
         html += f"""
-            <div class="checklist-item">
-                <div class="checkbox-box"></div>
-                <span style="font-size:14px; font-weight:bold; color:#ddd;">{item}</span>
-            </div>
+            <table class="checklist-table">
+                <tr>
+                    <td class="checklist-td-box">
+                        <div class="checkbox-indicator"></div>
+                    </td>
+                    <td class="checklist-td-text">
+                        {item}
+                    </td>
+                </tr>
+            </table>
         """
 
     html += f"""
