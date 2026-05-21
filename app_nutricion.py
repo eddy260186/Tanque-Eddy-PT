@@ -530,7 +530,27 @@ with st.sidebar:
                 res_perfil = supabase.table("perfiles_atletas").select("id").eq("email", email_usuario).execute()
                 perfil_id = res_perfil.data[0]["id"] if len(res_perfil.data) > 0 else supabase.table("perfiles_atletas").insert({"email": email_usuario, "nombre_completo": nombre, "pais": pais, "genero": genero, "objetivo_principal": tipo_objetivo}).execute().data[0]["id"]
                 
-                supabase.table("evaluaciones_biometricas").insert({"perfil_id": perfil_id, "edad": edad, "estatura": estatura, "peso": peso_actual, "cintura": cintura, "cadera": cadera, "rfm": rfm, "nivel_experiencia": nivel_experiencia, "meta": tipo_objetivo, "kcal_objetivo": int(cal_obj), "tipo_entrenamiento": tipo_entreno, "dias_entreno": dias_entreno}).execute()
+                supabase.table("evaluaciones_biometricas").insert({
+                    "perfil_id": perfil_id, 
+                    "edad": edad, 
+                    "estatura": estatura, 
+                    "peso": peso_actual, 
+                    "cintura": cintura, 
+                    "cadera": cadera, 
+                    "cuello": cuello,
+                    "torso": torso,
+                    "brazos": brazos,
+                    "gluteos": gluteos,
+                    "piernas": piernas,
+                    "pantorrillas": pantorrillas,
+                    "rfm": rfm, 
+                    "nivel_experiencia": nivel_experiencia, 
+                    "meta": tipo_objetivo, 
+                    "kcal_objetivo": int(cal_obj), 
+                    "tipo_entrenamiento": tipo_entreno, 
+                    "dias_entreno": dias_entreno,
+                    "fecha_registro": str(date.today())
+                }).execute()
                 
                 info_extra_json = {
                     "macros": {"proteina": round(p_g_total, 1), "carbos": round(c_g_total, 1), "grasas": round(g_g_total, 1)},
@@ -575,6 +595,65 @@ fig_plotly = go.Figure()
 fig_plotly.add_trace(go.Bar(x=fechas_reales, y=pesos_prog, marker_color=accent_color, text=[f"{round(v,1)} kg" for v in pesos_prog], textposition='auto', hoverinfo='x+y', hovertemplate='<b>Fecha:</b> %{x}<br><b>Peso Proyectado:</b> %{y} kg<extra></extra>'))
 fig_plotly.update_layout(title=dict(text="Proyección de Evolución Corporal", font=dict(color=accent_color, size=18)), plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#ffffff'), xaxis=dict(showgrid=False, linecolor=accent_color), yaxis=dict(showgrid=True, gridcolor='#333333', linecolor=accent_color, zeroline=False), margin=dict(l=20, r=20, t=50, b=20))
 st.plotly_chart(fig_plotly, use_container_width=True, key="grafico_evolucion_corporal_elite")
+
+# ==========================================
+# 📈 DASHBOARD DE EVOLUCIÓN HISTÓRICA
+# ==========================================
+st.divider()
+st.markdown("### 📈 Tu Evolución Histórica")
+
+try:
+    # 1. Traemos el historial de Supabase ordenado por fecha de registro
+    historial = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", perfil_id).order("fecha_registro").execute()
+    
+    # 2. Verificamos si hay suficientes datos para armar una curva (mínimo 2 registros)
+    if len(historial.data) > 1:
+        # Convertimos los datos a un DataFrame de Pandas para graficar fácil
+        df_hist = pd.DataFrame(historial.data)
+        
+        # Formateamos la fecha para que se lea linda (Día/Mes/Año)
+        df_hist['fecha_registro'] = pd.to_datetime(df_hist['fecha_registro']).dt.strftime('%d/%m/%Y')
+        
+        # 3. Creamos Pestañas (Tabs) para organizar los gráficos
+        tab_peso, tab_medidas = st.tabs(["⚖️ Peso y Grasa", "💪 Medidas Musculares"])
+        
+        # --- GRÁFICO 1: PESO VS GRASA ---
+        with tab_peso:
+            fig1 = go.Figure()
+            fig1.add_trace(go.Scatter(x=df_hist['fecha_registro'], y=df_hist['peso'], mode='lines+markers', name='Peso (kg)', line=dict(color='#00D9FF', width=3), marker=dict(size=8)))
+            fig1.add_trace(go.Scatter(x=df_hist['fecha_registro'], y=df_hist['rfm'], mode='lines+markers', name='Grasa (RFM %)', line=dict(color='#FF2D75', width=3), marker=dict(size=8)))
+            
+            fig1.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                margin=dict(l=20, r=20, t=30, b=20),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            st.plotly_chart(fig1, use_container_width=True)
+        
+        # --- GRÁFICO 2: MEDIDAS MUSCULARES ---
+        with tab_medidas:
+            fig2 = go.Figure()
+            # Verificamos si existen los datos de brazos/piernas antes de graficar (por si hay registros viejos)
+            if 'brazos' in df_hist.columns and 'piernas' in df_hist.columns:
+                fig2.add_trace(go.Scatter(x=df_hist['fecha_registro'], y=df_hist['brazos'], mode='lines+markers', name='Brazos (cm)', line=dict(color='#D4AF37', width=3), marker=dict(size=8)))
+                fig2.add_trace(go.Scatter(x=df_hist['fecha_registro'], y=df_hist['piernas'], mode='lines+markers', name='Piernas (cm)', line=dict(color='#00FF00', width=3), marker=dict(size=8)))
+                
+                fig2.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+            else:
+                st.info("Faltan datos de medidas en tus registros anteriores.")
+
+    elif len(historial.data) == 1:
+        st.info("📌 Tenés 1 registro guardado en la bóveda. Guardá tu progreso el próximo mes para generar tu curva de evolución.")
+    else:
+        st.warning("⚠️ Aún no guardaste ningún progreso. Llená tus datos en la barra lateral y presioná 'Guardar Progreso'.")
+
+except Exception as e:
+    st.error(f"❌ Error interno al cargar el historial: {e}")
 
 # ==========================================
 # 6. SUPLEMENTACIÓN
