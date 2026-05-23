@@ -16,7 +16,7 @@ def generar_menu_ia(prompt: str) -> str:
     configurar_gemini()
     try:
         # Usamos el modelo más rápido y estable
-        model = genai.GenerativeModel('gemini-1.5-flash') 
+        model = genai.GenerativeModel('gemini-2.5-flash')
         respuesta = model.generate_content(prompt)
         return respuesta.text
     except Exception as e:
