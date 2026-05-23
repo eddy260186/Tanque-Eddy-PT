@@ -19,8 +19,7 @@ from utils.pdf_generator_elite import build_pdf_ultra_elite
 from data.alimentos import alimentos_db
 from data.ejercicios import ejercicios_db, rutinas_elite
 from styles import aplicar_diseno_elite
-from frontend.dashboard import renderizar_dashboard
-from frontend.auth import renderizar_login
+
 
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA
@@ -71,28 +70,156 @@ def descontar_credito(email_usuario, creditos_actuales):
     supabase.table("perfiles_atletas").update({"creditos_ia": nuevo_saldo}).eq("email", email_usuario).execute()
     return nuevo_saldo
 
-# --- SEGURIDAD: CONTROL DE ACCESO ---
-usuario_autenticado = renderizar_login()
+if "usuario_actual" not in st.session_state:
+    st.session_state["usuario_actual"] = None
 
-if not usuario_autenticado:
-    st.stop() # Si no hay usuario logueado, la app se detiene aquí y no rompe el diseño
+# ==========================================
+# PANTALLA LOGIN (DISEÑO VIP 1 MILLÓN DE DÓLARES)
+# ==========================================
+if st.session_state["usuario_actual"] is None:
 
-if not usuario_autenticado:
-    st.stop() # Esto oculta todo el resto de la app hasta que pongan el correo
+    import os
 
-# 2. Si pasó la validación, leemos quién es (Admin, Entrenador o Alumno):
-rol_usuario = st.session_state.get("rol", "alumno")
+# ==========================================
+# ESTILOS CSS VIP DORADOS Y RESPONSIVOS (EDICIÓN PIXEL PERFECT)
+# ==========================================
+    st.markdown("""
+    <style>
+    /* Estilizamos las cajas de texto con bordes dorados cuando se seleccionan */
+    div[data-baseweb="input"] > div {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333 !important;
+        border-radius: 8px !important;
+    }
+    div[data-baseweb="input"] > div:focus-within {
+        border: 1px solid #d4af37 !important;
+        box-shadow: 0 0 5px rgba(212,175,55,0.5) !important;
+    }
+    /* Botón dorado VIP */
+    .stButton>button{
+        background: linear-gradient(90deg, #b8860b 0%, #ffd700 50%, #b8860b 100%);
+        color: black !important;
+        border: none;
+        border-radius:8px;
+        font-weight:800;
+        height:50px;
+        font-size:18px;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 0 15px rgba(212,175,55,0.6);
+    }
+    
+    /* 💎 MAGIA RESPONSIVA: ELIMINACIÓN DEL CRÁTER EN CELULARES 💎 */
+    .espaciador-vip {
+        height: 120px; /* En PC lo empuja para abajo para centrarlo con la foto */
+    }
+    
+    @media (max-width: 768px) {
+        /* 1. Apagamos el espaciador de computadora */
+        .espaciador-vip {
+            height: 0px !important;
+            display: none !important;
+        }
+        
+        /* 2. FOTO DE BORDE A BORDE: Eliminamos los márgenes laterales de Streamlit */
+        .block-container {
+            padding-left: 0rem !important;
+            padding-right: 0rem !important;
+            padding-top: 1rem !important;
+            max-width: 100% !important;
+        }
+        
+        /* 3. TRACCIÓN VIP (PUNTO DULCE): Subimos -65px exactos para no amontonar */
+        div[data-testid="stTabs"] {
+            margin-top: -65px !important; 
+            position: relative;
+            z-index: 99; 
+            padding-left: 1.5rem !important; /* Devolvemos un pequeño margen para que el texto no toque el borde del teléfono */
+            padding-right: 1.5rem !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-if rol_usuario == "admin":
-    st.info("👑 Modo ADMIN activado. Estás viendo la app con acceso total.")
-    # (Lo dejamos pasar a la app normal por ahora)
+    # ==========================================
+    # ESTRUCTURA DE 2 COLUMNAS (MAGIA PURA)
+    # ==========================================
+    # La columna izquierda (1.4) es más ancha para lucir la súper imagen
+    # La columna derecha (1.0) aloja el login
+    col_izq, col_der = st.columns([1.4, 1.0], gap="large")
 
-elif rol_usuario == "entrenador":
-    st.title("📋 Panel del Entrenador")
-    st.info("Próximamente: Acá verás la lista de tus alumnos y métricas grupales.")
-    st.stop() # Detenemos la app porque el entrenador tiene otro panel distinto
+    with col_izq:
+        # --- LA SÚPER IMAGEN CON TODO INCLUIDO ---
+        dir_actual = os.path.dirname(os.path.abspath(__file__))
+        
+        # Cazador automático: busca la foto por más que esté en mayúsculas (LOGO_TANQUE.png)
+        archivos_tanque = [f for f in os.listdir(dir_actual) if "tanque" in f.lower() and f.lower().endswith(".png")]
+        
+        if archivos_tanque:
+            ruta_segura = os.path.join(dir_actual, archivos_tanque[0])
+            # La mostramos al 100% de la columna izquierda
+            st.image(ruta_segura, use_column_width=True)
+        else:
+            st.error("❌ La súper imagen no se encontró en el servidor de GitHub.")
 
-# Si es ALUMNO (o Admin), sigue de largo y ejecuta todo tu código de abajo
+    with col_der:
+
+        # --- CAJA DE LOGIN VIP ---
+        # Usamos el espaciador que se apaga en celulares en lugar de los <br>
+
+        st.markdown("<div class='espaciador-vip'></div>", unsafe_allow_html=True) 
+        
+        tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
+
+        with tab_login:
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-bottom:5px;'>✉️ Correo electrónico</p>", unsafe_allow_html=True)
+            email_login = st.text_input("Correo", key="log_email", label_visibility="collapsed", placeholder="Ingresa tu correo electrónico")
+            
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>🔒 Contraseña</p>", unsafe_allow_html=True)
+            pass_login = st.text_input("Pass", type="password", key="log_pass", label_visibility="collapsed", placeholder="Ingresa tu contraseña")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("ENTRAR ➔", type="primary", use_container_width=True):
+                try:
+                    respuesta = supabase.auth.sign_in_with_password({"email": email_login.lower().strip(), "password": pass_login})
+                    st.session_state["usuario_actual"] = respuesta.user.email
+                    st.success("¡Acceso concedido!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error login: {e}")
+            
+            st.markdown("<br><p style='text-align:center; color:#888; font-style:italic;'>\"La excelencia no es un acto, es un hábito.<br>Tú eres tu único límite.\"</p>", unsafe_allow_html=True)
+
+        with tab_registro:
+            # --- Nombre ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-bottom:5px;'>👤 Nombre completo</p>", unsafe_allow_html=True)
+            nombre_reg = st.text_input("Nombre", key="reg_nombre", label_visibility="collapsed", placeholder="Ingresa tu nombre y apellido")
+            
+            # --- Correo ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>✉️ Correo electrónico</p>", unsafe_allow_html=True)
+            email_reg = st.text_input("Correo Reg", key="reg_email", label_visibility="collapsed", placeholder="Ingresa tu mejor correo")
+            
+            # --- Contraseña ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>🔒 Contraseña secreta</p>", unsafe_allow_html=True)
+            pass_reg = st.text_input("Pass Reg", type="password", key="reg_pass", label_visibility="collapsed", placeholder="Crea una contraseña fuerte")
+            
+            # --- Género ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>⚧️ Género</p>", unsafe_allow_html=True)
+            genero = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero", label_visibility="collapsed")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("CREAR MI CUENTA ELITE ➔", type="primary", use_container_width=True):
+                try:
+                    email_final = email_reg.lower().strip()
+                    respuesta = supabase.auth.sign_up({"email": email_final, "password": pass_reg})
+                    supabase.table("perfiles_atletas").insert({"email": email_final, "nombre_completo": nombre_reg, "genero": "m" if genero == "Masculino" else "f"}).execute()
+                    st.success("✅ ¡Cuenta VIP creada correctamente! Volvé a la pestaña de Iniciar Sesión para entrar.")
+                except Exception as e:
+                    st.error(f"Error en el registro: {e}")
+
+    st.stop()
 # ==========================================
 # SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
 # ==========================================
@@ -469,8 +596,151 @@ st.plotly_chart(fig_plotly, use_container_width=True, key="grafico_evolucion_cor
 # ==========================================
 # 📈 DASHBOARD DE EVOLUCIÓN HISTÓRICA (TIEMPO REAL)
 # ==========================================
-# Llamamos al dashboard inyectándole los datos que está tocando el usuario
-renderizar_dashboard(perfil_id, peso_actual, rfm, brazos, piernas, tipo_objetivo)
+st.divider()
+st.markdown("### 📈 Tu Evolución Histórica")
+
+if perfil_id:
+    try:
+        # 1. Traemos el historial de Supabase (El Pasado)
+        res_historial = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", perfil_id).order("fecha_registro").execute()
+        
+        if len(res_historial.data) > 0:
+            df_hist = pd.DataFrame(res_historial.data)
+            df_hist = df_hist[df_hist['peso'] > 0] # Limpiamos errores viejos
+            df_hist = df_hist.groupby('fecha_registro').last().reset_index()
+        else:
+            df_hist = pd.DataFrame(columns=['fecha_registro', 'peso', 'rfm', 'brazos', 'piernas'])
+        
+        # --- 🪄 MAGIA EN TIEMPO REAL (SINCRONIZACIÓN CON EL SIDEBAR) ---
+        fecha_hoy = str(date.today())
+        datos_en_vivo = {
+            'fecha_registro': fecha_hoy,
+            'peso': peso_actual, # Conectado en vivo al sidebar izquierdo
+            'rfm': rfm,
+            'brazos': brazos,
+            'piernas': piernas
+        }
+        
+        # Si hoy ya guardaste, actualizamos el punto del gráfico con lo que estás tocando ahora
+        if not df_hist.empty and fecha_hoy in df_hist['fecha_registro'].values:
+            idx = df_hist.index[df_hist['fecha_registro'] == fecha_hoy].tolist()[0]
+            df_hist.at[idx, 'peso'] = peso_actual
+            df_hist.at[idx, 'rfm'] = rfm
+            if 'brazos' in df_hist.columns: df_hist.at[idx, 'brazos'] = brazos
+            if 'piernas' in df_hist.columns: df_hist.at[idx, 'piernas'] = piernas
+        else:
+            # Si no guardaste hoy, creamos un "punto virtual" temporal para que veas la proyección
+            df_nuevo_punto = pd.DataFrame([datos_en_vivo])
+            df_hist = pd.concat([df_hist, df_nuevo_punto], ignore_index=True)
+            
+        df_hist['fecha_registro_str'] = pd.to_datetime(df_hist['fecha_registro']).dt.strftime('%d/%m/%Y')
+        
+        # --- CALCULAMOS CON LOS DATOS SINCRONIZADOS ---
+        if len(df_hist) > 1:
+            peso_ini = float(df_hist['peso'].iloc[0])
+            peso_dinamico = float(df_hist['peso'].iloc[-1]) # El peso en vivo
+            dif_peso = peso_dinamico - peso_ini
+            
+            grasa_ini = float(df_hist['rfm'].iloc[0])
+            grasa_dinamica = float(df_hist['rfm'].iloc[-1])
+            dif_grasa = grasa_dinamica - grasa_ini
+            
+            if 'brazos' in df_hist.columns:
+                df_brazos = df_hist[df_hist['brazos'] > 0]
+                if not df_brazos.empty:
+                    brazo_ini = float(df_brazos['brazos'].iloc[0])
+                    brazo_dinamico = float(df_brazos['brazos'].iloc[-1])
+                    dif_brazo = brazo_dinamico - brazo_ini
+                else:
+                    brazo_dinamico = brazos
+                    dif_brazo = 0
+            else:
+                brazo_dinamico = brazos
+                dif_brazo = 0
+
+            # --- 🗣️ RESUMEN DINÁMICO EN VIVO ---
+            st.markdown("""
+            <div style="background-color: rgba(212, 175, 55, 0.1); border-left: 4px solid #d4af37; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <h4 style="color: #d4af37; margin-top: 0; margin-bottom: 10px;">🤖 Análisis de tu progreso en vivo:</h4>
+            """, unsafe_allow_html=True)
+            
+            mensaje = ""
+            if dif_peso < 0:
+                mensaje += f"🔥 ¡Excelente trabajo! Has <b>bajado {abs(dif_peso):.1f} kg</b> desde que empezaste. "
+            elif dif_peso > 0:
+                mensaje += f"💪 Has <b>subido {abs(dif_peso):.1f} kg</b>. "
+            else:
+                mensaje += "⚖️ Te has mantenido en tu peso exacto. "
+                
+            if dif_grasa < 0:
+                mensaje += f"Lograste quemar un <b>{abs(dif_grasa):.1f}% de grasa</b>. "
+                
+            if dif_brazo > 0:
+                mensaje += f"¡Y tus brazos crecieron <b>{dif_brazo:.1f} cm</b>! "
+                
+            st.markdown(f"<p style='color: #ffffff; font-size: 16px; margin-bottom: 0; line-height: 1.5;'>{mensaje}</p></div>", unsafe_allow_html=True)
+
+            # --- 🚀 TARJETAS VISUALES EN VIVO ---
+            c1, c2, c3 = st.columns(3)
+            c1.metric("⚖️ Peso", f"{peso_dinamico} kg", f"{dif_peso:+.1f} kg", delta_color="inverse" if "Pérdida" in tipo_objetivo else "normal")
+            c2.metric("🔥 Grasa Corporal", f"{grasa_dinamica}%", f"{dif_grasa:+.1f}%", delta_color="inverse")
+            c3.metric("💪 Brazos", f"{brazo_dinamico} cm", f"{dif_brazo:+.1f} cm")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # --- 🚀 GRÁFICOS INTERACTIVOS EN VIVO ---
+            tab_peso, tab_medidas = st.tabs(["⚖️ Curva de Peso y Grasa", "💪 Evolución Muscular"])
+            
+            with tab_peso:
+                fig1 = go.Figure()
+                fig1.add_trace(go.Scatter(
+                    x=df_hist['fecha_registro_str'], y=df_hist['peso'], 
+                    mode='lines+markers', name='Peso (kg)', 
+                    line=dict(color='#00D9FF', width=4, shape='spline'), 
+                    marker=dict(size=10, color='white', line=dict(width=2, color='#00D9FF')),
+                    fill='tozeroy', fillcolor='rgba(0, 217, 255, 0.1)',
+                    hovertemplate='<b>Día:</b> %{x}<br><b>Peso:</b> %{y} kg<extra></extra>'
+                ))
+                fig1.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                    hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                )
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            with tab_medidas:
+                fig2 = go.Figure()
+                
+                df_graf_brazos = df_hist[df_hist['brazos'] > 0]
+                df_graf_piernas = df_hist[df_hist['piernas'] > 0]
+                
+                if not df_graf_brazos.empty:
+                    fig2.add_trace(go.Scatter(
+                        x=df_graf_brazos['fecha_registro_str'], y=df_graf_brazos['brazos'], 
+                        mode='lines+markers', name='Brazos (cm)', 
+                        line=dict(color='#D4AF37', width=4, shape='spline'), 
+                        marker=dict(size=10, color='white', line=dict(width=2, color='#D4AF37')),
+                        hovertemplate='<b>Día:</b> %{x}<br><b>Brazos:</b> %{y} cm<extra></extra>'
+                    ))
+                if not df_graf_piernas.empty:
+                    fig2.add_trace(go.Scatter(
+                        x=df_graf_piernas['fecha_registro_str'], y=df_graf_piernas['piernas'], 
+                        mode='lines+markers', name='Piernas (cm)', 
+                        line=dict(color='#00FF00', width=4, shape='spline'), 
+                        marker=dict(size=10, color='white', line=dict(width=2, color='#00FF00')),
+                        hovertemplate='<b>Día:</b> %{x}<br><b>Piernas:</b> %{y} cm<extra></extra>'
+                    ))
+                fig2.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                    hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+                    
+        else:
+            st.info("📌 Movimientos en tiempo real: Ajustá los datos de tu izquierda y mirá cómo se proyectan aquí de inmediato. Luego, tocá 'Guardar Progreso' en el menú.")
+    except Exception as e:
+        st.error(f"❌ Error al cargar historial: {e}")
 
 # ==========================================
 # 6. SUPLEMENTACIÓN
