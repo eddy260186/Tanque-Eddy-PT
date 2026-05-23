@@ -11,14 +11,8 @@ import os
 from collections import defaultdict
 import io
 import base64
-import google.generativeai as genai
-
-# Configuramos la IA limpiando espacios invisibles por seguridad
-llave_limpia = st.secrets["GEMINI_API_KEY"].strip()
-genai.configure(api_key=llave_limpia)
-model = genai.GenerativeModel('gemini-2.5-flash')
-
-from database.supabase_mgr import init_supabase
+from ai.gemini import generar_menu_ia
+from database.conexion import supabase
 from utils.biometria import calcular_biometria
 from utils.pdf_generator_elite import build_pdf_ultra_elite
 from data.alimentos import alimentos_db
@@ -821,9 +815,10 @@ if puedo_usar:
             with st.spinner("Bancame un toque que estoy analizando lo mejor para vos..."):
                 prompt_eddy = f"Actuá como Eddy, un Personal Trainer de Élite argentino. Tu estilo es motivador, directo y profesional, usando modismos como 'Tanque', 'Dale con todo', 'viste', 'metele mecha'. No seas un robot, hablá como un coach que cuida a su equipo de atletas. Si te piden un menú o consejo, hacelo efectivo y con alimentos comunes en Argentina. Pregunta del atleta: {pregunta_atleta} Firmá siempre al final: Team Eddy - Software Elite."
                 try:
-                    response = model.generate_content(prompt_eddy)
+                    # Usamos tu nueva súper función aislada
+                    respuesta_texto = generar_menu_ia(prompt_eddy)
                     st.markdown("### 📢 Respuesta de Eddy:")
-                    st.write(response.text)
+                    st.write(respuesta_texto)
                     descontar_credito(st.session_state['usuario_actual'], total_creditos)
                 except Exception as e:
                     st.error(f"Se cortó la conexión con el servidor, Tanque. Probá de nuevo: {e}")
