@@ -1,5 +1,6 @@
 import requests
 import streamlit as st
+st.set_page_config(page_title="Eddy PT - Elite v60.7", page_icon="💪", layout="wide")
 from weasyprint import HTML
 from datetime import datetime, date, time
 import pandas as pd
@@ -22,14 +23,13 @@ from styles import aplicar_diseno_elite
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA
 # ==========================================
-st.set_page_config(page_title="Eddy PT - Elite v60.7", page_icon="💪", layout="wide")
+
 aplicar_diseno_elite()
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
 # ==========================================
 # 2. SISTEMA DE USUARIOS (LOGIN / REGISTRO)
 # ==========================================
-supabase = init_supabase()
 
 def gestionar_ia_con_creditos(email_usuario):
     # ESCUDO: Importamos internamente con alias 'dt' para que nada lo rompa
