@@ -71,12 +71,11 @@ def descontar_credito(email_usuario, creditos_actuales):
     supabase.table("perfiles_atletas").update({"creditos_ia": nuevo_saldo}).eq("email", email_usuario).execute()
     return nuevo_saldo
 
-# ==========================================
-# 2. SISTEMA DE USUARIOS (LOGIN / RUTEO)
-# ==========================================
-
-# 1. Llamamos al guardia de seguridad visual. Si devuelve False, detenemos la app acá.
+# --- SEGURIDAD: CONTROL DE ACCESO ---
 usuario_autenticado = renderizar_login()
+
+if not usuario_autenticado:
+    st.stop() # Si no hay usuario logueado, la app se detiene aquí y no rompe el diseño
 
 if not usuario_autenticado:
     st.stop() # Esto oculta todo el resto de la app hasta que pongan el correo
