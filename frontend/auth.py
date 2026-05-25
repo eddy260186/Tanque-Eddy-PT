@@ -90,7 +90,8 @@ def renderizar_login():
         
         if archivos_tanque:
             ruta_segura = os.path.join(dir_raiz, archivos_tanque[0])
-            st.image(ruta_segura, use_container_width=True)
+            # CORRECCIÓN DE ARQUITECTURA: Se utiliza use_column_width=True para compatibilidad absoluta en la nube
+            st.image(ruta_segura, use_column_width=True)
         else:
             st.error("❌ La súper imagen no se encontró en el servidor de GitHub.")
 
