@@ -4,6 +4,9 @@ from database.conexion import supabase
 from styles import aplicar_diseno_elite
 from frontend.auth import renderizar_login
 
+# === CONFIGURACIÓN GLOBAL (DEBE IR ANTES QUE CUALQUIER COSA DE INTERFAZ) ===
+st.set_page_config(page_title="Eddy PT Elite", layout="wide", initial_sidebar_state="expanded")
+
 # ==========================================
 # 1. CARGA INICIAL Y ESTILOS VIP
 # ==========================================

@@ -2,6 +2,21 @@ import streamlit as st
 from database.conexion import supabase
 
 def panel_admin():
+    # =========================================================================
+    # BARRA LATERAL VIP: INFO DE SESIÓN Y BOTÓN DE CIERRE
+    # =========================================================================
+    with st.sidebar:
+        st.markdown("### 👑 Panel de Control")
+        st.success("Sesión Activa: Administrador")
+        st.write("---")
+        if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
+            supabase.auth.sign_out()
+            st.session_state.clear()
+            st.rerun()
+
+    # =========================================================================
+    # CUERPO PRINCIPAL
+    # =========================================================================
     st.markdown("## 👑 Suite de Administración General")
     st.caption("Control global del ecosistema multi-inquilino, límites de consumo de IA y licenciamiento de Staff.")
     st.write("---")
