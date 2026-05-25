@@ -1,0 +1,943 @@
+import requests
+import streamlit as st
+st.set_page_config(page_title="Eddy PT - Elite v60.7", page_icon="💪", layout="wide")
+from weasyprint import HTML
+from datetime import datetime, date, time
+import pandas as pd
+import matplotlib
+matplotlib.use("Agg") # Optimización brutal de memoria para servidor
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import os
+from collections import defaultdict
+import io
+import base64
+from ai.gemini import generar_menu_ia
+from database.conexion import supabase
+from utils.biometria import calcular_biometria
+from utils.pdf_generator_elite import build_pdf_ultra_elite
+from data.alimentos import alimentos_db
+from data.ejercicios import ejercicios_db, rutinas_elite
+from styles import aplicar_diseno_elite
+
+
+# ==========================================
+# 1. CONFIGURACIÓN DE PÁGINA
+# ==========================================
+
+aplicar_diseno_elite()
+st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
+
+# ==========================================
+# 2. SISTEMA DE USUARIOS (LOGIN / REGISTRO)
+# ==========================================
+
+def gestionar_ia_con_creditos(email_usuario):
+    # ESCUDO: Importamos internamente con alias 'dt' para que nada lo rompa
+    import datetime as dt
+    
+    res = supabase.table("perfiles_atletas").select("creditos_ia, guia_comprada, fecha_ultima_recarga").eq("email", email_usuario).execute()
+    
+    if res.data:
+        perfil = res.data[0]
+        compro_guia = perfil.get('guia_comprada', False)
+        valor_db = perfil.get('creditos_ia')
+        creditos_actuales = 0 if valor_db is None else int(valor_db)
+        ultima_recarga_str = perfil.get('fecha_ultima_recarga')
+
+        if compro_guia:
+            hoy = dt.date.today()
+            try:
+                ultima_recarga = dt.datetime.strptime(ultima_recarga_str, '%Y-%m-%d').date() if ultima_recarga_str else None
+            except:
+                ultima_recarga = None
+
+            if ultima_recarga is None or (hoy - ultima_recarga).days >= 30:
+                creditos_actuales = 30
+                supabase.table("perfiles_atletas").update({
+                    "creditos_ia": 30,
+                    "fecha_ultima_recarga": str(hoy)
+                }).eq("email", email_usuario).execute()
+                st.success("¡Vamooo Tanque! Tu acceso mensual se renovó. Tenés 30 consultas nuevas.")
+
+        if creditos_actuales > 0:
+            return True, creditos_actuales
+            
+    return False, 0
+
+def descontar_credito(email_usuario, creditos_actuales):
+    nuevo_saldo = creditos_actuales - 1
+    supabase.table("perfiles_atletas").update({"creditos_ia": nuevo_saldo}).eq("email", email_usuario).execute()
+    return nuevo_saldo
+
+if "usuario_actual" not in st.session_state:
+    st.session_state["usuario_actual"] = None
+
+# ==========================================
+# PANTALLA LOGIN (DISEÑO VIP 1 MILLÓN DE DÓLARES)
+# ==========================================
+if st.session_state["usuario_actual"] is None:
+
+    import os
+
+# ==========================================
+# ESTILOS CSS VIP DORADOS Y RESPONSIVOS (EDICIÓN PIXEL PERFECT)
+# ==========================================
+    st.markdown("""
+    <style>
+    /* Estilizamos las cajas de texto con bordes dorados cuando se seleccionan */
+    div[data-baseweb="input"] > div {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333 !important;
+        border-radius: 8px !important;
+    }
+    div[data-baseweb="input"] > div:focus-within {
+        border: 1px solid #d4af37 !important;
+        box-shadow: 0 0 5px rgba(212,175,55,0.5) !important;
+    }
+    /* Botón dorado VIP */
+    .stButton>button{
+        background: linear-gradient(90deg, #b8860b 0%, #ffd700 50%, #b8860b 100%);
+        color: black !important;
+        border: none;
+        border-radius:8px;
+        font-weight:800;
+        height:50px;
+        font-size:18px;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 0 15px rgba(212,175,55,0.6);
+    }
+    
+    /* 💎 MAGIA RESPONSIVA: ELIMINACIÓN DEL CRÁTER EN CELULARES 💎 */
+    .espaciador-vip {
+        height: 120px; /* En PC lo empuja para abajo para centrarlo con la foto */
+    }
+    
+    @media (max-width: 768px) {
+        /* 1. Apagamos el espaciador de computadora */
+        .espaciador-vip {
+            height: 0px !important;
+            display: none !important;
+        }
+        
+        /* 2. FOTO DE BORDE A BORDE: Eliminamos los márgenes laterales de Streamlit */
+        .block-container {
+            padding-left: 0rem !important;
+            padding-right: 0rem !important;
+            padding-top: 1rem !important;
+            max-width: 100% !important;
+        }
+        
+        /* 3. TRACCIÓN VIP (PUNTO DULCE): Subimos -65px exactos para no amontonar */
+        div[data-testid="stTabs"] {
+            margin-top: -65px !important; 
+            position: relative;
+            z-index: 99; 
+            padding-left: 1.5rem !important; /* Devolvemos un pequeño margen para que el texto no toque el borde del teléfono */
+            padding-right: 1.5rem !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ==========================================
+    # ESTRUCTURA DE 2 COLUMNAS (MAGIA PURA)
+    # ==========================================
+    # La columna izquierda (1.4) es más ancha para lucir la súper imagen
+    # La columna derecha (1.0) aloja el login
+    col_izq, col_der = st.columns([1.4, 1.0], gap="large")
+
+    with col_izq:
+        # --- LA SÚPER IMAGEN CON TODO INCLUIDO ---
+        dir_actual = os.path.dirname(os.path.abspath(__file__))
+        
+        # Cazador automático: busca la foto por más que esté en mayúsculas (LOGO_TANQUE.png)
+        archivos_tanque = [f for f in os.listdir(dir_actual) if "tanque" in f.lower() and f.lower().endswith(".png")]
+        
+        if archivos_tanque:
+            ruta_segura = os.path.join(dir_actual, archivos_tanque[0])
+            # La mostramos al 100% de la columna izquierda
+            st.image(ruta_segura, use_column_width=True)
+        else:
+            st.error("❌ La súper imagen no se encontró en el servidor de GitHub.")
+
+    with col_der:
+
+        # --- CAJA DE LOGIN VIP ---
+        # Usamos el espaciador que se apaga en celulares en lugar de los <br>
+
+        st.markdown("<div class='espaciador-vip'></div>", unsafe_allow_html=True) 
+        
+        tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta Nueva"])
+
+        with tab_login:
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-bottom:5px;'>✉️ Correo electrónico</p>", unsafe_allow_html=True)
+            email_login = st.text_input("Correo", key="log_email", label_visibility="collapsed", placeholder="Ingresa tu correo electrónico")
+            
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>🔒 Contraseña</p>", unsafe_allow_html=True)
+            pass_login = st.text_input("Pass", type="password", key="log_pass", label_visibility="collapsed", placeholder="Ingresa tu contraseña")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("ENTRAR ➔", type="primary", use_container_width=True):
+                try:
+                    respuesta = supabase.auth.sign_in_with_password({"email": email_login.lower().strip(), "password": pass_login})
+                    st.session_state["usuario_actual"] = respuesta.user.email
+                    st.success("¡Acceso concedido!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error login: {e}")
+            
+            st.markdown("<br><p style='text-align:center; color:#888; font-style:italic;'>\"La excelencia no es un acto, es un hábito.<br>Tú eres tu único límite.\"</p>", unsafe_allow_html=True)
+
+        with tab_registro:
+            # --- Nombre ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-bottom:5px;'>👤 Nombre completo</p>", unsafe_allow_html=True)
+            nombre_reg = st.text_input("Nombre", key="reg_nombre", label_visibility="collapsed", placeholder="Ingresa tu nombre y apellido")
+            
+            # --- Correo ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>✉️ Correo electrónico</p>", unsafe_allow_html=True)
+            email_reg = st.text_input("Correo Reg", key="reg_email", label_visibility="collapsed", placeholder="Ingresa tu mejor correo")
+            
+            # --- Contraseña ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>🔒 Contraseña secreta</p>", unsafe_allow_html=True)
+            pass_reg = st.text_input("Pass Reg", type="password", key="reg_pass", label_visibility="collapsed", placeholder="Crea una contraseña fuerte")
+            
+            # --- Género ---
+            st.markdown("<p style='color:#d4af37; font-weight:bold; margin-top:15px; margin-bottom:5px;'>⚧️ Género</p>", unsafe_allow_html=True)
+            genero = st.selectbox("Género", ["Masculino", "Femenino"], key="reg_genero", label_visibility="collapsed")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("CREAR MI CUENTA ELITE ➔", type="primary", use_container_width=True):
+                try:
+                    email_final = email_reg.lower().strip()
+                    respuesta = supabase.auth.sign_up({"email": email_final, "password": pass_reg})
+                    supabase.table("perfiles_atletas").insert({"email": email_final, "nombre_completo": nombre_reg, "genero": "m" if genero == "Masculino" else "f"}).execute()
+                    st.success("✅ ¡Cuenta VIP creada correctamente! Volvé a la pestaña de Iniciar Sesión para entrar.")
+                except Exception as e:
+                    st.error(f"Error en el registro: {e}")
+
+    st.stop()
+# ==========================================
+# SI LLEGA ACÁ, ESTÁ LOGUEADO. MOSTRAMOS LA APP NORMAL
+# ==========================================
+st.title("🏆 Eddy Personal Trainer: Software Elite v60.7")
+
+import os
+from datetime import date, datetime
+
+directorio_script = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(directorio_script, "Historial_Atletas.csv")
+
+# ==========================================
+# 3. OBTENER DATOS DEL ATLETA DESDE SUPABASE (SE MUEVE ARRIBA)
+# ==========================================
+email_usuario = st.session_state.get("usuario_actual", "")
+email_limpio = email_usuario.lower().strip() if email_usuario else ""
+
+res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_limpio).execute()
+
+perfil_id = None # <-- ESTA ES LA CLAVE PARA QUE NO DE ERROR
+if len(res_perfil.data) > 0:
+    perfil_db = res_perfil.data[0]
+    perfil_id = perfil_db.get("id") # <-- Extraemos su ID apenas inicia sesión
+    nombre_default = perfil_db.get("nombre_completo", "")
+    pais_default = perfil_db.get("pais", "Argentina")
+    genero_db = perfil_db.get("genero")
+    genero_idx = 0 if (genero_db and genero_db.strip() == "m") else 1
+    fecha_str = perfil_db.get("fecha_nacimiento")
+    if fecha_str:
+        fecha_nac_atleta = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+    else:
+        fecha_nac_atleta = date(1990, 1, 1)
+else:
+    nombre_default = email_limpio.split("@")[0].capitalize() # Plan B si no hay nombre
+    pais_default = "Argentina"
+    genero_idx = 0
+    fecha_nac_atleta = date(1990, 1, 1)
+
+# --- VARIABLES INVISIBLES EN EL BACKEND (Reemplazan a los inputs visuales) ---
+nombre = nombre_default
+pais = pais_default
+genero = "m" if genero_idx == 0 else "f"
+hoy = date.today()
+edad = hoy.year - fecha_nac_atleta.year - ((hoy.month, hoy.day) < (fecha_nac_atleta.month, fecha_nac_atleta.day))
+
+# ==========================================
+# CONSTRUCCIÓN DEL MENÚ LATERAL (SIDEBAR VIP)
+# ==========================================
+with st.sidebar:
+    st.header("🏢 Branding")
+    
+    # Buscador automático para el Logo Verde del interior
+    nombres_sidebar = ["logo.png", "logo(1).png", "logo.png.png"]
+    foto_side = None
+    
+    for n in nombres_sidebar:
+        ruta_s = os.path.join(directorio_script, n)
+        if os.path.exists(ruta_s):
+            foto_side = ruta_s
+            break
+            
+    if foto_side:
+        try:
+            st.image(str(foto_side), use_column_width=True)
+        except Exception:
+            pass
+            
+    st.divider()
+
+    # --- BOTÓN DE SOPORTE WHATSAPP ---
+    st.markdown("<p style='text-align: center; color: #d4af37; font-weight: bold; font-size: 14px; margin-bottom: 0px; letter-spacing: 1px;'>¿Dudas con tu plan?</p>", unsafe_allow_html=True)
+    num_wa_interno = "5491164788719"
+    msg_interno = "Hola%20Eddy.%20Tengo%20una%20consulta%20desde%20mi%20panel."
+    link_wa_int = f"https://wa.me/{num_wa_interno}?text={msg_interno}"
+    st.markdown(f"<div style='text-align: center;'><a href='{link_wa_int}' target='_blank' style='text-decoration: none; color: #25D366; font-size: 16px;'>💬 <b>Contactar Soporte</b></a></div>", unsafe_allow_html=True)
+    st.divider()
+
+    # --- CAJA VIP DE USUARIO CONECTADO (AHORA MUESTRA EL NOMBRE) ---
+    nombre_mostrar = nombre if nombre else "Atleta Elite"
+    st.markdown(
+        f"""
+        <div style="background-color: #151a26; border: 1px solid #d4af37; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+            <span style="color: #d4af37; font-weight: bold; font-size: 16px;">👤 Conectado</span><br>
+            <span style="color: #ffffff; font-size: 15px; font-family: Arial, sans-serif; font-weight: bold; text-transform: capitalize;">{nombre_mostrar}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    if st.button("Cerrar Sesión", use_container_width=True):
+        supabase.auth.sign_out()
+        st.session_state["usuario_actual"] = None
+        st.rerun()
+        
+    st.divider()
+
+    # ==========================================
+    # FORMULARIO REDUCIDO (SOLO LO DINÁMICO)
+    # ==========================================
+    st.header("📏 Medidas Actuales")
+    
+    # Solo mostramos el embarazo si el perfil en la base de datos es femenino ("f")
+    embarazada_bool = False
+    if genero == "f": 
+        embarazada_bool = st.checkbox("¿Está embarazada?")
+        meses_gestacion = st.slider("Meses de gestación:", min_value=1, max_value=9, value=3, disabled=not embarazada_bool)
+        st.divider()
+        
+    estatura = st.number_input("Estatura (cm):", min_value=100, value=170)
+    peso_actual = st.number_input("Peso actual (kg):", min_value=30.0, value=75.0)
+
+    st.header("🏋️‍♂️ Perfil Deportivo")
+    nivel_experiencia = st.selectbox("Nivel de Experiencia:", ["Principiante", "Intermedio", "Avanzado"])
+    tipo_entreno = st.selectbox("Tipo de Entrenamiento:", [
+        "Fuerza / Hipertrofia (Gimnasio)", "CrossFit / Funcional", "Powerlifting / Levantamiento Olímpico",
+        "Calistenia / Street Workout", "Resistencia (Running, Ciclismo, Natación)", "Deportes de Equipo (Fútbol, Básquet, Rugby)", 
+        "Artes Marciales / Deportes de Contacto", "Deportes de Raqueta (Tenis, Pádel)", "Pilates / Yoga / Movilidad",
+        "Danza / Baile Deportivo", "Gimnasia Artística / Rítmica", "Rehabilitación / Fisioterapia Activa", "Ninguno (Sedentario)"
+    ])
+    dias_entreno = st.slider("Días de entrenamiento por semana:", 0, 7, 3)
+    hora_entreno = st.time_input("¿A qué hora entrena?", time(18, 0))
+    
+    st.divider()
+    tipo_objetivo = st.selectbox("Meta Principal:", [
+        "Pérdida de Grasa (Déficit Estándar)", "Definición Agresiva (Corte)", "Recomposición Corporal", 
+        "Mantenimiento / Salud", "Volumen Limpio (Superávit)", "Volumen Agresivo (Bulking)"
+    ])
+    kg_a_cambiar = st.number_input("Kilos de referencia a modificar:", min_value=0.0, value=5.0)
+    meses_plazo = st.number_input("Plazo en meses:", min_value=1, value=3)
+    
+    st.divider()
+    dieta_tipo = st.selectbox("Tipo de Dieta:", [
+        "Clásica / Equilibrada", "Hiperproteica (Fitness)", "Cetogénica (Keto)", "Low Carb",
+        "Vegana (100% Vegetal)", "Vegetariana", "Pescetariana", "Paleolítica",
+        "Mediterránea", "DASH", "FODMAP", "Libre de Gluten", "Sin Lactosa", "Flexitariana"
+    ])
+    num_comidas = st.selectbox("Cantidad de comidas al día:", [1, 2, 3, 4, 5, 6], index=3)
+    num_opciones = st.slider("¿Cuántas opciones de menú por comida?", min_value=1, max_value=10, value=5)
+
+# ==========================================
+# 4. TABLERO DE CONTROL: MAPA CORPORAL DE ÉLITE
+# ==========================================
+st.subheader("📏 Salud y Biometría Elite")
+
+# --- FILA 1: BIOMETRÍA BASE CIENTÍFICA ---
+st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🔑 Base Científica (Grasa y Salud)</p>", unsafe_allow_html=True)
+col_b1, col_b2 = st.columns(2)
+with col_b1:
+    cintura = st.number_input("Perímetro de Cinta / Cintura (cm):", value=85.0, key="medida_cintura")
+with col_b2:
+    cadera = st.number_input("Perímetro de Cadera (cm):", value=95.0, key="medida_cadera")
+
+st.divider()
+
+# --- FILA 2: TREN SUPERIOR PREMIUM ---
+st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🦅 Tren Superior Premium</p>", unsafe_allow_html=True)
+col_sup1, col_sup2, col_sup3 = st.columns(3)
+with col_sup1:
+    cuello = st.number_input("Perímetro de Cuello (cm):", value=38.0, key="medida_cuello")
+with col_sup2:
+    torso = st.number_input("Pectoral / Torso (cm):", value=100.0, key="medida_torso")
+with col_sup3:
+    brazos = st.number_input("Brazos (Promedio cm):", value=35.0, key="medida_brazos")
+
+st.divider()
+
+# --- FILA 3: TREN INFERIOR Y ESCULTURA ESTÉTICA ---
+st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🍑 Tren Inferior y Escultura Estética</p>", unsafe_allow_html=True)
+col_inf1, col_inf2, col_inf3 = st.columns(3)
+with col_inf1:
+    gluteos = st.number_input("Perímetro de Glúteos (cm):", value=98.0, key="medida_gluteos")
+with col_inf2:
+    piernas = st.number_input("Muslos / Piernas (cm):", value=55.0, key="medida_piernas")
+with col_inf3:
+    pantorrillas = st.number_input("Pantorrillas (cm):", value=38.0, key="medida_pantorrillas")
+
+rcc_valor = round(cintura / cadera, 2) if cadera > 0 else 0
+rfm, masa_magra, tmb = calcular_biometria(genero, estatura, cintura, peso_actual)
+
+pal_base = 1.2 if dias_entreno == 0 else (1.3 if dias_entreno <= 2 else (1.45 if dias_entreno <= 4 else (1.6 if dias_entreno <= 6 else 1.75)))
+bonus_deporte = 0.15 if any(x in tipo_entreno for x in ["CrossFit", "Resistencia", "Artes Marciales"]) else (0.10 if any(x in tipo_entreno for x in ["Fuerza", "Powerlifting", "Calistenia", "Equipo", "Raqueta", "Gimnasia"]) else 0.05)
+if dias_entreno == 0 or "Ninguno" in tipo_entreno: bonus_deporte = 0.0
+
+factor_actividad = pal_base + bonus_deporte
+cal_mant = tmb * factor_actividad
+if embarazada_bool: cal_mant += 340 if meses_gestacion <= 6 else 450
+
+ajuste_diario = (kg_a_cambiar * 7000) / (meses_plazo * 30) if meses_plazo > 0 else 0
+
+if embarazada_bool and any(x in tipo_objetivo for x in ["Pérdida", "Definición", "Recomposición"]):
+    cal_obj = cal_mant
+    dif = 0
+else:
+    if "Pérdida" in tipo_objetivo: dif = -ajuste_diario
+    elif "Definición" in tipo_objetivo: dif = -(ajuste_diario * 1.3)
+    elif "Recomposición" in tipo_objetivo: dif = -300 if cal_mant > 1500 else -150
+    elif "Volumen Limpio" in tipo_objetivo: dif = ajuste_diario
+    elif "Volumen Agresivo" in tipo_objetivo: dif = ajuste_diario * 1.5
+    else: dif = 0
+    cal_obj = cal_mant + dif
+
+p_g_total = peso_actual * (2.2 if "Hiper" in dieta_tipo else 1.8)
+if "Keto" in dieta_tipo:
+    c_g_total = 30.0
+    g_g_total = (cal_obj - (p_g_total * 4) - 120) / 9
+else:
+    g_g_total = (cal_obj * 0.30) / 9
+    c_g_total = (cal_obj - (p_g_total * 4) - (g_g_total * 9)) / 4
+
+agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
+
+# =========================================
+# GRÁFICO DE MACROS ELITE (GLASSMORPHISM 3D + ANIMACIÓN)
+# =========================================
+st.sidebar.markdown("""
+<style>
+/* Animación del resplandor */
+@keyframes eliteGlow {
+    0% { filter: drop-shadow(0 0 5px rgba(255,215,0,0.4)); }
+    100% { filter: drop-shadow(0 0 15px rgba(0,255,150,0.8)); }
+}
+</style>
+
+<h2 style="
+text-align:center;
+background:linear-gradient(90deg, #ffd700, #ffffff, #00ff95);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+font-weight:900;
+font-size:28px;
+margin-top:10px;
+margin-bottom:-10px;
+letter-spacing:1px;
+animation: eliteGlow 2s infinite alternate;
+">
+⚡ AI Elite Macros
+</h2>
+""", unsafe_allow_html=True)
+
+# Contenedor de Cristal (Glassmorphism)
+st.sidebar.markdown("""
+<div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,215,0,0.18); padding:10px; border-radius:24px; backdrop-filter:blur(14px); box-shadow:0 0 35px rgba(0,0,0,0.35); margin-bottom: 15px;">
+""", unsafe_allow_html=True)
+
+labels = ['Proteínas', 'Carbohidratos', 'Grasas']
+valores = [int(round(p_g_total)), int(round(c_g_total)), int(round(g_g_total))]
+colores_vip = ['#00d9ff', '#00ff95', '#ffd700']
+
+fig = go.Figure(data=[go.Pie(
+    labels=labels,
+    values=valores,
+    hole=0.52,
+    sort=False,
+    direction='clockwise',
+    marker=dict(
+        colors=colores_vip,
+        line=dict(color='rgba(255,255,255,0.18)', width=3)
+    ),
+    texttemplate="<b>%{value} g</b><br>%{label}",
+    textposition='inside',
+    insidetextorientation='horizontal',
+    textfont=dict(family='Poppins, Arial', size=13, color='black'),
+    hovertemplate="<b>%{label}</b><br>%{value} g<br>%{percent}",
+    pull=[0.02, 0.02, 0.02]
+)])
+
+fig.update_layout(
+    height=380,
+    margin=dict(t=20, b=20, l=10, r=10),
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    showlegend=False,
+    annotations=[
+        dict(
+            text="<b style='font-size:30px'>AI</b><br><span style='font-size:16px;color:#d4af37'>MACROS</span>",
+            x=0.5,
+            y=0.5,
+            showarrow=False,
+            font=dict(family='Poppins, Arial', color='#ffffff')
+        )
+    ]
+)
+
+fig.update_traces(
+    rotation=90,
+    hoverlabel=dict(bgcolor="#111111", bordercolor="#d4af37", font_size=15, font_family="Poppins, Arial")
+)
+
+st.sidebar.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
+    
+# ==========================================
+# 5. CRM Y GRÁFICO INTERACTIVO
+# ==========================================
+accent_color = "#FFB6C1" if genero == "f" else "#d4af37"
+bg_plot = "#1A1A1A"
+
+with st.sidebar:
+    st.divider()
+    if st.button("💾 Guardar Progreso en Supabase", type="primary", use_container_width=True):
+        if nombre:
+            try:
+                email_usuario = st.session_state["usuario_actual"]
+                res_perfil = supabase.table("perfiles_atletas").select("id").eq("email", email_usuario).execute()
+                perfil_id = res_perfil.data[0]["id"] if len(res_perfil.data) > 0 else supabase.table("perfiles_atletas").insert({"email": email_usuario, "nombre_completo": nombre, "pais": pais, "genero": genero, "objetivo_principal": tipo_objetivo}).execute().data[0]["id"]
+                
+                supabase.table("evaluaciones_biometricas").insert({
+                    "perfil_id": perfil_id, 
+                    "edad": edad, 
+                    "estatura": estatura, 
+                    "peso": peso_actual, 
+                    "cintura": cintura, 
+                    "cadera": cadera, 
+                    "cuello": cuello,
+                    "torso": torso,
+                    "brazos": brazos,
+                    "gluteos": gluteos,
+                    "piernas": piernas,
+                    "pantorrillas": pantorrillas,
+                    "rfm": rfm, 
+                    "nivel_experiencia": nivel_experiencia, 
+                    "meta": tipo_objetivo, 
+                    "kcal_objetivo": int(cal_obj), 
+                    "tipo_entrenamiento": tipo_entreno, 
+                    "dias_entreno": dias_entreno,
+                    "fecha_registro": str(date.today())
+                }).execute()
+                
+                info_extra_json = {
+                    "macros": {"proteina": round(p_g_total, 1), "carbos": round(c_g_total, 1), "grasas": round(g_g_total, 1)},
+                    "biometria_extra": {"masa_magra": round(masa_magra, 1), "tmb": round(tmb, 1), "rcc": rcc_valor},
+                    "metas_tiempo": {"kg_a_cambiar": kg_a_cambiar, "meses_plazo": meses_plazo},
+                    "habitos": {"hora_entreno": str(hora_entreno), "comidas_dia": num_comidas, "agua_litros": agua_total},
+                    "embarazo": {"es_embarazada": embarazada_bool, "meses_gestacion": meses_gestacion if embarazada_bool else 0}
+                }
+                supabase.table("historial_planes").insert({"perfil_id": perfil_id, "tipo_plan": dieta_tipo, "detalle_macros": info_extra_json, "rutina_asignada": f"Rutina de {tipo_entreno} ({dias_entreno} días)"}).execute()
+                st.success("✅ ¡Evolución y Plan guardados al 100% en la base de datos!")
+            except Exception as e:
+                st.error(f"❌ Error al guardar en la nube: {e}")
+        else:
+            st.warning("⚠️ Escribe el nombre del atleta primero.")
+
+st.info(f"Atleta: **{nombre if nombre else 'Eddy PT'}** | RCC: {rcc_valor} | **Grasa Est. (RFM): {rfm}%** | Nivel: {nivel_experiencia}")
+col_r1, col_r2, col_r3, col_r4 = st.columns(4)
+col_r1.metric("Mantenimiento", f"{int(cal_mant)} kcal")
+col_r2.metric("Ajuste Diario", f"{int(dif)} kcal", delta=int(dif))
+col_r3.metric("Objetivo Final", f"{int(cal_obj)} kcal")
+col_r4.metric("💧 Agua (Con Entreno)", f"{agua_total} L")
+
+kg_mes_real = (dif * 30) / 7000 
+fechas_reales = [(datetime.now() + pd.DateOffset(months=i)).strftime("%d/%m/%Y") for i in range(int(meses_plazo) + 1)]
+pesos_prog = [peso_actual + (kg_mes_real * i) for i in range(len(fechas_reales))]
+
+fig, ax = plt.subplots(figsize=(10, 3))
+fig.patch.set_facecolor(bg_plot)
+ax.set_facecolor(bg_plot)
+ax.bar(fechas_reales, pesos_prog, color=accent_color)
+ax.tick_params(colors=accent_color)
+for spine in ax.spines.values(): spine.set_color(accent_color)
+for i, v in enumerate(pesos_prog): ax.text(i, v + 0.5, f"{round(v,1)}kg", ha='center', fontsize=10, fontweight='bold', color='#ffffff')
+
+buf = io.BytesIO()
+fig.savefig(buf, format="png", bbox_inches="tight", facecolor=bg_plot)
+buf.seek(0)
+grafico_base64 = base64.b64encode(buf.read()).decode("utf-8")
+plt.close(fig)
+
+fig_plotly = go.Figure()
+fig_plotly.add_trace(go.Bar(x=fechas_reales, y=pesos_prog, marker_color=accent_color, text=[f"{round(v,1)} kg" for v in pesos_prog], textposition='auto', hoverinfo='x+y', hovertemplate='<b>Fecha:</b> %{x}<br><b>Peso Proyectado:</b> %{y} kg<extra></extra>'))
+fig_plotly.update_layout(title=dict(text="Proyección de Evolución Corporal", font=dict(color=accent_color, size=18)), plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#ffffff'), xaxis=dict(showgrid=False, linecolor=accent_color), yaxis=dict(showgrid=True, gridcolor='#333333', linecolor=accent_color, zeroline=False), margin=dict(l=20, r=20, t=50, b=20))
+st.plotly_chart(fig_plotly, use_container_width=True, key="grafico_evolucion_corporal_elite")
+
+# ==========================================
+# 📈 DASHBOARD DE EVOLUCIÓN HISTÓRICA (TIEMPO REAL)
+# ==========================================
+st.divider()
+st.markdown("### 📈 Tu Evolución Histórica")
+
+if perfil_id:
+    try:
+        # 1. Traemos el historial de Supabase (El Pasado)
+        res_historial = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", perfil_id).order("fecha_registro").execute()
+        
+        if len(res_historial.data) > 0:
+            df_hist = pd.DataFrame(res_historial.data)
+            df_hist = df_hist[df_hist['peso'] > 0] # Limpiamos errores viejos
+            df_hist = df_hist.groupby('fecha_registro').last().reset_index()
+        else:
+            df_hist = pd.DataFrame(columns=['fecha_registro', 'peso', 'rfm', 'brazos', 'piernas'])
+        
+        # --- 🪄 MAGIA EN TIEMPO REAL (SINCRONIZACIÓN CON EL SIDEBAR) ---
+        fecha_hoy = str(date.today())
+        datos_en_vivo = {
+            'fecha_registro': fecha_hoy,
+            'peso': peso_actual, # Conectado en vivo al sidebar izquierdo
+            'rfm': rfm,
+            'brazos': brazos,
+            'piernas': piernas
+        }
+        
+        # Si hoy ya guardaste, actualizamos el punto del gráfico con lo que estás tocando ahora
+        if not df_hist.empty and fecha_hoy in df_hist['fecha_registro'].values:
+            idx = df_hist.index[df_hist['fecha_registro'] == fecha_hoy].tolist()[0]
+            df_hist.at[idx, 'peso'] = peso_actual
+            df_hist.at[idx, 'rfm'] = rfm
+            if 'brazos' in df_hist.columns: df_hist.at[idx, 'brazos'] = brazos
+            if 'piernas' in df_hist.columns: df_hist.at[idx, 'piernas'] = piernas
+        else:
+            # Si no guardaste hoy, creamos un "punto virtual" temporal para que veas la proyección
+            df_nuevo_punto = pd.DataFrame([datos_en_vivo])
+            df_hist = pd.concat([df_hist, df_nuevo_punto], ignore_index=True)
+            
+        df_hist['fecha_registro_str'] = pd.to_datetime(df_hist['fecha_registro']).dt.strftime('%d/%m/%Y')
+        
+        # --- CALCULAMOS CON LOS DATOS SINCRONIZADOS ---
+        if len(df_hist) > 1:
+            peso_ini = float(df_hist['peso'].iloc[0])
+            peso_dinamico = float(df_hist['peso'].iloc[-1]) # El peso en vivo
+            dif_peso = peso_dinamico - peso_ini
+            
+            grasa_ini = float(df_hist['rfm'].iloc[0])
+            grasa_dinamica = float(df_hist['rfm'].iloc[-1])
+            dif_grasa = grasa_dinamica - grasa_ini
+            
+            if 'brazos' in df_hist.columns:
+                df_brazos = df_hist[df_hist['brazos'] > 0]
+                if not df_brazos.empty:
+                    brazo_ini = float(df_brazos['brazos'].iloc[0])
+                    brazo_dinamico = float(df_brazos['brazos'].iloc[-1])
+                    dif_brazo = brazo_dinamico - brazo_ini
+                else:
+                    brazo_dinamico = brazos
+                    dif_brazo = 0
+            else:
+                brazo_dinamico = brazos
+                dif_brazo = 0
+
+            # --- 🗣️ RESUMEN DINÁMICO EN VIVO ---
+            st.markdown("""
+            <div style="background-color: rgba(212, 175, 55, 0.1); border-left: 4px solid #d4af37; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <h4 style="color: #d4af37; margin-top: 0; margin-bottom: 10px;">🤖 Análisis de tu progreso en vivo:</h4>
+            """, unsafe_allow_html=True)
+            
+            mensaje = ""
+            if dif_peso < 0:
+                mensaje += f"🔥 ¡Excelente trabajo! Has <b>bajado {abs(dif_peso):.1f} kg</b> desde que empezaste. "
+            elif dif_peso > 0:
+                mensaje += f"💪 Has <b>subido {abs(dif_peso):.1f} kg</b>. "
+            else:
+                mensaje += "⚖️ Te has mantenido en tu peso exacto. "
+                
+            if dif_grasa < 0:
+                mensaje += f"Lograste quemar un <b>{abs(dif_grasa):.1f}% de grasa</b>. "
+                
+            if dif_brazo > 0:
+                mensaje += f"¡Y tus brazos crecieron <b>{dif_brazo:.1f} cm</b>! "
+                
+            st.markdown(f"<p style='color: #ffffff; font-size: 16px; margin-bottom: 0; line-height: 1.5;'>{mensaje}</p></div>", unsafe_allow_html=True)
+
+            # --- 🚀 TARJETAS VISUALES EN VIVO ---
+            c1, c2, c3 = st.columns(3)
+            c1.metric("⚖️ Peso", f"{peso_dinamico} kg", f"{dif_peso:+.1f} kg", delta_color="inverse" if "Pérdida" in tipo_objetivo else "normal")
+            c2.metric("🔥 Grasa Corporal", f"{grasa_dinamica}%", f"{dif_grasa:+.1f}%", delta_color="inverse")
+            c3.metric("💪 Brazos", f"{brazo_dinamico} cm", f"{dif_brazo:+.1f} cm")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # --- 🚀 GRÁFICOS INTERACTIVOS EN VIVO ---
+            tab_peso, tab_medidas = st.tabs(["⚖️ Curva de Peso y Grasa", "💪 Evolución Muscular"])
+            
+            with tab_peso:
+                fig1 = go.Figure()
+                fig1.add_trace(go.Scatter(
+                    x=df_hist['fecha_registro_str'], y=df_hist['peso'], 
+                    mode='lines+markers', name='Peso (kg)', 
+                    line=dict(color='#00D9FF', width=4, shape='spline'), 
+                    marker=dict(size=10, color='white', line=dict(width=2, color='#00D9FF')),
+                    fill='tozeroy', fillcolor='rgba(0, 217, 255, 0.1)',
+                    hovertemplate='<b>Día:</b> %{x}<br><b>Peso:</b> %{y} kg<extra></extra>'
+                ))
+                fig1.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                    hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                )
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            with tab_medidas:
+                fig2 = go.Figure()
+                
+                df_graf_brazos = df_hist[df_hist['brazos'] > 0]
+                df_graf_piernas = df_hist[df_hist['piernas'] > 0]
+                
+                if not df_graf_brazos.empty:
+                    fig2.add_trace(go.Scatter(
+                        x=df_graf_brazos['fecha_registro_str'], y=df_graf_brazos['brazos'], 
+                        mode='lines+markers', name='Brazos (cm)', 
+                        line=dict(color='#D4AF37', width=4, shape='spline'), 
+                        marker=dict(size=10, color='white', line=dict(width=2, color='#D4AF37')),
+                        hovertemplate='<b>Día:</b> %{x}<br><b>Brazos:</b> %{y} cm<extra></extra>'
+                    ))
+                if not df_graf_piernas.empty:
+                    fig2.add_trace(go.Scatter(
+                        x=df_graf_piernas['fecha_registro_str'], y=df_graf_piernas['piernas'], 
+                        mode='lines+markers', name='Piernas (cm)', 
+                        line=dict(color='#00FF00', width=4, shape='spline'), 
+                        marker=dict(size=10, color='white', line=dict(width=2, color='#00FF00')),
+                        hovertemplate='<b>Día:</b> %{x}<br><b>Piernas:</b> %{y} cm<extra></extra>'
+                    ))
+                fig2.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white',
+                    hovermode="x unified", margin=dict(l=10, r=10, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+                    
+        else:
+            st.info("📌 Movimientos en tiempo real: Ajustá los datos de tu izquierda y mirá cómo se proyectan aquí de inmediato. Luego, tocá 'Guardar Progreso' en el menú.")
+    except Exception as e:
+        st.error(f"❌ Error al cargar historial: {e}")
+
+# ==========================================
+# 6. SUPLEMENTACIÓN
+# ==========================================
+suples = ["✅ Creatina (5g): Diario para fuerza y recuperación ATP.", "💊 Multivitamínico: 1 cápsula con el desayuno.", "🦴 Magnesio/Zinc: 1 dosis por la noche."]
+if "Volumen" in tipo_objetivo or "Recomposición" in tipo_objetivo: suples.append("🚀 Citrulina Malato (6-8g): 30 min Pre-entreno.")
+if "Definición" in tipo_objetivo or "Pérdida" in tipo_objetivo: suples.append("🏃‍♂️ Beta-Alanina (3-5g): Diario.")
+if "Agresiva" in tipo_objetivo or "Keto" in dieta_tipo or "Vegana" in dieta_tipo: suples.append("🐟 Omega-3 (1-3g EPA/DHA): Con la comida principal.")
+if "Keto" in dieta_tipo or (10 <= hora_entreno.hour <= 16): suples.append("⚡ Electrolitos: Intra-entreno en el agua.")
+if hora_entreno.hour < 12: suples.append("☕ Cafeína: 30 min Pre-entreno (Mañana).")
+suples.append("🥤 Proteína Whey o Vegetal: Post-entreno.")
+
+# ==========================================
+# 7. MENÚ DINÁMICO
+# ==========================================
+st.subheader(f"🍽️ Plan de {num_comidas} Comidas ({int(cal_obj)} kcal)")
+diccionario_menus = {} 
+lista_compras = defaultdict(float)
+
+p_com = p_g_total / num_comidas
+c_com = c_g_total / num_comidas
+g_com = g_g_total / num_comidas
+gramos_p = int(p_com / 0.25)
+gramos_g = int(g_com / 0.90)
+gramos_c = 0 if "Keto" in dieta_tipo else int(c_com / 0.25)
+
+mapa_nombres = {1: ["Comida Única"], 2: ["Almuerzo", "Cena"], 3: ["Desayuno", "Almuerzo", "Cena"], 4: ["Desayuno", "Almuerzo", "Merienda", "Cena"], 5: ["Desayuno", "Media Mañana", "Almuerzo", "Merienda", "Cena"], 6: ["Desayuno", "Media Mañana", "Almuerzo", "Merienda", "Pre-Cena", "Cena"]}
+
+for nombre_base in mapa_nombres[num_comidas]:
+    opciones_de_esta_comida = []
+    st.button(f"› ✨ {nombre_base.upper()}", use_container_width=True, disabled=True)
+    es_mt = any(x in nombre_base for x in ["Desayuno", "Merienda", "Mañana"])
+    for i in range(num_opciones):
+        if "Vegana" in dieta_tipo: fp = alimentos_db["Prot_Vegana"][i % len(alimentos_db["Prot_Vegana"])]
+        elif "Vegetariana" in dieta_tipo: fp = alimentos_db["Prot_Desayuno"][i % len(alimentos_db["Prot_Desayuno"])] if es_mt else alimentos_db["Prot_Vegana"][i % len(alimentos_db["Prot_Vegana"])]
+        elif "Pescetariana" in dieta_tipo: fp = alimentos_db["Prot_Desayuno"][i % len(alimentos_db["Prot_Desayuno"])] if es_mt else alimentos_db["Prot_Pescado"][i % len(alimentos_db["Prot_Pescado"])]
+        else: fp = alimentos_db["Prot_Desayuno"][i % len(alimentos_db["Prot_Desayuno"])] if es_mt else alimentos_db["Prot_Principal"][i % len(alimentos_db["Prot_Principal"])]
+        
+        if "Keto" in dieta_tipo: 
+            fc = alimentos_db["Verduras_Keto"][i % len(alimentos_db["Verduras_Keto"])]
+            texto_carbo = "Libre"
+        elif "Paleo" in dieta_tipo: 
+            fc = alimentos_db["Carb_Vegetales"][i % len(alimentos_db["Carb_Vegetales"])]
+            texto_carbo = f"{gramos_c}g"
+        else: 
+            fc = alimentos_db["Carb_Desayuno"][i % len(alimentos_db["Carb_Desayuno"])] if es_mt else alimentos_db["Carb_Principal"][i % len(alimentos_db["Carb_Principal"])]
+            texto_carbo = f"{gramos_c}g"
+        
+        fg = alimentos_db["Grasas"][i % len(alimentos_db["Grasas"])]
+        bebida = alimentos_db["Bebidas_Arg"][i % len(alimentos_db["Bebidas_Arg"])] if "Argentina" in pais else alimentos_db["Bebidas_Gral"][i % len(alimentos_db["Bebidas_Gral"])]
+        
+        txt_op = f"Opcion {i+1}: {gramos_p}g {fp} + {texto_carbo} {fc} + {gramos_g}g {fg} | Infusion: {bebida}"
+        opciones_de_esta_comida.append(txt_op)
+        dias_por_opcion = 30 / num_opciones
+        lista_compras[fp] += gramos_p * dias_por_opcion
+        if "Keto" not in dieta_tipo: lista_compras[fc] += gramos_c * dias_por_opcion
+        lista_compras[fg] += gramos_g * dias_por_opcion
+        lista_compras[bebida] += dias_por_opcion
+        
+    diccionario_menus[nombre_base.upper()] = opciones_de_esta_comida
+
+# --- PANEL DE CONSULTORÍA EXCLUSIVA TEAM EDDY ---
+st.divider()
+st.subheader("🏆 Consultoría Directa con Eddy Personal Trainer")
+puedo_usar, total_creditos = gestionar_ia_con_creditos(st.session_state['usuario_actual'])
+
+if puedo_usar:
+    st.info(f"Hola Tanque, hoy tenés **{total_creditos}** consultas disponibles con el equipo.")
+    pregunta_atleta = st.text_area("¿Qué duda tenés hoy para el equipo, Tanque?", placeholder="Ej: Eddy, ¿qué puedo cenar hoy para recuperar después de hacer piernas?")
+
+    if st.button("💬 ENVIAR CONSULTA AL TEAM EDDY", use_container_width=True):
+        if pregunta_atleta:
+            with st.spinner("Bancame un toque que estoy analizando lo mejor para vos..."):
+                prompt_eddy = f"Actuá como Eddy, un Personal Trainer de Élite argentino. Tu estilo es motivador, directo y profesional, usando modismos como 'Tanque', 'Dale con todo', 'viste', 'metele mecha'. No seas un robot, hablá como un coach que cuida a su equipo de atletas. Si te piden un menú o consejo, hacelo efectivo y con alimentos comunes en Argentina. Pregunta del atleta: {pregunta_atleta} Firmá siempre al final: Team Eddy - Software Elite."
+                try:
+                    # Usamos tu nueva súper función aislada
+                    respuesta_texto = generar_menu_ia(prompt_eddy)
+                    st.markdown("### 📢 Respuesta de Eddy:")
+                    st.write(respuesta_texto)
+                    descontar_credito(st.session_state['usuario_actual'], total_creditos)
+                except Exception as e:
+                    st.error(f"Se cortó la conexión con el servidor, Tanque. Probá de nuevo: {e}")
+        else:
+            st.warning("Escribime algo antes de enviar, Tanque. ¡Metele pilas!")
+else:
+    st.error("🚫 Ya agotaste tus consultas de prueba.")
+    st.write("Para tener **30 consultas mensuales** y soporte constante del equipo, descargá tu Guía de Entrenamiento Elite.")
+
+# ==========================================
+# 7.5 MOTOR DE RUTINAS ELITE
+# ==========================================
+st.subheader(f"🏋️‍♂️ Plan de Entrenamiento ({nivel_experiencia})")
+contenido_nivel = rutinas_elite.get(tipo_entreno, {}).get(nivel_experiencia, [])
+rutina_seleccionada = contenido_nivel[st.selectbox("🔄 Seleccionar Variante de Rutina:", list(contenido_nivel.keys()))] if isinstance(contenido_nivel, dict) else contenido_nivel
+
+diccionario_rutinas = {}
+if dias_entreno == 0:
+    diccionario_rutinas["Descanso Activo"] = ["Día libre. Priorizar hidratación, sueño y caminatas ligeras."]
+elif rutina_seleccionada:
+    for bloque in rutina_seleccionada[:dias_entreno]:
+        diccionario_rutinas[bloque[0]] = bloque[1:]
+else:
+    diccionario_rutinas = {"Aviso": ["Rutina en construcción para esta disciplina y nivel."]}
+
+st.button("› 👁️ VER RUTINA GENERADA", use_container_width=True, disabled=True)
+
+# ==========================================
+# 8. MOTOR PDF Y VALIDADOR DE PAGOS ÚNICOS
+# ==========================================
+st.divider()
+st.markdown("### 🔒 Descarga Protegida")
+
+if "pago_validado" not in st.session_state:
+    st.session_state.pago_validado = False
+
+if not st.session_state.pago_validado:
+    st.info("Para descargar tu Plan Elite, ingresa el número de operación de tu pago.")
+    col_p, col_v = st.columns(2)
+    with col_p:
+        st.link_button("💳 REALIZAR PAGO ($10.000)", "https://mpago.la/27TKbMf", type="primary")
+    with col_v:
+        nro_operacion = st.text_input("Ingresá el # de Operación (Ej: 156877505264):")
+        if st.button("🔓 Validar y Descargar"):
+            if nro_operacion:
+                nro_limpio = nro_operacion.replace("#", "").strip()
+                
+                # 🔥 LA CERRADURA MAESTRA (Código VIP)
+                if nro_limpio == "TANQUEVIP":
+                    st.session_state.pago_validado = True
+                    st.rerun()
+                
+                try:
+                    token = st.secrets["MERCADO_PAGO_TOKEN"]
+                    res = requests.get(f"https://api.mercadopago.com/v1/payments/{nro_limpio}", headers={"Authorization": f"Bearer {token}"})
+                    if res.status_code == 200:
+                        status = res.json().get("status")
+                        if status == "approved":
+                            if len(supabase.table("pagos_verificados").select("*").eq("id_pago", nro_limpio).execute().data) == 0:
+                                supabase.table("pagos_verificados").insert({"id_pago": nro_limpio, "usuario": st.session_state["usuario_actual"]}).execute()
+                                st.session_state.pago_validado = True
+                                st.rerun()
+                            else:
+                                st.error("❌ Este comprobante ya fue utilizado por otro usuario.")
+                        else:
+                            st.error(f"❌ El pago figura como: {status}. Debe estar 'approved'.")
+                    else:
+                        st.error("❌ Número de operación no encontrado en Mercado Pago.")
+                except Exception as e:
+                    st.error(f"Hubo un error técnico: {e}")
+
+# ==========================================
+# ZONA DESBLOQUEADA: GENERACIÓN DEL PDF
+# ==========================================
+if st.session_state.pago_validado:
+    st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
+    
+    # 1. Empaquetamos toda la data (agregando los datos extra que pide el nuevo motor)
+    payload = {
+        "n": nombre,
+        "edad": edad,
+        "estatura": estatura,
+        "peso": peso_actual,
+        "rfm": rfm,
+        "k": cal_obj,
+        "p": p_g_total,
+        "c": c_g_total,
+        "g": g_g_total,
+        "meta": tipo_objetivo,
+        "nivel": nivel_experiencia,
+        "w": agua_total,
+        "entreno": tipo_entreno,
+        "m": diccionario_menus,
+        "rutina": diccionario_rutinas
+    }
+
+    with st.container():
+        with st.spinner("⏳ Ensamblando tu PDF Ultra Elite..."):
+            try:
+                # 2. Importamos la NUEVA función desde tu archivo
+                from utils.pdf_generator_elite import build_pdf_ultra_elite
+                
+                # 3. Generamos el PDF pasándole el payload, el gráfico 3D y el género
+                pdf_elite = build_pdf_ultra_elite(
+                    data=payload,
+                    grafico_b64=grafico_base64,
+                    genero=genero
+                )
+                
+                # 4. Botón de descarga
+                if pdf_elite:
+                    st.download_button(
+                        label="🏆 DESCARGAR PLAN ULTRA ELITE",
+                        data=pdf_elite,
+                        file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf",
+                        mime="application/pdf",
+                        type="primary",
+                        key="descarga_pdf"
+                    )
+            except Exception as e:
+                st.error(f"❌ Error técnico en el servidor al generar PDF: {e}")

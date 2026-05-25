@@ -1,16 +1,20 @@
-import streamlit as st
 from supabase import create_client, Client
+from config.settings import settings
+from utils.logger import obtener_logger
 
-# Inicializamos la conexión una sola vez y la guardamos en caché
-@st.cache_resource
-def iniciar_conexion() -> Client:
+logger = obtener_logger("DatabaseConnection")
+
+def inicializar_supabase() -> Client:
     try:
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"]
-        return create_client(url, key)
+        if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+            raise ValueError("Faltan las credenciales de Supabase en la configuración.")
+        
+        client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+        logger.info("⚡ Conexión exitosa con Supabase establecida.")
+        return client
     except Exception as e:
-        st.error(f"❌ Error crítico al conectar con la base de datos: {e}")
-        st.stop()
+        logger.error(f"❌ Error al conectar con Supabase: {str(e)}")
+        raise e
 
-# Exportamos la variable maestra para usarla en el resto del proyecto
-supabase = iniciar_conexion()
+# Instancia única reutilizable en todo el proyecto
+supabase = inicializar_supabase()
