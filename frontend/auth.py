@@ -88,7 +88,7 @@ def _mostrar_imagen_login():
     st.markdown('<div class="login-image-wrap">', unsafe_allow_html=True)
     if archivos_tanque:
         ruta_segura = os.path.join(dir_raiz, archivos_tanque[0])
-        st.image(ruta_segura, width="stretch")
+        st.image(ruta_segura, use_column_width=True)
     else:
         st.warning("La imagen principal no se encontro en la carpeta del proyecto.")
     st.markdown('</div>', unsafe_allow_html=True)
