@@ -61,7 +61,7 @@ def panel_admin():
     ])
 
     # =========================================================================
-    # TAB 1: MONITOREO DE CLIENTES (REVISAR SI EXISTEN O SI FALTA ROL)
+    # TAB 1: MONITOREO DE CLIENTES
     # =========================================================================
     with tab_clientes:
         st.markdown("#### Clientes Registrados en la Plataforma Web")
@@ -70,7 +70,6 @@ def panel_admin():
         if not lista_alumnos:
             st.info("No se encontraron registros de clientes en la base de datos actualmente.")
         else:
-            # Cruzar datos de perfiles con roles de staff existentes
             staff_dict = {x['perfil_id']: x['rol'] for x in lista_staff}
             
             tabla_visual = []
@@ -86,14 +85,14 @@ def panel_admin():
             st.dataframe(tabla_visual, use_container_width=True)
 
     # =========================================================================
-    # TAB 2: OTORGAR LICENCIA (ALTA DE NUEVO STAFF CON DATOS COMPLETOS)
+    # TAB 2: OTORGAR LICENCIA (ALTA DE NUEVO STAFF)
     # =========================================================================
     with tab_licencias:
         st.markdown("#### Autorizar y Configurar Nuevo Personal de Staff")
         st.caption("Si un cliente ya se registró en la web, acá lo ascendés a Entrenador, Nutricionista o Administrador.")
         
         if not lista_alumnos:
-            st.warning("Debe existir almsnos un usuario en la plataforma para otorgarle una licencia de trabajo.")
+            st.warning("Debe existir al menos un usuario en la plataforma para otorgarle una licencia de trabajo.")
         else:
             dict_usuarios_disponibles = {
                 f"{u.get('nombre_completo', 'Sin Nombre')} [{u.get('email')}]": u 
@@ -127,7 +126,6 @@ def panel_admin():
                     if not whatsapp_comercial.strip():
                         st.error("❌ El campo de WhatsApp es obligatorio para la futura automatización.")
                     else:
-                        # Verificar si el usuario ya tiene un rol asignado
                         ya_existe = any(x['perfil_id'] == perfil['id'] for x in lista_staff)
                         
                         data_staff = {
@@ -140,11 +138,9 @@ def panel_admin():
                         
                         try:
                             if ya_existe:
-                                # Actualizar datos existentes
                                 supabase.table("roles_staff").update(data_staff).eq("perfil_id", perfil["id"]).execute()
                                 st.success(f"🔄 Licencia actualizada: {perfil['nombre_completo']} ahora es {rol_seleccionado.upper()} con Plan {plan_nivel.upper()}.")
                             else:
-                                # Insertar nuevo rol corporativo
                                 supabase.table("roles_staff").insert(data_staff).execute()
                                 st.success(f"✅ Licencia otorgada con éxito: {perfil['nombre_completo']} se incorporó como {rol_seleccionado.upper()}.")
                             st.rerun()
@@ -158,13 +154,11 @@ def panel_admin():
         st.markdown("#### Matriz de Asignación de Alumnos")
         st.caption("Vincula de forma directa a un Atleta con su Entrenador o Nutricionista responsable.")
         
-        # Filtrar solo el personal que puede tener alumnos asignados (entrenador o nutricionista)
         staff_activo = [x for x in lista_staff if x['rol'] in ['entrenador', 'nutricionista']]
         
         if not lista_alumnos or not staff_activo:
             st.info("Se requiere tener alumnos cargados y staff con rol de Entrenador/Nutricionista configurado.")
         else:
-            # Crear mapas de búsqueda por ID
             perfiles_dict = {p['id']: p for p in lista_alumnos}
             
             dict_alumnos = {
@@ -180,10 +174,9 @@ def panel_admin():
                     email_prof = perfiles_dict[p_id].get('email', '')
                     dict_staff[f"[{s['rol'].upper()}] {nombre_prof} - {email_prof}"] = p_id
             
-            # Formulario de enlace
             with st.form("form_vinculacion_directa"):
                 alumno_elegido = st.selectbox("Seleccionar Alumno Atleta:", list(dict_alumnos.keys()))
-                staff_elegido = st.selectbox("Asignar al Profesional Profesional:", list(dict_staff.keys()))
+                staff_elegido = st.selectbox("Asignar al Profesional:", list(dict_staff.keys()))
                 
                 if st.form_submit_button("Vincular Atleta ➔", type="primary", use_container_width=True):
                     id_alumno = dict_alumnos[alumno_elegido]
@@ -197,7 +190,7 @@ def panel_admin():
                         st.error(f"Error al intentar escribir la clave foránea del entrenador: {e}")
 
     # =========================================================================
-    # TAB 4: MONITOR DE AUDITORÍA (ESTÁTICO PARA LOGS DE SERVIDORES DE IA)
+    # TAB 4: MONITOR DE AUDITORÍA
     # =========================================================================
     with tab_auditoria:
         st.markdown("#### Monitor de Infraestructura y Costos de Operación")

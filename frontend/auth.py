@@ -140,7 +140,7 @@ def renderizar_login():
                 placeholder="Ingresa tu contrasena",
             )
 
-            # CORRECCIÓN DE BOTÓN (Línea 108)
+            # Botón validado para arquitectura en la nube
             if st.button("Entrar", type="primary", use_container_width=True):
                 if not email_login or not pass_login:
                     st.warning("Completa correo y contrasena para ingresar.")
@@ -195,7 +195,7 @@ def renderizar_login():
                 label_visibility="collapsed",
             )
 
-            # CORRECCIÓN DE BOTÓN (Línea 150)
+            # Botón validado para arquitectura en la nube
             if st.button("Crear mi cuenta", type="primary", use_container_width=True):
                 if not nombre_reg or not email_reg or not pass_reg:
                     st.warning("Completa nombre, correo y contrasena para crear tu cuenta.")
