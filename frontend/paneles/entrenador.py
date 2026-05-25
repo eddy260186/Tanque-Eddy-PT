@@ -1,207 +1,216 @@
 import streamlit as st
-import os
-from datetime import date
+from datetime import datetime, date
 from database.conexion import supabase
-from utils.biometria import calcular_biometria
-from backend.services.whatsapp_service import enviar_mensaje_texto_whatsapp
 
-def panel_entrenador(staff_id):
-    # ==========================================
-    # 1. BARRA LATERAL (SIDEBAR) Y CERRAR SESIÓN
-    # ==========================================
+def _calcular_edad(fecha_nac):
+    if not fecha_nac:
+        return "N/A"
+    try:
+        if isinstance(fecha_nac, str):
+            fecha_nac = datetime.strptime(fecha_nac[:10], "%Y-%m-%d").date()
+        hoy = date.today()
+        return hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
+    except Exception:
+        return "N/A"
+
+def panel_entrenador(entrenador_uuid):
+    """
+    Suite Elite para Entrenadores.
+    Muestra la nomina de atletas asignados a este entrenador_uuid y despliega 
+    toda su informacion biometrica, de actividad, horarios y seguimiento.
+    """
+    # =========================================================================
+    # BARRA LATERAL VIP: CONTROL DE SESIÓN
+    # =========================================================================
     with st.sidebar:
-        st.header("🏢 Branding")
-        dir_raiz = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        foto_side = None
-        for n in ["logo.png", "logo(1).png", "logo.png.png"]:
-            ruta_s = os.path.join(dir_raiz, n)
-            if os.path.exists(ruta_s):
-                foto_side = ruta_s
-                break
-        if foto_side:
-            try:
-                st.image(str(foto_side), use_container_width=True)
-            except:
-                pass
-        
-        st.divider()
-        st.markdown(
-            f"""
-            <div style="background-color: #151a26; border: 1px solid #d4af37; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
-                <span style="color: #d4af37; font-weight: bold; font-size: 16px;">🛡️ Modo Entrenador</span><br>
-                <span style="color: #ffffff; font-size: 13px;">Panel de Gestión Elite</span>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # 🚪 BOTÓN DE SALIDA (Ubicado abajo a la izquierda en la app)
-        if st.button("🚪 CERRAR SESIÓN", use_container_width=True, type="primary"):
+        st.markdown("### 📋 Panel del Profesional")
+        st.success("Sesión Activa: Entrenador / Staff")
+        st.write("---")
+        if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
             supabase.auth.sign_out()
-            st.session_state["usuario_actual"] = None
-            if "rol" in st.session_state:
-                del st.session_state["rol"]
+            st.session_state.clear()
             st.rerun()
 
-    # ==========================================
-    # 2. PANEL PRINCIPAL
-    # ==========================================
-    st.markdown("## 📋 Panel de Control - Entrenador Elite")
+    # =========================================================================
+    # CUERPO PRINCIPAL: EXTRACCIÓN DE ALUMNOS VINCULADOS
+    # =========================================================================
+    st.markdown("## ⚡ Sistema Clínico de Entrenamiento y Seguimiento")
+    st.caption("Visualización de fichas técnicas, evolución biométrica y gestión adaptativa de atletas asignados.")
     st.write("---")
 
     try:
-        res_alumnos = supabase.table("perfiles_atletas").select("id").eq("entrenador_id", staff_id).execute()
-        total_mis_alumnos = len(res_alumnos.data)
-    except:
-        total_mis_alumnos = 0
+        # Traemos solo los alumnos cuyo entrenador_id coincida con el UUID del entrenador logueado
+        atletas_resp = supabase.table("perfiles_atletas").select("*").eq("entrenador_id", entrenador_uuid).execute()
+        lista_alumnos = atletas_resp.data if atletas_resp.data else []
+    except Exception as e:
+        st.error(f"Error al conectar con la base de datos de atletas: {e}")
+        lista_alumnos = []
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("👥 Mis Alumnos Activos", total_mis_alumnos)
-    col2.metric("💧 Adherencia Promedio", "89%")
-    col3.metric("🤖 Consultas IA Disponibles", "Ilimitadas")
+    # =========================================================================
+    # CONTROL DE FLUJO SI NO HAY ALUMNOS ASIGNADOS
+    # =========================================================================
+    if not lista_alumnos:
+        st.info("👋 ¡Bienvenido a la Suite Elite! Actualmente no tenés alumnos asignados por la administración.")
+        st.markdown(
+            """
+            <div style='background-color: #1e1e1e; padding: 20px; border-radius: 8px; border: 1px solid #333;'>
+                <p style='color: #f4d47c; font-weight: bold; margin-bottom: 5px;'>¿Qué sigue?</p>
+                <p style='color: #b7bdca; margin: 0;'>Póngase en contacto con el Administrador General para que vincule alumnos a su perfil desde la <b>Matriz de Asignación</b>.</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+        st.stop()
+
+    # =========================================================================
+    # PANEL ACTIVO: SELECTOR DE ATLETA TRABAJADO
+    # =========================================================================
+    dict_alumnos = {
+        f"👤 {a.get('nombre_completo', 'Sin Nombre')} [{a.get('email')}]": a 
+        for a in lista_alumnos
+    }
+    
+    col_sel, _ = st.columns([2, 2])
+    with col_sel:
+        atleta_seleccionado = st.selectbox(
+            "Seleccioná el alumno para auditar su ficha completa:", 
+            options=list(dict_alumnos.keys())
+        )
     
     st.write("---")
+    
+    # Extraemos el registro limpio de la base de datos del alumno elegido
+    alumno = dict_alumnos[atleta_seleccionado]
+    
+    # Pre-calculos de datos protegidos contra valores nulos
+    edad = _calcular_edad(alumno.get("fecha_nacimiento"))
+    genero_raw = str(alumno.get("genero", "m")).strip().lower()
+    genero = "Masculino" if genero_raw == "m" else "Femenino"
+    
+    # =========================================================================
+    # PESTAÑAS DETALLADAS DE INFORMACIÓN DE 360 GRADOS
+    # =========================================================================
+    tab_ficha, tab_biometria, tab_rutina_dieta, tab_progreso = st.tabs([
+        "📄 Ficha Técnica y Horarios", 
+        "📏 Medidas y Biometría", 
+        "🍏 Prescripción Actual",
+        "📈 Historial de Seguimiento"
+    ])
 
-    tab_lista, tab_alta = st.tabs(["👥 Mi Cartera de Clientes", "➕ Dar de Alta / Actualizar Alumno"])
-
-    # ---------------------------------------------------------
-    # TAB 1: LISTA DE ALUMNOS (AHORA CON BUSCADOR Y EDICIÓN RÁPIDA)
-    # ---------------------------------------------------------
-    with tab_lista:
-        st.markdown("### 👥 Tus Alumnos Asignados")
+    # -------------------------------------------------------------------------
+    # TAB 1: FICHA TÉCNICA Y HORARIOS
+    # -------------------------------------------------------------------------
+    with tab_ficha:
+        st.markdown("#### Datos de Identificación y Disponibilidad")
         
-        try:
-            # Traemos a todos los alumnos ordenados alfabéticamente
-            res_alumnos_lista = supabase.table("perfiles_atletas").select("*").eq("entrenador_id", staff_id).order("nombre_completo").execute()
-            alumnos_totales = res_alumnos_lista.data
-            
-            if not alumnos_totales:
-                st.info("Aún no tienes alumnos asignados o registrados.")
+        c1, c2, c3, c4 = st.columns(4)
+        with c1: st.metric(label="Edad", value=f"{edad} años")
+        with c2: st.metric(label="Género", value=genero)
+        with c3: st.metric(label="País de Residencia", value=alumno.get("pais", "Argentina"))
+        with c4: st.metric(label="Teléfono / WhatsApp", value=alumno.get("telefono", "No registrado"))
+        
+        st.write("---")
+        st.markdown("#### ⏰ Horarios y Estilo de Vida")
+        
+        # El uso de .get(campo, "No definido") evita errores si la columna está vacía
+        col_h1, col_h2 = st.columns(2)
+        with col_h1:
+            st.text_input("Horarios disponibles para entrenar:", value=alumno.get("horario_entrenamiento", "No definido"), disabled=True)
+            st.text_input("Ocupación / Trabajo:", value=alumno.get("ocupacion", "No definido"), disabled=True)
+        with col_h2:
+            st.text_input("Nivel de Actividad Física diario:", value=alumno.get("actividad_fisica", "No definido"), disabled=True)
+            st.text_input("Objetivo Principal declarado:", value=alumno.get("objetivo", "Hipertrofia / Descenso de grasa"), disabled=True)
+
+    # -------------------------------------------------------------------------
+    # TAB 2: MEDIDAS Y BIOMETRÍA
+    # -------------------------------------------------------------------------
+    with tab_biometria:
+        st.markdown("#### Último Registro Antropométrico Detectado")
+        
+        # Variables de control extraídas directamente de la fila del alumno
+        peso_actual = alumno.get("peso", 0.0)
+        altura_actual = alumno.get("altura", 0.0)
+        
+        col_b1, col_b2, col_b3 = st.columns(3)
+        with col_b1: st.metric(label="Peso Actual", value=f"{peso_actual} kg" if peso_actual else "S/D")
+        with col_b2: st.metric(label="Estatura", value=f"{altura_actual} m" if altura_actual else "S/D")
+        with col_b3: 
+            if peso_actual and altura_actual:
+                imc = round(peso_actual / (altura_actual ** 2), 1)
+                st.metric(label="Índice de Masa Corporal (IMC)", value=f"{imc}")
             else:
-                # 🔍 EL NUEVO BUSCADOR INTELIGENTE
-                busqueda = st.text_input("🔍 Buscar atleta por nombre o correo electrónico...", placeholder="Escribe para buscar...").lower()
-                
-                # Filtramos la lista en tiempo real
-                alumnos = [a for a in alumnos_totales if busqueda in str(a.get('nombre_completo', '')).lower() or busqueda in str(a.get('email', '')).lower()]
-                
-                if not alumnos:
-                    st.warning("No se encontraron alumnos que coincidan con tu búsqueda.")
+                st.metric(label="Índice de Masa Corporal (IMC)", value="S/D")
 
-                for alu in alumnos:
-                    nombre_alu = alu.get('nombre_completo', 'Sin Nombre')
-                    email_alu = alu.get('email', '')
-                    tel_alu = alu.get('telefono')
-                    tel_mostrar = tel_alu if tel_alu else "Sin teléfono cargado"
-
-                    with st.container():
-                        c1, c2, c3 = st.columns([3, 3, 2])
-                        with c1:
-                            st.markdown(f"**{nombre_alu}**")
-                            st.caption(f"✉️ {email_alu}")
-                        with c2:
-                            st.markdown(f"📱 `{tel_mostrar}`")
-                        with c3:
-                            # ✏️ EDICIÓN AL VUELO DE WHATSAPP
-                            with st.expander("✏️ Editar WhatsApp"):
-                                nuevo_tel = st.text_input("Número (Ej: +54911...)", value=tel_alu if tel_alu else "", key=f"edit_tel_{alu['id']}")
-                                if st.button("💾 Guardar Número", key=f"btn_tel_{alu['id']}", use_container_width=True):
-                                    try:
-                                        supabase.table("perfiles_atletas").update({"telefono": nuevo_tel.strip()}).eq("id", alu['id']).execute()
-                                        st.success("¡Actualizado!")
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error("Error al actualizar.")
-                                        
-                        with st.expander(f"👁️ VER FICHA TÉCNICA DE {nombre_alu.upper()}"):
-                            res_bio = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", alu['id']).order("fecha_registro", desc=True).limit(1).execute()
-                            
-                            if res_bio.data:
-                                bio = res_bio.data[0]
-                                st.markdown(f"🗓️ **Último Control:** {bio.get('fecha_registro', 'Sin fecha')}")
-                                
-                                col_f1, col_f2, col_f3, col_f4 = st.columns(4)
-                                col_f1.metric("Peso", f"{bio.get('peso', 0)} kg")
-                                col_f2.metric("Estatura", f"{bio.get('estatura', 0)} cm")
-                                col_f3.metric("Grasa (RFM)", f"{round(float(bio.get('rfm', 0)), 1)} %")
-                                col_f4.metric("Cintura", f"{bio.get('cintura', 0)} cm")
-                                
-                                st.markdown(f"🎯 **Meta Actual:** `{bio.get('meta', 'No definida')}`")
-                            else:
-                                st.warning("⚠️ Todavía no se registraron controles biométricos completos para este atleta.")
-                                
-                    st.markdown("<hr style='margin:0.2em 0px; border-color: #333;' />", unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"Error al renderizar cartera: {e}")
-
-    # ---------------------------------------------------------
-    # TAB 2: FORMULARIO DE ALTA / EDICIÓN BLINDADO
-    # ---------------------------------------------------------
-    with tab_alta:
-        st.markdown("### 🚀 Registrar Atleta y Disparar Rutina")
-        st.info("Si el alumno ya existe, el sistema actualizará sus datos e incorporará la nueva medición en su historial.")
+        st.write("---")
+        st.markdown("#### Perímetros Corporales (Cm)")
         
-        with st.form("form_alta_alumno"):
-            col_a, col_b = st.columns(2)
+        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+        with col_m1:
+            st.text_input("Cuello:", value=f"{alumno.get('medida_cuello', 'S/D')} cm", disabled=True)
+            st.text_input("Pecho:", value=f"{alumno.get('medida_pecho', 'S/D')} cm", disabled=True)
+        with col_m2:
+            st.text_input("Brazo Izquierdo:", value=f"{alumno.get('medida_brazo_izq', 'S/D')} cm", disabled=True)
+            st.text_input("Brazo Derecho:", value=f"{alumno.get('medida_brazo_der', 'S/D')} cm", disabled=True)
+        with col_m3:
+            st.text_input("Cintura / Abdomen:", value=f"{alumno.get('medida_cintura', 'S/D')} cm", disabled=True)
+            st.text_input("Cadera:", value=f"{alumno.get('medida_cadera', 'S/D')} cm", disabled=True)
+        with col_m4:
+            st.text_input("Muslo Izquierdo:", value=f"{alumno.get('medida_muslo_izq', 'S/D')} cm", disabled=True)
+            st.text_input("Muslo Derecho:", value=f"{alumno.get('medida_muslo_der', 'S/D')} cm", disabled=True)
+
+    # -------------------------------------------------------------------------
+    # TAB 3: PRESCRIPCIÓN ACTUAL (DIETA Y RUTINA ACTIVA)
+    # -------------------------------------------------------------------------
+    with tab_rutina_dieta:
+        st.markdown("#### Programación Asignada al Alumno")
+        st.caption("Acá podés auditar qué plan tiene cargado el sistema actualmente para este usuario.")
+        
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            st.markdown("##### 🏋️ Esquema de Entrenamiento")
+            st.text_area(
+                label="Rutina Vigente:",
+                value=alumno.get("rutina_activa", "No hay ninguna rutina asignada actualmente a este atleta."),
+                height=200,
+                key="view_rutina"
+            )
+        with col_p2:
+            st.markdown("##### 🍏 Planificación Nutricional")
+            st.text_area(
+                label="Macronutrientes y Menú:",
+                value=alumno.get("dieta_activa", "No hay ninguna planificación nutricional asignada actualmente."),
+                height=200,
+                key="view_dieta"
+            )
+
+    # -------------------------------------------------------------------------
+    # TAB 4: HISTORIAL DE SEGUIMIENTO (PREPARADO PARA LOGS DE SUPABASE)
+    # -------------------------------------------------------------------------
+    with tab_progreso:
+        st.markdown("#### Línea de Tiempo de Evolución")
+        st.caption("Historial de auditorías métricas guardadas cronológicamente.")
+        
+        # Consultamos si existen registros históricos para este alumno en una tabla relacional
+        try:
+            historial_resp = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", alumno["id"]).order("fecha_evaluacion", ascending=False).execute()
+            logs_evolucion = historial_resp.data if historial_resp.data else []
+        except Exception:
+            logs_evolucion = []
+
+        if not logs_evolucion:
+            st.info("El alumno todavía no cuenta con un historial de chequeos biométricos guardados en la base de datos.")
             
-            with col_a:
-                nombre_alum = st.text_input("Nombre Completo:")
-                email_alum = st.text_input("Correo Electrónico (Clave de unicidad):")
-                tel_alum = st.text_input("📱 WhatsApp del Alumno (Ej: +5491123456789):")
-                genero_alum = st.selectbox("Género:", ["Masculino", "Femenino"])
-            
-            with col_b:
-                peso_alum = st.number_input("Peso Inicial (kg):", min_value=30.0, value=75.0)
-                estatura_alum = st.number_input("Estatura (cm):", min_value=100, value=170)
-                cintura_alum = st.number_input("Cintura (cm):", value=85.0)
-                meta_alum = st.selectbox("Meta Principal:", ["Pérdida de Grasa", "Recomposición", "Volumen"])
-
-            if st.form_submit_button("💾 Guardar y Disparar IA por WhatsApp"):
-                if nombre_alum and email_alum and tel_alum:
-                    try:
-                        gen_val = "m" if genero_alum == "Masculino" else "f"
-                        email_limpio = email_alum.lower().strip()
-                        
-                        perfil_data = {
-                            "email": email_limpio,
-                            "nombre_completo": nombre_alum,
-                            "genero": gen_val,
-                            "telefono": tel_alum.strip(),
-                            "entrenador_id": staff_id
-                        }
-                        res_perfil = supabase.table("perfiles_atletas").upsert(perfil_data, on_conflict="email").execute()
-                        p_id = res_perfil.data[0]["id"]
-
-                        rfm_calc, masa_magra, tmb = calcular_biometria(gen_val, estatura_alum, cintura_alum, peso_alum)
-
-                        bio_data = {
-                            "perfil_id": p_id,
-                            "peso": float(peso_alum),
-                            "estatura": float(estatura_alum),
-                            "cintura": float(cintura_alum),
-                            "rfm": float(rfm_calc),
-                            "meta": meta_alum,
-                            "fecha_registro": str(date.today())
-                        }
-                        
-                        supabase.table("evaluaciones_biometricas").insert(bio_data).execute()
-
-                        mensaje_bienvenida = (
-                            f"Hola {nombre_alum}. Ya quedaste registrado en el seguimiento de Eddy Personal Trainer. "
-                            f"Tu objetivo actual es: {meta_alum}. Responde por este WhatsApp cuando tengas dudas de tu plan."
-                        )
-                        whatsapp_ok = enviar_mensaje_texto_whatsapp(
-                            alumno_id=p_id,
-                            entrenador_id=staff_id,
-                            telefono=tel_alum,
-                            mensaje=mensaje_bienvenida,
-                        )
-
-                        if whatsapp_ok:
-                            st.success(f"✅ Datos guardados y WhatsApp de bienvenida enviado a {nombre_alum}.")
-                        else:
-                            st.warning("Datos guardados, pero WhatsApp no se envio. Revisa WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID.")
-                    except Exception as e:
-                        st.error(f"❌ Error de persistencia: {str(e)}")
-                else:
-                    st.warning("⚠️ El Nombre, Email y WhatsApp son obligatorios.")
-
+            # Simulador visual estático para diseño Pixel Perfect mientras el alumno no cargue datos
+            st.markdown("##### *Vista de ejemplo de gráfico evolutivo estructural:*")
+            datos_simulados = {"Peso Corporal (Kg)": [peso_actual, peso_actual], "Semanas": ["Semana 1", "Semana 2"]}
+            st.line_chart(data=[peso_actual if peso_actual else 80.0, peso_actual if peso_actual else 79.5])
+        else:
+            tabla_historial = []
+            for log in logs_evolucion:
+                tabla_historial.append({
+                    "Fecha de Control": log.get("fecha_evaluacion"),
+                    "Peso Registrado (Kg)": log.get("peso"),
+                    "% Grasa Estimado": log.get("porcentaje_grasa", "S/D"),
+                    "Comentarios del Coach": log.get("observaciones", "Sin observaciones")
+                })
+            st.dataframe(tabla_historial, use_container_width=True)
