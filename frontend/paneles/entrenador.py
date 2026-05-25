@@ -3,6 +3,7 @@ import os
 from datetime import date
 from database.conexion import supabase
 from utils.biometria import calcular_biometria
+from backend.services.whatsapp_service import enviar_mensaje_texto_whatsapp
 
 def panel_entrenador(staff_id):
     # ==========================================
@@ -184,9 +185,23 @@ def panel_entrenador(staff_id):
                         
                         supabase.table("evaluaciones_biometricas").insert(bio_data).execute()
 
-                        st.success(f"✅ ¡Datos procesados perfectamente para {nombre_alum}! Conexión e historial biométrico sincronizados.")
-                        st.rerun()
+                        mensaje_bienvenida = (
+                            f"Hola {nombre_alum}. Ya quedaste registrado en el seguimiento de Eddy Personal Trainer. "
+                            f"Tu objetivo actual es: {meta_alum}. Responde por este WhatsApp cuando tengas dudas de tu plan."
+                        )
+                        whatsapp_ok = enviar_mensaje_texto_whatsapp(
+                            alumno_id=p_id,
+                            entrenador_id=staff_id,
+                            telefono=tel_alum,
+                            mensaje=mensaje_bienvenida,
+                        )
+
+                        if whatsapp_ok:
+                            st.success(f"✅ Datos guardados y WhatsApp de bienvenida enviado a {nombre_alum}.")
+                        else:
+                            st.warning("Datos guardados, pero WhatsApp no se envio. Revisa WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID.")
                     except Exception as e:
                         st.error(f"❌ Error de persistencia: {str(e)}")
                 else:
                     st.warning("⚠️ El Nombre, Email y WhatsApp son obligatorios.")
+

@@ -50,7 +50,7 @@ def registrar_log_whatsapp(alumno_id: str, entrenador_id: str, direccion: str, c
     try:
         log = {
             "alumno_id": alumno_id,
-            "entrenador_id": entrenador_id,
+            "entrenador_id": entrenador_id if entrenador_id else None,
             "direccion": direccion, # 'entrante' o 'saliente'
             "contenido": contenido,
             "estado_envio": "enviado"
@@ -110,3 +110,4 @@ def obtener_lista_staff_detallada() -> list:
     except Exception as e:
         logger.error(f"❌ Error al obtener lista de staff: {str(e)}")
         return []
+

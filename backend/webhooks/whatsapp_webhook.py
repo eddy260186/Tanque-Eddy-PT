@@ -2,96 +2,135 @@ from fastapi import APIRouter, Request, Response, HTTPException, status
 from config.settings import settings
 from utils.logger import obtener_logger
 from database.conexion import supabase
+from database.queries import registrar_log_whatsapp
 from backend.services.ia_service import procesar_consulta_ia_con_memoria
-from backend.services.whatsapp_service import enviar_mensaje_texto_whatsapp
+from backend.services.whatsapp_service import enviar_mensaje_texto_whatsapp, normalizar_telefono_whatsapp
 
 logger = obtener_logger("WhatsAppWebhookMaster")
 router = APIRouter()
 
-VERIFY_TOKEN = settings.WHATSAPP_TOKEN or "mi_token_secreto_eddy_pt_2026"
 
 @router.get("/whatsapp")
 def verificar_webhook_meta(request: Request):
     """
-    Validador obligatorio para la consola de Meta Developers.
+    Verifica el webhook desde Meta Developers.
+    Usa WHATSAPP_VERIFY_TOKEN, no el token privado de la API.
     """
     params = request.query_params
     mode = params.get("hub.mode")
     token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
 
-    if mode and token:
-        if mode == "subscribe" and token == VERIFY_TOKEN:
-            logger.info("✅ Servidor validado correctamente ante la Meta API.")
-            return Response(content=challenge, media_type="text/plain")
-        else:
-            logger.warning("❌ Intento de hackeo o token incorrecto en webhook.")
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Token mismatch")
-            
+    if mode == "subscribe" and token == settings.WHATSAPP_VERIFY_TOKEN:
+        logger.info("Webhook de WhatsApp validado correctamente.")
+        return Response(content=challenge or "", media_type="text/plain")
+
+    if mode or token:
+        logger.warning("Intento de verificacion de webhook con token incorrecto.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Token mismatch")
+
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing parameters")
+
+
+def _extraer_mensaje_texto(payload: dict) -> tuple[str, str]:
+    entry = payload.get("entry") or []
+    changes = (entry[0].get("changes") if entry else []) or []
+    value = changes[0].get("value", {}) if changes else {}
+    messages = value.get("messages") or []
+
+    if not messages:
+        return "", ""
+
+    msg = messages[0]
+    telefono = msg.get("from", "")
+    texto = (msg.get("text") or {}).get("body", "").strip()
+    return telefono, texto
+
+
+def _buscar_atleta_por_telefono(telefono_meta: str) -> dict:
+    telefono_normalizado = normalizar_telefono_whatsapp(telefono_meta)
+    if not telefono_normalizado:
+        return {}
+
+    try:
+        exacto = supabase.table("perfiles_atletas")\
+            .select("id, entrenador_id, nombre_completo, telefono")\
+            .eq("telefono", telefono_meta)\
+            .limit(1)\
+            .execute()
+        if exacto.data:
+            return exacto.data[0]
+
+        con_mas = supabase.table("perfiles_atletas")\
+            .select("id, entrenador_id, nombre_completo, telefono")\
+            .eq("telefono", f"+{telefono_normalizado}")\
+            .limit(1)\
+            .execute()
+        if con_mas.data:
+            return con_mas.data[0]
+
+        # Fallback tolerante: cubre telefonos guardados con espacios, guiones o parentesis.
+        perfiles = supabase.table("perfiles_atletas")\
+            .select("id, entrenador_id, nombre_completo, telefono")\
+            .execute()
+        for perfil in perfiles.data or []:
+            if normalizar_telefono_whatsapp(perfil.get("telefono")) == telefono_normalizado:
+                return perfil
+    except Exception as e:
+        logger.error(f"Error buscando atleta por telefono: {e}")
+
+    return {}
 
 
 @router.post("/whatsapp")
 async def recibir_interaccion_alumno(request: Request):
     """
-    EL INTERCEPTOR MÁGICO: Escucha, procesa con contexto e IA, y responde al instante.
+    Recibe mensajes de WhatsApp, identifica al alumno, responde con IA y guarda historial.
     """
     try:
         payload = await request.json()
-        
-        # 1. Extracción segura de la estructura anidada de Meta Cloud API
-        entry = payload.get("entry", [])[0]
-        changes = entry.get("changes", [])[0]
-        value = changes.get("value", {})
-        messages = value.get("messages", [])
+        telefono_original, texto_recibido = _extraer_mensaje_texto(payload)
 
-        if not messages:
-            return {"status": "ignored", "reason": "No contiene estructura de mensajes (ej. fue un estado de entrega)."}
-
-        msg = messages[0]
-        telefono_original = msg.get("from") # El número de WhatsApp del alumno
-        texto_recibido = msg.get("text", {}).get("body", "").strip()
+        if not telefono_original:
+            return {"status": "ignored", "reason": "sin_mensaje"}
 
         if not texto_recibido:
-            return {"status": "ignored", "reason": "El mensaje no contiene texto plano."}
+            return {"status": "ignored", "reason": "sin_texto"}
 
-        logger.info(f"📩 WhatsApp entrante de [{telefono_original}]: '{texto_recibido}'")
+        logger.info(f"WhatsApp entrante de [{telefono_original}]: {texto_recibido}")
 
-        # 2. IDENTIFICACIÓN MULTI-INQUILINO (Cruzar teléfono con base de datos)
-        # Buscamos quién es el atleta y quién es su entrenador asignado
-        atleta_query = supabase.table("perfiles_atletas")\
-            .select("id, entrenador_id, nombre_completo")\
-            .eq("telefono", telefono_original)\
-            .execute()
-
-        if not atleta_query.data:
-            logger.warning(f"⚠️ Mensaje recibido de un número no registrado en el SaaS: {telefono_original}")
+        atleta = _buscar_atleta_por_telefono(telefono_original)
+        if not atleta:
+            logger.warning(f"Mensaje recibido de numero no registrado: {telefono_original}")
             return {"status": "unregistered_user"}
 
-        atleta = atleta_query.data[0]
         alumno_id = atleta["id"]
-        entrenador_id = atleta["entrenador_id"]
-        nombre_alumno = atleta["nombre_completo"]
+        entrenador_id = atleta.get("entrenador_id")
+        nombre_alumno = atleta.get("nombre_completo", "Atleta")
 
-        # 3. CONTEXTO E IA EN ACCIÓN
-        # Mandamos el mensaje al módulo de ia_service que maneja la memoria y el rate limiter
-        respuesta_ia = procesar_consulta_ia_con_memoria(
-            alumno_id=alumno_id, 
-            mensaje_alumno=texto_recibido
+        registrar_log_whatsapp(
+            alumno_id=alumno_id,
+            entrenador_id=entrenador_id,
+            direccion="entrante",
+            contenido=texto_recibido,
         )
 
-        # 4. DISPARO DE RESPUESTA DE SALIDA
-        # Usamos el motor de whatsapp_service para mandarle la respuesta de Gemini al alumno
-        enviar_mensaje_texto_whatsapp(
+        respuesta_ia = procesar_consulta_ia_con_memoria(
+            alumno_id=alumno_id,
+            mensaje_alumno=texto_recibido,
+        )
+
+        enviado = enviar_mensaje_texto_whatsapp(
             alumno_id=alumno_id,
             entrenador_id=entrenador_id,
             telefono=telefono_original,
-            mensaje=respuesta_ia
+            mensaje=respuesta_ia,
         )
 
-        logger.info(f"🚀 Circuito cerrado con éxito para el alumno: {nombre_alumno}")
-        return {"status": "success", "processed": True}
+        logger.info(f"Circuito WhatsApp cerrado para {nombre_alumno}. Enviado={enviado}")
+        return {"status": "success", "processed": True, "sent": enviado}
 
     except Exception as e:
-        logger.error(f"❌ Fallo crítico en el router del webhook: {str(e)}")
+        logger.error(f"Fallo critico en webhook WhatsApp: {str(e)}")
         return {"status": "error", "message": str(e)}
+
