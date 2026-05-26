@@ -8,7 +8,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from datetime import datetime, date, time
 from database.conexion import supabase
-from ai.gemini import generar_menu_ia
+
+# 🔥 NUEVO CABLEADO AL PROVEEDOR CENTRAL DE IA (REEMPLAZA AL VIEJO ai.gemini)
+from ai.providers.gemini_provider import generar_texto
 from utils.biometria import calcular_biometria
 
 # IMPORTACIÓN DE TUS MÓDULOS DE SERVICIO ESPECIALIZADOS
@@ -257,7 +259,8 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                 with st.spinner("Bancame un toque..."):
                     prompt_eddy = f"Actuá como Eddy, un Personal Trainer de Élite argentino. Tu estilo es motivador, directo y profesional, usando modismos como 'Tanque', 'Dale con todo', 'viste', 'metele mecha'. Pregunta del atleta: {pregunta_atleta} Firmá siempre al final: Team Eddy - Software Elite."
                     try:
-                        respuesta_texto = generar_menu_ia(prompt_eddy)
+                        # 🔥 AQUÍ LLAMAMOS A LA NUEVA FUNCIÓN ESPECIALIZADA
+                        respuesta_texto = generar_texto(prompt=prompt_eddy)
                         st.markdown("### 📢 Respuesta de Eddy:")
                         st.write(respuesta_texto)
                         descontar_credito(st.session_state['usuario_actual'], total_creditos)
