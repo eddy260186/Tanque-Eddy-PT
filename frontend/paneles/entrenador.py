@@ -241,7 +241,7 @@ def panel_entrenador(entrenador_uuid):
         "📲 Vinculación WhatsApp QR"
     ])
 
-    # TAB 1: DIAGNÓSTICO FUNCIONAL (RESTAURADO COMPLETO)
+    # TAB 1: DIAGNÓSTICO FUNCIONAL
     with tab_diagnostico:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>📋 Perfil de Estilo de Vida e Historial</div>", unsafe_allow_html=True)
@@ -264,7 +264,7 @@ def panel_entrenador(entrenador_uuid):
         st.warning(alumno.get("objetivo", "Recomposición corporal avanzada."))
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 2: ANATOMÍA Y PERÍMETROS (RESTAURADO COMPLETO)
+    # TAB 2: ANATOMÍA Y PERÍMETROS
     with tab_antropometria:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>📐 Ficha Métrica Perimetral (Cm)</div>", unsafe_allow_html=True)
@@ -284,11 +284,11 @@ def panel_entrenador(entrenador_uuid):
             st.metric("Muslo Der.", f"{alumno.get('medida_muslo_der', '—')} cm")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA (CON LLAVE ANTI-CACHÉ)
+    # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA Y GATILLO DE WHATSAPP
     with tab_prescripcion:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>⚙️ Modificación de Rutinas y Planificación Calórica</div>", unsafe_allow_html=True)
-        st.caption("Los cambios guardados impactarán instantáneamente en la interfaz web de la aplicación del alumno.")
+        st.caption("Los cambios guardados se actualizarán en la BD y despacharán un aviso automático al celular del alumno.")
         
         # LLAVE MÁGICA: Obliga al formulario a vaciarse al cambiar de alumno
         with st.form(key=f"form_actualizar_plan_{alumno_id}"):
@@ -319,22 +319,48 @@ def panel_entrenador(entrenador_uuid):
             st.write("")
             btn_guardar_plan = st.form_submit_button("💾 Modificar y Sincronizar Ficha del Alumno", type="primary", use_container_width=True)
             
+            # FLUJO MAESTRO DE DATOS + AUTOMATIZACIÓN DE EVOLUTION API
             if btn_guardar_plan:
-                try:
-                    supabase.table("perfiles_atletas").update({
-                        "rutina_activa": nueva_rutina,
-                        "dieta_activa": nueva_dieta,
-                        "peso_objetivo": nuevo_peso_obj,
-                        "plazo_meses": nuevo_plazo_meses
-                    }).eq("id", alumno_id).execute()
-                    
-                    st.success(f"🔥 Sincronización Exitosa: El plan de {alumno.get('nombre_completo')} fue actualizado en la nube.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error al escribir en Supabase: {e}")
+                with st.spinner("Guardando plan y despachando aviso por WhatsApp..."):
+                    try:
+                        # 1. Escritura en Supabase
+                        supabase.table("perfiles_atletas").update({
+                            "rutina_activa": nueva_rutina,
+                            "dieta_activa": nueva_dieta,
+                            "peso_objetivo": nuevo_peso_obj,
+                            "plazo_meses": nuevo_plazo_meses
+                        }).eq("id", alumno_id).execute()
+                        
+                        # 2. Despacho por Evolution API (WhatsApp)
+                        from backend.services.whatsapp_service import enviar_mensaje_texto_evolution
+                        
+                        telefono_alumno = str(alumno.get("telefono", "")).strip()
+                        nombre_alumno = str(alumno.get('nombre_completo', 'campeón')).split()[0]
+                        
+                        if telefono_alumno:
+                            instancia_nombre = f"coach_{str(entrenador_uuid)[:8]}"
+                            mensaje_whatsapp = f"¡Hola {nombre_alumno}! 🚀\n\nTu Coach acaba de actualizar tu plan de entrenamiento en la plataforma.\n\n🎯 Nueva meta fijada: {nuevo_peso_obj} Kg.\n\nEntrá a la app para ver tu nueva rutina y plan nutricional. ¡A romperla esta semana!"
+                            
+                            exito_ws = enviar_mensaje_texto_evolution(
+                                nombre_instancia=instancia_nombre,
+                                alumno_id=alumno_id,
+                                entrenador_id=entrenador_uuid,
+                                telefono=telefono_alumno,
+                                mensaje=mensaje_whatsapp
+                            )
+                            
+                            if exito_ws:
+                                st.success(f"🔥 Sincronización Exitosa: El plan fue actualizado y el aviso de WhatsApp fue entregado al {telefono_alumno}.")
+                            else:
+                                st.warning("⚠️ El plan fue guardado en la base de datos, pero el servidor de mensajería no pudo despachar el WhatsApp. Revisá que el número del alumno sea válido.")
+                        else:
+                            st.success("🔥 Sincronización Exitosa: Ficha actualizada. (No se despachó WhatsApp porque el alumno no tiene un número registrado).")
+                            
+                    except Exception as e:
+                        st.error(f"Falla crítica al sincronizar los datos: {e}")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 4: SEGUIMIENTO GRÁFICO REAL (RESTAURADO COMPLETO)
+    # TAB 4: SEGUIMIENTO GRÁFICO REAL
     with tab_seguimiento:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>📈 Curva Evolutiva de Composición Corporal</div>", unsafe_allow_html=True)
@@ -367,7 +393,7 @@ def panel_entrenador(entrenador_uuid):
             st.dataframe(tabla_historial, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 5: VINCULACIÓN WHATSAPP SINCRO (CON LLAVE ANTI-CACHÉ)
+    # TAB 5: VINCULACIÓN WHATSAPP SINCRO
     with tab_whatsapp_saas:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>📲 Consola de Activación de WhatsApp Automático</div>", unsafe_allow_html=True)
