@@ -185,7 +185,7 @@ def panel_entrenador(entrenador_uuid):
     col_busc, col_stats = st.columns([1.5, 2.5], gap="large")
     
     with col_busc:
-        # LLAVE ANTI-CACHÉ GLOBAL
+        # LLAVE ANTI-CACHÉ GLOBAL - Cambiar de alumno destruye los estados viejos congelados
         atleta_seleccionado = st.selectbox(
             "Buscar Atleta en su Red:", 
             options=list(dict_alumnos.keys()),
@@ -288,9 +288,9 @@ def panel_entrenador(entrenador_uuid):
     with tab_prescripcion:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>⚙️ Modificación de Rutinas y Planificación Calórica</div>", unsafe_allow_html=True)
-        st.caption("Los cambios guardados se actualizarán en la BD y despacharán un aviso automático al celular del alumno.")
+        st.caption("Los cambios guardados se actualizarán en la base de datos y despacharán un aviso automático al WhatsApp del alumno.")
         
-        # LLAVE MÁGICA: Obliga al formulario a vaciarse al cambiar de alumno
+        # LA LLAVE MÁGICA: Obliga al formulario a redibujarse completamente con los datos del nuevo alumno
         with st.form(key=f"form_actualizar_plan_{alumno_id}"):
             col_p1, col_p2 = st.columns(2)
             with col_p1:
@@ -319,11 +319,11 @@ def panel_entrenador(entrenador_uuid):
             st.write("")
             btn_guardar_plan = st.form_submit_button("💾 Modificar y Sincronizar Ficha del Alumno", type="primary", use_container_width=True)
             
-            # FLUJO MAESTRO DE DATOS + AUTOMATIZACIÓN DE EVOLUTION API
+            # FLUJO MAESTRO INTELIGENTE: SUPABASE + DISPARADOR DE EVOLUTION API
             if btn_guardar_plan:
-                with st.spinner("Guardando plan y despachando aviso por WhatsApp..."):
+                with st.spinner("Guardando plan en Supabase y conectando con el servidor de WhatsApp..."):
                     try:
-                        # 1. Escritura en Supabase
+                        # 1. Escritura blindada en la base de datos
                         supabase.table("perfiles_atletas").update({
                             "rutina_activa": nueva_rutina,
                             "dieta_activa": nueva_dieta,
@@ -338,10 +338,12 @@ def panel_entrenador(entrenador_uuid):
                         nombre_alumno = str(alumno.get('nombre_completo', 'campeón')).split()[0]
                         
                         if telefono_alumno:
+                            # Recreamos dinámicamente el identificador de la instancia vinculada por este Coach
                             instancia_nombre = f"coach_{str(entrenador_uuid)[:8]}"
+                            
                             mensaje_whatsapp = f"¡Hola {nombre_alumno}! 🚀\n\nTu Coach acaba de actualizar tu plan de entrenamiento en la plataforma.\n\n🎯 Nueva meta fijada: {nuevo_peso_obj} Kg.\n\nEntrá a la app para ver tu nueva rutina y plan nutricional. ¡A romperla esta semana!"
                             
-                            exito_ws = enviar_mensaje_texto_evolution(
+                            resultado_ws = enviar_mensaje_texto_evolution(
                                 nombre_instancia=instancia_nombre,
                                 alumno_id=alumno_id,
                                 entrenador_id=entrenador_uuid,
@@ -349,15 +351,22 @@ def panel_entrenador(entrenador_uuid):
                                 mensaje=mensaje_whatsapp
                             )
                             
-                            if exito_ws:
-                                st.success(f"🔥 Sincronización Exitosa: El plan fue actualizado y el aviso de WhatsApp fue entregado al {telefono_alumno}.")
+                            # Procesamos la respuesta avanzada del motor
+                            if isinstance(resultado_ws, dict):
+                                if resultado_ws.get("exito"):
+                                    st.success(f"🔥 Sincronización Exitosa: El plan fue actualizado y el aviso de WhatsApp fue entregado al {telefono_alumno}.")
+                                else:
+                                    # Desplegamos el error técnico real del servidor si falla
+                                    st.error(f"❌ BD Guardada, pero WhatsApp rechazado por Railway. Detalle técnico:\n\n{resultado_ws.get('error')}")
+                            elif resultado_ws is True:
+                                st.success(f"🔥 Sincronización Exitosa: El plan fue actualizado y el aviso fue entregado.")
                             else:
-                                st.warning("⚠️ El plan fue guardado en la base de datos, pero el servidor de mensajería no pudo despachar el WhatsApp. Revisá que el número del alumno sea válido.")
+                                st.warning("⚠️ Plan guardado, pero se recibió un estado desconocido del motor de mensajería.")
                         else:
-                            st.success("🔥 Sincronización Exitosa: Ficha actualizada. (No se despachó WhatsApp porque el alumno no tiene un número registrado).")
+                            st.success("🔥 Sincronización Exitosa: Ficha actualizada en Supabase. (No se despachó WhatsApp porque el alumno no posee teléfono cargado en su perfil).")
                             
                     except Exception as e:
-                        st.error(f"Falla crítica al sincronizar los datos: {e}")
+                        st.error(f"Falla crítica al sincronizar los datos en Supabase: {e}")
         st.markdown("</div>", unsafe_allow_html=True)
 
     # TAB 4: SEGUIMIENTO GRÁFICO REAL
@@ -408,7 +417,7 @@ def panel_entrenador(entrenador_uuid):
         with col_qr_actions:
             st.markdown("##### ⚙️ Gestión de Conexión")
             st.write("Presioná el botón para solicitar un nuevo token y sincronizar la terminal inalámbrica.")
-            # LLAVE MÁGICA: El botón nunca se va a trabar
+            # LLAVE MÁGICA: El botón posee un ID ligado al entrenador para evitar congelamientos
             btn_generar_qr = st.button("🔄 Generar Código QR de Vinculación", type="primary", use_container_width=True, key=f"btn_qr_{entrenador_uuid}")
             
         with col_qr_display:
