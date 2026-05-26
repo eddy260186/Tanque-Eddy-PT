@@ -114,7 +114,7 @@ def _inyectar_estilos_premium():
 
 def panel_entrenador(entrenador_uuid):
     """
-    Suite Avanzada e Interactiva para Entrenadores con Interfaz Gráfica Premium.
+    Suite Avanzada e Interactiva para Entrenadores con Interfaz Gráfica Premium y Sincronización WhatsApp.
     """
     _inyectar_estilos_premium()
 
@@ -145,7 +145,7 @@ def panel_entrenador(entrenador_uuid):
     except Exception:
         pass
 
-    # cabecera de la app
+    # Cabecera dinámica VIP
     st.markdown(f"""
     <div class="coach-hero">
         <div class="coach-avatar">👑</div>
@@ -202,12 +202,11 @@ def panel_entrenador(entrenador_uuid):
     peso_actual = alumno.get("peso", 0.0)
     altura_actual = alumno.get("altura", 0.0)
     
-    # Recuperación interactiva de metas y plazos (evitando caídas si no existen las columnas)
+    # Recuperación interactiva de metas y plazos de forma segura
     peso_objetivo = alumno.get("peso_objetivo", 0.0) if alumno.get("peso_objetivo") else (peso_actual - 5.0 if peso_actual else 70.0)
     plazo_meses = alumno.get("plazo_meses", 4) if alumno.get("plazo_meses") else 3
 
     with col_stats:
-        # Fila de métricas interactivas diseñadas con HTML puro para romper la monotonía estética
         cm1, cm2, cm3 = st.columns(3)
         with cm1:
             st.markdown(f"""
@@ -236,11 +235,12 @@ def panel_entrenador(entrenador_uuid):
     # =========================================================================
     # ÁREA DE EXPEDIENTE 360 GRADOS
     # =========================================================================
-    tab_diagnostico, tab_antropometria, tab_prescripcion, tab_seguimiento = st.tabs([
+    tab_diagnostico, tab_antropometria, tab_prescripcion, tab_seguimiento, tab_whatsapp_saas = st.tabs([
         "🔍 Diagnóstico Funcional", 
         "📏 Anatomía y Medidas", 
         "📝 Modificar Planificación (Rutina/Dieta)", 
-        "📈 Gráfica de Progreso Real"
+        "📈 Gráfica de Progreso Real",
+        "📲 Vinculación WhatsApp QR"
     ])
 
     # TAB 1: DIAGNÓSTICO FUNCIONAL
@@ -286,7 +286,7 @@ def panel_entrenador(entrenador_uuid):
             st.metric("Muslo Der.", f"{alumno.get('medida_muslo_der', '—')} cm")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA (INTERACTIVO)
+    # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA
     with tab_prescripcion:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>⚙️ Modificación de Rutinas y Planificación Calórica</div>", unsafe_allow_html=True)
@@ -322,7 +322,6 @@ def panel_entrenador(entrenador_uuid):
             
             if btn_guardar_plan:
                 try:
-                    # Actualizamos de forma masiva y limpia todas las columnas funcionales
                     supabase.table("perfiles_atletas").update({
                         "rutina_activa": nueva_rutina,
                         "dieta_activa": nueva_dieta,
@@ -348,9 +347,7 @@ def panel_entrenador(entrenador_uuid):
             logs_evolucion = []
 
         if not logs_evolucion:
-            st.info("💡 Historial inicial activo. Mostrando proyección de control en base al peso actual y la meta configurada.")
-            
-            # Gráfica interactiva de alta fidelidad para el control visual del progreso
+            st.info("💡 Historial inicial activo. Mostrando proyeccion de control en base al peso actual y la meta configurada.")
             p_inicial = peso_actual if peso_actual else 85.0
             curva_proyeccion = [p_inicial, p_inicial - ((p_inicial - peso_objetivo) * 0.3), p_inicial - ((p_inicial - peso_objetivo) * 0.6), peso_objetivo]
             
@@ -358,8 +355,6 @@ def panel_entrenador(entrenador_uuid):
             st.caption("Eje X: Línea temporal del proceso // Eje Y: Peso registrado en Kg.")
         else:
             pesos_historicos = [log.get("peso") for log in logs_evolucion if log.get("peso")]
-            fechas_historicas = [log.get("fecha_evaluacion") for log in logs_evolucion if log.get("fecha_evaluacion")]
-            
             st.line_chart(data=pesos_historicos, use_container_width=True)
             
             tabla_historial = []
@@ -371,4 +366,44 @@ def panel_entrenador(entrenador_uuid):
                     "Observaciones del Ajuste": log.get("observaciones", "Sin anotaciones")
                 })
             st.dataframe(tabla_historial, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # TAB 5: VINCULACIÓN WHATSAPP SINCRO (IMPORTACIÓN RECTIFICADA)
+    with tab_whatsapp_saas:
+        st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
+        st.markdown("<div class='seccion-titulo-vip'>📲 Consola de Activación de WhatsApp Automático</div>", unsafe_allow_html=True)
+        st.caption("Escaneá el código QR para que la Inteligencia Artificial de la app pueda enviar rutinas y recordatorios automáticos firmados con tu propio número.")
+        
+        instancia_nombre = f"coach_{str(entrenador_uuid)[:8]}"
+        
+        # RUTA CORRECTA APUNTANDO A TU COMPONENTE REAL DE SERVICES
+        from backend.services.whatsapp_service import EvolutionAPI
+        
+        col_qr_actions, col_qr_display = st.columns([1.5, 2.5])
+        
+        with col_qr_actions:
+            st.markdown("##### ⚙️ Gestión de Conexión")
+            st.write("Presioná el botón para solicitar un nuevo token y sincronizar la terminal inalámbrica.")
+            btn_generar_qr = st.button("🔄 Generar Código QR de Vinculación", type="primary", use_container_width=True)
+            
+        with col_qr_display:
+            if btn_generar_qr:
+                with st.spinner("Conectando con el servidor de Railway y generando QR corporativo..."):
+                    evo = EvolutionAPI()
+                    resultado = evo.crear_instancia_y_obtener_qr(instancia_nombre)
+                    
+                    if resultado.get("exito") and resultado.get("qr_base64"):
+                        st.success("✅ ¡Código generado! Escanealo desde la app de WhatsApp de tu celular (Dispositivos vinculados).")
+                        datos_qr = resultado["qr_base64"]
+                        st.markdown(
+                            f"""
+                            <div style='text-align: center; background: white; padding: 15px; border-radius: 8px; width: fit-content; margin: 10px auto;'>
+                                <img src="{datos_qr}" style="width: 280px; height: 280px;" />
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.error(f"No se pudo inicializar la API de WhatsApp: {resultado.get('error')}")
+                        st.info("Verificá que las credenciales de EVOLUTION_API_URL y KEY en tus Secrets sean las correctas.")
         st.markdown("</div>", unsafe_allow_html=True)

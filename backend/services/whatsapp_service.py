@@ -1,63 +1,122 @@
 import requests
+import streamlit as st
 from config.settings import settings
 from utils.logger import obtener_logger
 from database.queries import registrar_log_whatsapp
 
 logger = obtener_logger("WhatsAppService")
 
+class EvolutionAPI:
+    """
+    Conector de Alta Gama para el motor Evolution API alojado en Railway.
+    Gobierna la creación de instancias dinámicas y el despacho de flujos de IA.
+    """
+    def __init__(self):
+        # Extraemos las credenciales guardadas de forma segura en los secretos del SaaS
+        self.base_url = st.secrets.get("EVOLUTION_API_URL", "https://evolution-api-production-a15fc.up.railway.app").rstrip("/")
+        self.api_key = st.secrets.get("EVOLUTION_API_KEY", "")
+        
+        self.headers = {
+            "Content-Type": "application/json",
+            "apikey": self.api_key
+        }
+
+    def crear_instancia_y_obtener_qr(self, nombre_instancia):
+        """
+        Inicializa un contenedor virtual para el profesor en el cluster de Railway.
+        Devuelve el QR de emparejamiento Base64 listo para inyección en la UI de Streamlit.
+        """
+        url = f"{self.base_url}/instance/create"
+        payload = {
+            "instanceName": nombre_instancia,
+            "qrcode": True,
+            "integration": "WHATSAPP-BAILEYS"
+        }
+        
+        try:
+            response = requests.post(url, headers=self.headers, json=payload, timeout=15)
+            data = response.json()
+            
+            if response.status_code in [200, 201]:
+                return {
+                    "exito": True, 
+                    "qr_base64": data.get("qrcode", {}).get("base64")
+                }
+            elif response.status_code == 403 or "already exists" in str(data.get("message", "")):
+                return self.conectar_instancia(nombre_instancia)
+            else:
+                return {
+                    "exito": False, 
+                    "error": data.get("message", "Falla de comunicación con el servidor.")
+                }
+        except Exception as e:
+            return {"exito": False, "error": f"Error de conexión de red: {str(e)}"}
+
+    def conectar_instancia(self, nombre_instancia):
+        """Recupera el canal de enlace de una instancia existente desvinculada."""
+        url = f"{self.base_url}/instance/connect/{nombre_instancia}"
+        try:
+            response = requests.get(url, headers=self.headers, timeout=15)
+            data = response.json()
+            if "base64" in data:
+                return {"exito": True, "qr_base64": data["base64"]}
+            elif data.get("code") == "instance_already_connected":
+                return {"exito": False, "error": "CONNECTED_ALREADY"}
+            return {"exito": False, "error": "No se pudo recuperar el flujo del código QR."}
+        except Exception as e:
+            return {"exito": False, "error": str(e)}
+
 
 def normalizar_telefono_whatsapp(telefono: str) -> str:
-    """Deja el numero en formato aceptado por Meta: solo digitos con codigo de pais."""
+    """Deja el número en formato internacional limpio: solo dígitos."""
     return "".join(filter(str.isdigit, str(telefono or "")))
 
 
-def enviar_mensaje_texto_whatsapp(alumno_id: str, entrenador_id: str, telefono: str, mensaje: str) -> bool:
+def enviar_mensaje_texto_evolution(nombre_instancia: str, alumno_id: str, entrenador_id: str, telefono: str, mensaje: str) -> bool:
     """
-    Envia un mensaje de texto personalizado al alumno usando Meta Cloud API.
+    Despacha un mensaje a través del motor Evolution API de Railway.
+    Simula escritura humana para proteger la línea y registra el log en la base de datos.
     """
-    token = settings.WHATSAPP_TOKEN
-    phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
-
-    if not token or not phone_number_id:
-        logger.error("WhatsApp no configurado: faltan WHATSAPP_TOKEN o WHATSAPP_PHONE_NUMBER_ID.")
-        return False
-
+    base_url = st.secrets.get("EVOLUTION_API_URL", "https://evolution-api-production-a15fc.up.railway.app").rstrip("/")
+    api_key = st.secrets.get("EVOLUTION_API_KEY", "")
+    
     telefono_limpio = normalizar_telefono_whatsapp(telefono)
-    if not telefono_limpio:
-        logger.error("WhatsApp no enviado: telefono vacio o invalido.")
+    if not telefono_limpio or not mensaje or not mensaje.strip():
+        logger.error("Envío cancelado: Teléfono o mensaje inválidos.")
         return False
 
-    if not mensaje or not mensaje.strip():
-        logger.error("WhatsApp no enviado: mensaje vacio.")
-        return False
-
-    url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
+    url = f"{base_url}/message/sendText/{nombre_instancia}"
     headers = {
-        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
+        "apikey": api_key
     }
+    
     payload = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": telefono_limpio,
-        "type": "text",
-        "text": {"preview_url": False, "body": mensaje.strip()},
+        "number": f"{telefono_limpio}@s.whatsapp.net",
+        "options": {
+            "delay": 1200,
+            "presence": "composing"
+        },
+        "textMessage": {
+            "text": mensaje.strip()
+        }
     }
 
     try:
         respuesta = requests.post(url, json=payload, headers=headers, timeout=15)
-        if respuesta.status_code in (200, 201):
+        if respuesta.status_code in [200, 201]:
+            # Mantenemos tu auditoría interna intacta
             registrar_log_whatsapp(
                 alumno_id=alumno_id,
                 entrenador_id=entrenador_id,
                 direccion="saliente",
                 contenido=mensaje.strip(),
             )
-            logger.info(f"WhatsApp enviado correctamente a {telefono_limpio}.")
+            logger.info(f"Mensaje de Evolution enviado correctamente a {telefono_limpio}.")
             return True
-
-        logger.error(f"Meta rechazo el mensaje ({respuesta.status_code}): {respuesta.text}")
+        
+        logger.error(f"El motor Evolution rechazó el mensaje: {respuesta.text}")
         return False
     except Exception as e:
-        logger.error(f"Error de conexion con Meta: {str(e)}")
+        logger.error(f"Error de conexión con el motor de Railway: {str(e)}")
         return False
