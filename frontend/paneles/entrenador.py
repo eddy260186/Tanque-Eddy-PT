@@ -157,7 +157,7 @@ def panel_entrenador(entrenador_uuid):
     """, unsafe_allow_html=True)
 
     # =========================================================================
-    # EXTRACCIÓN DE LOS ATLETAS ASIGNADOS
+    # EXTRACCIÓN DE LOS ATLETAS ASIGNADOS Y SELECTOR DINÁMICO (ANTI-CACHÉ)
     # =========================================================================
     try:
         atletas_resp = supabase.table("perfiles_atletas").select("*").eq("entrenador_id", entrenador_uuid).execute()
@@ -175,9 +175,6 @@ def panel_entrenador(entrenador_uuid):
         """, unsafe_allow_html=True)
         return
 
-    # =========================================================================
-    # BUSCADOR INTERACTIVO Y DASHBOARD DE MANDO
-    # =========================================================================
     st.markdown("<h3 style='color: #ffffff; font-weight: 700; margin-bottom: 10px;'>📊 Centro de Control de Atletas</h3>", unsafe_allow_html=True)
     
     dict_alumnos = {
@@ -188,21 +185,22 @@ def panel_entrenador(entrenador_uuid):
     col_busc, col_stats = st.columns([1.5, 2.5], gap="large")
     
     with col_busc:
+        # LLAVE ANTI-CACHÉ GLOBAL
         atleta_seleccionado = st.selectbox(
             "Buscar Atleta en su Red:", 
             options=list(dict_alumnos.keys()),
+            key="selector_global_alumnos",
             help="Escriba o seleccione el nombre del cliente para abrir su expediente clínico."
         )
     
     alumno = dict_alumnos[atleta_seleccionado]
+    alumno_id = str(alumno.get("id"))
     
     # Variables biométricas seguras
     edad = _calcular_edad(alumno.get("fecha_nacimiento"))
     genero = "Masculino" if str(alumno.get("genero", "m")).strip().lower() == "m" else "Femenino"
     peso_actual = alumno.get("peso", 0.0)
-    altura_actual = alumno.get("altura", 0.0)
     
-    # Recuperación interactiva de metas y plazos de forma segura
     peso_objetivo = alumno.get("peso_objetivo", 0.0) if alumno.get("peso_objetivo") else (peso_actual - 5.0 if peso_actual else 70.0)
     plazo_meses = alumno.get("plazo_meses", 4) if alumno.get("plazo_meses") else 3
 
@@ -243,7 +241,7 @@ def panel_entrenador(entrenador_uuid):
         "📲 Vinculación WhatsApp QR"
     ])
 
-    # TAB 1: DIAGNÓSTICO FUNCIONAL
+    # TAB 1: DIAGNÓSTICO FUNCIONAL (RESTAURADO COMPLETO)
     with tab_diagnostico:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>📋 Perfil de Estilo de Vida e Historial</div>", unsafe_allow_html=True)
@@ -266,7 +264,7 @@ def panel_entrenador(entrenador_uuid):
         st.warning(alumno.get("objetivo", "Recomposición corporal avanzada."))
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 2: ANATOMÍA Y PERÍMETROS
+    # TAB 2: ANATOMÍA Y PERÍMETROS (RESTAURADO COMPLETO)
     with tab_antropometria:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>📐 Ficha Métrica Perimetral (Cm)</div>", unsafe_allow_html=True)
@@ -286,13 +284,14 @@ def panel_entrenador(entrenador_uuid):
             st.metric("Muslo Der.", f"{alumno.get('medida_muslo_der', '—')} cm")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA
+    # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA (CON LLAVE ANTI-CACHÉ)
     with tab_prescripcion:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>⚙️ Modificación de Rutinas y Planificación Calórica</div>", unsafe_allow_html=True)
         st.caption("Los cambios guardados impactarán instantáneamente en la interfaz web de la aplicación del alumno.")
         
-        with st.form("form_actualizar_plan"):
+        # LLAVE MÁGICA: Obliga al formulario a vaciarse al cambiar de alumno
+        with st.form(key=f"form_actualizar_plan_{alumno_id}"):
             col_p1, col_p2 = st.columns(2)
             with col_p1:
                 st.markdown("##### 🏋️ Programación de Estímulo Muscular")
@@ -327,7 +326,7 @@ def panel_entrenador(entrenador_uuid):
                         "dieta_activa": nueva_dieta,
                         "peso_objetivo": nuevo_peso_obj,
                         "plazo_meses": nuevo_plazo_meses
-                    }).eq("id", alumno["id"]).execute()
+                    }).eq("id", alumno_id).execute()
                     
                     st.success(f"🔥 Sincronización Exitosa: El plan de {alumno.get('nombre_completo')} fue actualizado en la nube.")
                     st.rerun()
@@ -335,19 +334,19 @@ def panel_entrenador(entrenador_uuid):
                     st.error(f"Error al escribir en Supabase: {e}")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 4: SEGUIMIENTO GRÁFICO REAL
+    # TAB 4: SEGUIMIENTO GRÁFICO REAL (RESTAURADO COMPLETO)
     with tab_seguimiento:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>📈 Curva Evolutiva de Composición Corporal</div>", unsafe_allow_html=True)
         
         try:
-            historial_resp = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", alumno["id"]).order("fecha_evaluacion", ascending=True).execute()
+            historial_resp = supabase.table("evaluaciones_biometricas").select("*").eq("perfil_id", alumno_id).order("fecha_evaluacion", ascending=True).execute()
             logs_evolucion = historial_resp.data if historial_resp.data else []
         except Exception:
             logs_evolucion = []
 
         if not logs_evolucion:
-            st.info("💡 Historial inicial activo. Mostrando proyeccion de control en base al peso actual y la meta configurada.")
+            st.info("💡 Historial inicial activo. Mostrando proyección de control en base al peso actual y la meta configurada.")
             p_inicial = peso_actual if peso_actual else 85.0
             curva_proyeccion = [p_inicial, p_inicial - ((p_inicial - peso_objetivo) * 0.3), p_inicial - ((p_inicial - peso_objetivo) * 0.6), peso_objetivo]
             
@@ -368,7 +367,7 @@ def panel_entrenador(entrenador_uuid):
             st.dataframe(tabla_historial, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 5: VINCULACIÓN WHATSAPP SINCRO (IMPORTACIÓN RECTIFICADA)
+    # TAB 5: VINCULACIÓN WHATSAPP SINCRO (CON LLAVE ANTI-CACHÉ)
     with tab_whatsapp_saas:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>📲 Consola de Activación de WhatsApp Automático</div>", unsafe_allow_html=True)
@@ -376,7 +375,6 @@ def panel_entrenador(entrenador_uuid):
         
         instancia_nombre = f"coach_{str(entrenador_uuid)[:8]}"
         
-        # RUTA CORRECTA APUNTANDO A TU COMPONENTE REAL DE SERVICES
         from backend.services.whatsapp_service import EvolutionAPI
         
         col_qr_actions, col_qr_display = st.columns([1.5, 2.5])
@@ -384,26 +382,30 @@ def panel_entrenador(entrenador_uuid):
         with col_qr_actions:
             st.markdown("##### ⚙️ Gestión de Conexión")
             st.write("Presioná el botón para solicitar un nuevo token y sincronizar la terminal inalámbrica.")
-            btn_generar_qr = st.button("🔄 Generar Código QR de Vinculación", type="primary", use_container_width=True)
+            # LLAVE MÁGICA: El botón nunca se va a trabar
+            btn_generar_qr = st.button("🔄 Generar Código QR de Vinculación", type="primary", use_container_width=True, key=f"btn_qr_{entrenador_uuid}")
             
         with col_qr_display:
             if btn_generar_qr:
-                with st.spinner("Conectando con el servidor de Railway y generando QR corporativo..."):
-                    evo = EvolutionAPI()
-                    resultado = evo.crear_instancia_y_obtener_qr(instancia_nombre)
-                    
-                    if resultado.get("exito") and resultado.get("qr_base64"):
-                        st.success("✅ ¡Código generado! Escanealo desde la app de WhatsApp de tu celular (Dispositivos vinculados).")
-                        datos_qr = resultado["qr_base64"]
-                        st.markdown(
-                            f"""
-                            <div style='text-align: center; background: white; padding: 15px; border-radius: 8px; width: fit-content; margin: 10px auto;'>
-                                <img src="{datos_qr}" style="width: 280px; height: 280px;" />
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        st.error(f"No se pudo inicializar la API de WhatsApp: {resultado.get('error')}")
-                        st.info("Verificá que las credenciales de EVOLUTION_API_URL y KEY en tus Secrets sean las correctas.")
+                with st.spinner("Conectando con el motor de Railway y generando QR corporativo..."):
+                    try:
+                        evo = EvolutionAPI()
+                        resultado = evo.crear_instancia_y_obtener_qr(instancia_nombre)
+                        
+                        if resultado.get("exito") and resultado.get("qr_base64"):
+                            st.success("✅ ¡Código generado! Escanealo desde la app de WhatsApp de tu celular (Dispositivos vinculados).")
+                            datos_qr = resultado["qr_base64"]
+                            st.markdown(
+                                f"""
+                                <div style='text-align: center; background: white; padding: 15px; border-radius: 8px; width: fit-content; margin: 10px auto;'>
+                                    <img src="{datos_qr}" style="width: 280px; height: 280px;" />
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.error(f"No se pudo inicializar la API de WhatsApp: {resultado.get('error')}")
+                            st.info("Verificá que las credenciales de EVOLUTION_API_URL y KEY en tus Secrets sean las correctas.")
+                    except Exception as fatal_e:
+                        st.error(f"Falla crítica de red conectando al servidor: {fatal_e}")
         st.markdown("</div>", unsafe_allow_html=True)
