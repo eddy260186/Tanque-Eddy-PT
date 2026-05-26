@@ -1,0 +1,89 @@
+🗺️ MAPA DE ARQUITECTURA - EDDY PT SAAS ELITE 🗺️
+==================================================
+
+📂 ./
+│   📄 app_nutricion.py
+│   📄 logo.png
+│   📄 logo_dorado.png
+│   📄 logo_rosa.png
+│   📄 logo_tanque.png
+│   📄 mapa_arquitectura.txt
+│   📄 mapear.py
+│   📄 packages.txt
+│   📄 portada.py
+│   📄 qr_code.png
+│   📄 requirements.txt
+│   📄 styles.py
+│   📄 __init__.py
+│   📂 ai/
+│   │   📄 gemini.py
+│   │   📄 __init__.py
+│   📂 automation/
+│   │   📄 mensajes.py
+│   │   📄 scheduler.py
+│   │   📄 __init__.py
+│   📂 backend/
+│   │   📄 main.py
+│   │   📄 __init__.py
+│   │   📂 memory/
+│   │   │   📄 __init__.py
+│   │   📂 services/
+│   │   │   📄 ia_service.py
+│   │   │   📄 payment_service.py
+│   │   │   📄 pdf_service.py
+│   │   │   📄 plan_service.py
+│   │   │   📄 whatsapp_service.py
+│   │   │   📄 __init__.py
+│   │   📂 webhooks/
+│   │   │   📄 whatsapp_webhook.py
+│   │   │   📄 __init__.py
+│   📂 billing/
+│   │   📄 __init__.py
+│   │   📂 notifications/
+│   │   │   📄 __init__.py
+│   📂 config/
+│   │   📄 settings.py
+│   │   📄 __init__.py
+│   📂 data/
+│   │   📄 alimentos.py
+│   │   📄 ejercicios.py
+│   │   📄 __init__.py
+│   📂 database/
+│   │   📄 conexion.py
+│   │   📄 queries.py
+│   │   📄 repositories.py
+│   │   📄 supabase_mgr.py
+│   │   📄 __init__.py
+│   📂 diseño/
+│   │   📄 diseño.py
+│   │   📄 __init__.py
+│   📂 events/
+│   │   📄 event_handler.py
+│   │   📄 services.py
+│   📂 frontend/
+│   │   📄 auth.py
+│   │   📄 dashboard.py
+│   │   📄 __init__.py
+│   │   📂 components/
+│   │   │   📄 graficos.py
+│   │   │   📄 __init__.py
+│   │   📂 paneles/
+│   │   │   📄 admin.py
+│   │   │   📄 alumno.py
+│   │   │   📄 entrenador.py
+│   │   │   📄 __init__.py
+│   📂 ideas para mejorar mi app/
+│   │   📄 ideas para mi app nutricion.docx
+│   📂 models/
+│   │   📄 atleta.py
+│   │   📄 automatizacion.py
+│   │   📄 perfiles.py
+│   │   📄 staff.py
+│   │   📄 __init__.py
+│   📂 utils/
+│   │   📄 biometria.py
+│   │   📄 formatters.py
+│   │   📄 logger.py
+│   │   📄 pdf_generator.py
+│   │   📄 pdf_generator_elite.py
+│   │   📄 __init__.py

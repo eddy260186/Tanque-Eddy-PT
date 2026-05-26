@@ -4,6 +4,10 @@ from database.conexion import supabase
 from styles import aplicar_diseno_elite
 from frontend.auth import renderizar_login
 
+# 🔥 IMPORTAMOS LA BÓVEDA DE SEGURIDAD (NUEVO)
+from core.session_manager import iniciar_sesion, obtener_rol_actual
+from core.constants import Roles
+
 # === CONFIGURACIÓN GLOBAL (DEBE IR ANTES QUE CUALQUIER COSA DE INTERFAZ) ===
 st.set_page_config(page_title="Eddy PT Elite", layout="wide", initial_sidebar_state="expanded")
 
@@ -12,7 +16,6 @@ st.set_page_config(page_title="Eddy PT Elite", layout="wide", initial_sidebar_st
 # ==========================================
 aplicar_diseno_elite()
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
-
 
 def _normalizar_fecha_nacimiento(fecha_str):
     """Convierte fechas de Supabase a date sin romper si vienen vacias o con hora."""
@@ -26,7 +29,6 @@ def _normalizar_fecha_nacimiento(fecha_str):
             return datetime.strptime(str(fecha_str)[:10], "%Y-%m-%d").date()
         except ValueError:
             return date(1990, 1, 1)
-
 
 def ejecutar_sistema_saas():
     # 2. EL PORTERO: Interfaz modular de login
@@ -43,7 +45,6 @@ def ejecutar_sistema_saas():
 
     # ==========================================
     # ENRUTADOR DINAMICO INTELIGENTE
-    # Lee el rol real de la base de datos sin forzar correos a mano
     # ==========================================
     try:
         res_perfil = supabase.table("perfiles_atletas").select("*").eq("email", email_limpio).execute()
@@ -68,36 +69,48 @@ def ejecutar_sistema_saas():
         genero_idx = 0
         fecha_nac_atleta = date(1990, 1, 1)
 
-    # 4. VERIFICAMOS SI EL USUARIO TIENE UN ROL DE STAFF (ADMIN / ENTRENADOR / NUTRI)
+    # 4. VERIFICAMOS ROL Y BLINDAMOS LA SESIÓN CON SESSION MANAGER
+    rol_asignado = Roles.ALUMNO # Por defecto, la seguridad asume que todos son alumnos
+
     if perfil_id:
         try:
             res_staff = supabase.table("roles_staff").select("rol").eq("perfil_id", perfil_id).execute()
+            roles_staff = res_staff.data or []
+            
+            if roles_staff:
+                rol_db = (roles_staff[0].get("rol") or "").lower()
+                
+                # Mapeamos los roles de la base de datos a nuestras constantes blindadas
+                if rol_db == "admin":
+                    rol_asignado = Roles.ADMIN
+                elif rol_db in ["entrenador", "nutricionista"]:
+                    rol_asignado = Roles.TRAINER
+                    
         except Exception as e:
             st.error(f"No se pudo verificar el rol del usuario: {e}")
             return
 
-        roles_staff = res_staff.data or []
-        if roles_staff:
-            rol_actual = (roles_staff[0].get("rol") or "").lower()
-            st.session_state["rol"] = rol_actual
+    # 🔥 LA INYECCIÓN MÁGICA: Guardamos en la bóveda de forma segura
+    iniciar_sesion(usuario_id=perfil_id, rol=rol_asignado, nombre=nombre_default)
+    
+    # Le preguntamos a la bóveda quién es el usuario para dejarlo pasar
+    rol_seguro = obtener_rol_actual()
 
-            if rol_actual == "admin":
-                from frontend.paneles.admin import panel_admin
-                panel_admin()
-                st.stop()
-            elif rol_actual == "entrenador":
-                from frontend.paneles.entrenador import panel_entrenador
-                panel_entrenador(perfil_id)
-                st.stop()
-            elif rol_actual == "nutricionista":
-                from frontend.paneles.entrenador import panel_entrenador
-                panel_entrenador(perfil_id)
-                st.stop()
-
-    # 5. RUTA POR DEFECTO: Panel modular del alumno si no es Staff
-    from frontend.paneles.alumno import app_alumno_original
-    app_alumno_original(perfil_id, nombre_default, pais_default, genero_idx, fecha_nac_atleta)
-
+    # 5. ENRUTAMIENTO PROTEGIDO
+    if rol_seguro == Roles.ADMIN:
+        from frontend.paneles.admin import panel_admin
+        panel_admin()
+        st.stop()
+        
+    elif rol_seguro == Roles.TRAINER:
+        from frontend.paneles.entrenador import panel_entrenador
+        panel_entrenador(perfil_id)
+        st.stop()
+        
+    else:
+        # RUTA POR DEFECTO: Panel modular del alumno si no es Staff
+        from frontend.paneles.alumno import app_alumno_original
+        app_alumno_original(perfil_id, nombre_default, pais_default, genero_idx, fecha_nac_atleta)
 
 if __name__ == "__main__":
     ejecutar_sistema_saas()
