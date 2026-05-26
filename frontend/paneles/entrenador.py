@@ -3,6 +3,9 @@ import streamlit as st
 from datetime import datetime, date
 from database.conexion import supabase
 
+# 🔥 IMPORTAMOS EL CASO DE USO DE NUESTRA NUEVA CAPA DE APLICACIÓN
+from application.actualizar_plan import ejecutar_actualizacion_plan
+
 def _calcular_edad(fecha_nac):
     if not fecha_nac:
         return "N/A"
@@ -112,9 +115,11 @@ def _inyectar_estilos_premium():
     </style>
     """, unsafe_allow_html=True)
 
+
 def panel_entrenador(entrenador_uuid):
     """
-    Suite Avanzada e Interactiva para Entrenadores con Interfaz Gráfica Premium y Sincronización WhatsApp.
+    Suite Avanzada e Interactiva para Entrenadores con Interfaz Gráfica Premium.
+    Desacoplada de la lógica de SQL para máxima velocidad (Arquitectura Limpia).
     """
     _inyectar_estilos_premium()
 
@@ -124,14 +129,14 @@ def panel_entrenador(entrenador_uuid):
     with st.sidebar:
         st.markdown("<div style='text-align: center; padding: 10px 0;'>", unsafe_allow_html=True)
         st.markdown("<h2 style='color: #d4af37; font-weight: 900; margin: 0;'>EDDY PT</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='color: #666; font-size: 0.8rem; margin: 0;'>SaaS Elite v2.1</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #666; font-size: 0.8rem; margin: 0;'>SaaS Elite v2.2</p>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
         st.write("---")
         st.info("Consola de Monitoreo Antropométrico y Prescripción Directa.")
         st.write("---")
         if st.button("🚪 Cerrar Sesión Activa", type="primary", use_container_width=True):
-            supabase.auth.sign_out()
-            st.session_state.clear()
+            from core.session_manager import cerrar_sesion
+            cerrar_sesion()
             st.rerun()
 
     # =========================================================================
@@ -139,6 +144,7 @@ def panel_entrenador(entrenador_uuid):
     # =========================================================================
     nombre_entrenador = "Profesional Staff"
     try:
+        # Nota: En futuras fases moveremos esta consulta también al repositorio
         perfil_coach = supabase.table("perfiles_atletas").select("nombre_completo").eq("id", entrenador_uuid).execute()
         if perfil_coach.data:
             nombre_entrenador = perfil_coach.data[0].get("nombre_completo", "Profesional Staff")
@@ -185,7 +191,6 @@ def panel_entrenador(entrenador_uuid):
     col_busc, col_stats = st.columns([1.5, 2.5], gap="large")
     
     with col_busc:
-        # LLAVE ANTI-CACHÉ GLOBAL - Cambiar de alumno destruye los estados viejos congelados
         atleta_seleccionado = st.selectbox(
             "Buscar Atleta en su Red:", 
             options=list(dict_alumnos.keys()),
@@ -284,13 +289,12 @@ def panel_entrenador(entrenador_uuid):
             st.metric("Muslo Der.", f"{alumno.get('medida_muslo_der', '—')} cm")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA Y GATILLO DE WHATSAPP
+    # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA (ARQUITECTURA LIMPIA)
     with tab_prescripcion:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         st.markdown("<div class='seccion-titulo-vip'>⚙️ Modificación de Rutinas y Planificación Calórica</div>", unsafe_allow_html=True)
         st.caption("Los cambios guardados se actualizarán en la base de datos y despacharán un aviso automático al WhatsApp del alumno.")
         
-        # LA LLAVE MÁGICA: Obliga al formulario a redibujarse completamente con los datos del nuevo alumno
         with st.form(key=f"form_actualizar_plan_{alumno_id}"):
             col_p1, col_p2 = st.columns(2)
             with col_p1:
@@ -319,54 +323,29 @@ def panel_entrenador(entrenador_uuid):
             st.write("")
             btn_guardar_plan = st.form_submit_button("💾 Modificar y Sincronizar Ficha del Alumno", type="primary", use_container_width=True)
             
-            # FLUJO MAESTRO INTELIGENTE: SUPABASE + DISPARADOR DE EVOLUTION API
+            # 🔥 FLUJO MAESTRO DE DATOS ORQUESTADO DESDE LA CAPA DE APLICACIÓN
             if btn_guardar_plan:
-                with st.spinner("Guardando plan en Supabase y conectando con el servidor de WhatsApp..."):
-                    try:
-                        # 1. Escritura blindada en la base de datos
-                        supabase.table("perfiles_atletas").update({
-                            "rutina_activa": nueva_rutina,
-                            "dieta_activa": nueva_dieta,
-                            "peso_objetivo": nuevo_peso_obj,
-                            "plazo_meses": nuevo_plazo_meses
-                        }).eq("id", alumno_id).execute()
-                        
-                        # 2. Despacho por Evolution API (WhatsApp)
-                        from backend.services.whatsapp_service import enviar_mensaje_texto_evolution
-                        
-                        telefono_alumno = str(alumno.get("telefono", "")).strip()
-                        nombre_alumno = str(alumno.get('nombre_completo', 'campeón')).split()[0]
-                        
-                        if telefono_alumno:
-                            # Recreamos dinámicamente el identificador de la instancia vinculada por este Coach
-                            instancia_nombre = f"coach_{str(entrenador_uuid)[:8]}"
-                            
-                            mensaje_whatsapp = f"¡Hola {nombre_alumno}! 🚀\n\nTu Coach acaba de actualizar tu plan de entrenamiento en la plataforma.\n\n🎯 Nueva meta fijada: {nuevo_peso_obj} Kg.\n\nEntrá a la app para ver tu nueva rutina y plan nutricional. ¡A romperla esta semana!"
-                            
-                            resultado_ws = enviar_mensaje_texto_evolution(
-                                nombre_instancia=instancia_nombre,
-                                alumno_id=alumno_id,
-                                entrenador_id=entrenador_uuid,
-                                telefono=telefono_alumno,
-                                mensaje=mensaje_whatsapp
-                            )
-                            
-                            # Procesamos la respuesta avanzada del motor
-                            if isinstance(resultado_ws, dict):
-                                if resultado_ws.get("exito"):
-                                    st.success(f"🔥 Sincronización Exitosa: El plan fue actualizado y el aviso de WhatsApp fue entregado al {telefono_alumno}.")
-                                else:
-                                    # Desplegamos el error técnico real del servidor si falla
-                                    st.error(f"❌ BD Guardada, pero WhatsApp rechazado por Railway. Detalle técnico:\n\n{resultado_ws.get('error')}")
-                            elif resultado_ws is True:
-                                st.success(f"🔥 Sincronización Exitosa: El plan fue actualizado y el aviso fue entregado.")
-                            else:
-                                st.warning("⚠️ Plan guardado, pero se recibió un estado desconocido del motor de mensajería.")
+                with st.spinner("Sincronizando plan y conectando con el servidor..."):
+                    
+                    resultado = ejecutar_actualizacion_plan(
+                        entrenador_id=entrenador_uuid,
+                        alumno_id=alumno_id,
+                        alumno_data=alumno,
+                        nueva_rutina=nueva_rutina,
+                        nueva_dieta=nueva_dieta,
+                        nuevo_peso_obj=nuevo_peso_obj,
+                        nuevo_plazo=nuevo_plazo_meses
+                    )
+                    
+                    # El panel solo reacciona visualmente al resultado del orquestador
+                    if resultado.get("exito"):
+                        if resultado.get("ws_enviado"):
+                            st.success(f"🔥 Sincronización Exitosa: {resultado.get('mensaje')}")
                         else:
-                            st.success("🔥 Sincronización Exitosa: Ficha actualizada en Supabase. (No se despachó WhatsApp porque el alumno no posee teléfono cargado en su perfil).")
-                            
-                    except Exception as e:
-                        st.error(f"Falla crítica al sincronizar los datos en Supabase: {e}")
+                            st.warning(f"⚠️ {resultado.get('mensaje')}")
+                    else:
+                        st.error(f"❌ Error Crítico: {resultado.get('error', 'Falla general del sistema')}")
+                        
         st.markdown("</div>", unsafe_allow_html=True)
 
     # TAB 4: SEGUIMIENTO GRÁFICO REAL
@@ -417,7 +396,6 @@ def panel_entrenador(entrenador_uuid):
         with col_qr_actions:
             st.markdown("##### ⚙️ Gestión de Conexión")
             st.write("Presioná el botón para solicitar un nuevo token y sincronizar la terminal inalámbrica.")
-            # LLAVE MÁGICA: El botón posee un ID ligado al entrenador para evitar congelamientos
             btn_generar_qr = st.button("🔄 Generar Código QR de Vinculación", type="primary", use_container_width=True, key=f"btn_qr_{entrenador_uuid}")
             
         with col_qr_display:

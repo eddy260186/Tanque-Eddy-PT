@@ -4,12 +4,16 @@ from database.conexion import supabase
 from styles import aplicar_diseno_elite
 from frontend.auth import renderizar_login
 
-# 🔥 IMPORTAMOS LA BÓVEDA DE SEGURIDAD (NUEVO)
+# === IMPORTACIONES DE SEGURIDAD Y EVENTOS ===
 from core.session_manager import iniciar_sesion, obtener_rol_actual
 from core.constants import Roles
+from events.event_handler import registrar_todos_los_eventos
 
 # === CONFIGURACIÓN GLOBAL (DEBE IR ANTES QUE CUALQUIER COSA DE INTERFAZ) ===
 st.set_page_config(page_title="Eddy PT Elite", layout="wide", initial_sidebar_state="expanded")
+
+# Enchufamos el cerebro de eventos silenciosos
+registrar_todos_los_eventos()
 
 # ==========================================
 # 1. CARGA INICIAL Y ESTILOS VIP
@@ -69,8 +73,8 @@ def ejecutar_sistema_saas():
         genero_idx = 0
         fecha_nac_atleta = date(1990, 1, 1)
 
-    # 4. VERIFICAMOS ROL Y BLINDAMOS LA SESIÓN CON SESSION MANAGER
-    rol_asignado = Roles.ALUMNO # Por defecto, la seguridad asume que todos son alumnos
+    # 4. VERIFICAMOS ROL Y BLINDAMOS LA SESIÓN
+    rol_asignado = Roles.ALUMNO
 
     if perfil_id:
         try:
@@ -80,7 +84,6 @@ def ejecutar_sistema_saas():
             if roles_staff:
                 rol_db = (roles_staff[0].get("rol") or "").lower()
                 
-                # Mapeamos los roles de la base de datos a nuestras constantes blindadas
                 if rol_db == "admin":
                     rol_asignado = Roles.ADMIN
                 elif rol_db in ["entrenador", "nutricionista"]:
@@ -90,10 +93,8 @@ def ejecutar_sistema_saas():
             st.error(f"No se pudo verificar el rol del usuario: {e}")
             return
 
-    # 🔥 LA INYECCIÓN MÁGICA: Guardamos en la bóveda de forma segura
+    # Iniciar sesión segura
     iniciar_sesion(usuario_id=perfil_id, rol=rol_asignado, nombre=nombre_default)
-    
-    # Le preguntamos a la bóveda quién es el usuario para dejarlo pasar
     rol_seguro = obtener_rol_actual()
 
     # 5. ENRUTAMIENTO PROTEGIDO
@@ -108,7 +109,6 @@ def ejecutar_sistema_saas():
         st.stop()
         
     else:
-        # RUTA POR DEFECTO: Panel modular del alumno si no es Staff
         from frontend.paneles.alumno import app_alumno_original
         app_alumno_original(perfil_id, nombre_default, pais_default, genero_idx, fecha_nac_atleta)
 
