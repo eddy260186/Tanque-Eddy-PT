@@ -1,20 +1,29 @@
+import os
+import streamlit as st
 from supabase import create_client, Client
-from config.settings import settings
 from utils.logger import obtener_logger
 
 logger = obtener_logger("DatabaseConnection")
 
 def inicializar_supabase() -> Client:
     try:
-        if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
-            raise ValueError("Faltan las credenciales de Supabase en la configuración.")
+        # Prioridad 1: Leer de las variables de entorno de Railway
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_KEY")
         
-        client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
-        logger.info("⚡ Conexión exitosa con Supabase establecida.")
-        return client
+        # Prioridad 2: Leer de los secretos de Streamlit (por si acaso)
+        if not url:
+            url = st.secrets.get("SUPABASE_URL")
+        if not key:
+            key = st.secrets.get("SUPABASE_KEY")
+            
+        if not url or not key:
+            raise Exception("No se encontraron credenciales de Supabase en el entorno.")
+            
+        logger.info("Conectando a Supabase con credenciales de entorno...")
+        return create_client(url, key)
     except Exception as e:
-        logger.error(f"❌ Error al conectar con Supabase: {str(e)}")
+        logger.error(f"❌ Error al conectar con Supabase: {e}")
         raise e
 
-# Instancia única reutilizable en todo el proyecto
 supabase = inicializar_supabase()
