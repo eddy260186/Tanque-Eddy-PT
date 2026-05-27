@@ -34,7 +34,8 @@ router = APIRouter()
 def webhook_root():
 
     return {
-        "webhook": "online"
+        "webhook": "online",
+        "status": "active"
     }
 
 # =========================================================
@@ -82,38 +83,169 @@ def verificar_webhook_meta(request: Request):
     )
 
 # =========================================================
-# EXTRAER MENSAJE
+# EXTRAER MENSAJE EVOLUTION API
 # =========================================================
 
 def extraer_mensaje(payload: dict):
 
     try:
 
-        entry = payload.get("entry", [])
+        logger.info(
+            f"PAYLOAD COMPLETO: {payload}"
+        )
 
-        if not entry:
+        # =====================================================
+        # VALIDAR EVENTO
+        # =====================================================
+
+        evento = payload.get("event", "")
+
+        if evento != "messages.upsert":
+
+            logger.info(
+                f"Evento ignorado: {evento}"
+            )
+
             return "", ""
 
-        changes = entry[0].get("changes", [])
+        # =====================================================
+        # DATA
+        # =====================================================
 
-        if not changes:
+        data = payload.get("data", {})
+
+        if not data:
+
+            logger.warning(
+                "Payload sin data."
+            )
+
             return "", ""
 
-        value = changes[0].get("value", {})
+        # =====================================================
+        # KEY
+        # =====================================================
 
-        messages = value.get("messages", [])
+        key = data.get("key", {})
 
-        if not messages:
+        remote_jid = key.get(
+            "remoteJid",
+            ""
+        )
+
+        if not remote_jid:
+
+            logger.warning(
+                "remoteJid vacío."
+            )
+
             return "", ""
 
-        msg = messages[0]
+        telefono = (
+            remote_jid
+            .replace("@s.whatsapp.net", "")
+            .replace("@g.us", "")
+        )
 
-        telefono = msg.get("from", "")
+        # =====================================================
+        # IGNORAR GRUPOS
+        # =====================================================
 
-        texto = (
-            msg.get("text", {})
-            .get("body", "")
-            .strip()
+        if "@g.us" in remote_jid:
+
+            logger.info(
+                "Mensaje grupal ignorado."
+            )
+
+            return "", ""
+
+        # =====================================================
+        # IGNORAR MENSAJES PROPIOS
+        # =====================================================
+
+        from_me = key.get("fromMe", False)
+
+        if from_me:
+
+            logger.info(
+                "Mensaje propio ignorado."
+            )
+
+            return "", ""
+
+        # =====================================================
+        # MENSAJE
+        # =====================================================
+
+        message = data.get("message", {})
+
+        texto = ""
+
+        # TEXTO SIMPLE
+
+        if "conversation" in message:
+
+            texto = (
+                message.get(
+                    "conversation",
+                    ""
+                )
+            )
+
+        # TEXTO EXTENDIDO
+
+        elif "extendedTextMessage" in message:
+
+            texto = (
+                message
+                .get(
+                    "extendedTextMessage",
+                    {}
+                )
+                .get(
+                    "text",
+                    ""
+                )
+            )
+
+        # IMAGEN CON TEXTO
+
+        elif "imageMessage" in message:
+
+            texto = (
+                message
+                .get(
+                    "imageMessage",
+                    {}
+                )
+                .get(
+                    "caption",
+                    ""
+                )
+            )
+
+        # VIDEO CON TEXTO
+
+        elif "videoMessage" in message:
+
+            texto = (
+                message
+                .get(
+                    "videoMessage",
+                    {}
+                )
+                .get(
+                    "caption",
+                    ""
+                )
+            )
+
+        texto = texto.strip()
+
+        logger.info(
+            f"Mensaje extraído "
+            f"telefono={telefono} "
+            f"texto={texto}"
         )
 
         return telefono, texto
@@ -158,7 +290,18 @@ def buscar_atleta_por_telefono(telefono_meta: str):
             )
 
             if telefono_db == telefono_normalizado:
+
+                logger.info(
+                    f"Atleta encontrado: "
+                    f"{perfil.get('nombre_completo')}"
+                )
+
                 return perfil
+
+        logger.warning(
+            f"Número no encontrado: "
+            f"{telefono_normalizado}"
+        )
 
         return None
 
@@ -181,13 +324,24 @@ def procesar_mensaje(payload: dict):
         telefono, texto = extraer_mensaje(payload)
 
         if not telefono:
+
+            logger.warning(
+                "Mensaje ignorado: teléfono vacío."
+            )
+
             return
 
         if not texto:
+
+            logger.warning(
+                "Mensaje ignorado: texto vacío."
+            )
+
             return
 
         logger.info(
-            f"Mensaje entrante [{telefono}]: {texto}"
+            f"Mensaje entrante "
+            f"[{telefono}]: {texto}"
         )
 
         atleta = buscar_atleta_por_telefono(
@@ -197,7 +351,8 @@ def procesar_mensaje(payload: dict):
         if not atleta:
 
             logger.warning(
-                f"Número no registrado: {telefono}"
+                f"Número no registrado: "
+                f"{telefono}"
             )
 
             return
@@ -228,6 +383,10 @@ def procesar_mensaje(payload: dict):
         # IA
         # =================================================
 
+        logger.info(
+            f"Procesando IA para {nombre}"
+        )
+
         respuesta_ia = (
             procesar_consulta_ia_con_memoria(
                 alumno_id=alumno_id,
@@ -235,8 +394,18 @@ def procesar_mensaje(payload: dict):
             )
         )
 
+        if not respuesta_ia:
+
+            respuesta_ia = (
+                "No pude procesar tu mensaje."
+            )
+
+        logger.info(
+            f"Respuesta IA: {respuesta_ia}"
+        )
+
         # =================================================
-        # RESPUESTA
+        # ENVIAR RESPUESTA
         # =================================================
 
         enviado = (
@@ -250,8 +419,9 @@ def procesar_mensaje(payload: dict):
         )
 
         logger.info(
-            f"Flujo completado para {nombre}. "
-            f"Enviado={enviado}"
+            f"Mensaje enviado "
+            f"a {nombre}. "
+            f"Estado={enviado}"
         )
 
     except Exception as e:
@@ -261,7 +431,7 @@ def procesar_mensaje(payload: dict):
         )
 
 # =========================================================
-# WEBHOOK
+# WEBHOOK PRINCIPAL
 # =========================================================
 
 @router.post("/webhook/evolution")
