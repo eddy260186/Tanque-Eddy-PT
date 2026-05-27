@@ -91,19 +91,28 @@ def extraer_mensaje(payload: dict):
     try:
 
         logger.info(
-            f"PAYLOAD COMPLETO: {payload}"
+            f"📦 PAYLOAD COMPLETO: {payload}"
         )
-
-        # =====================================================
-        # VALIDAR EVENTO
-        # =====================================================
 
         evento = payload.get("event", "")
 
-        if evento != "messages.upsert":
+        logger.info(
+            f"📡 EVENTO RECIBIDO: {evento}"
+        )
 
-            logger.info(
-                f"Evento ignorado: {evento}"
+        # =====================================================
+        # ACEPTAR EVENTOS IMPORTANTES
+        # =====================================================
+
+        eventos_validos = [
+            "messages.upsert",
+            "MESSAGES_UPSERT"
+        ]
+
+        if evento not in eventos_validos:
+
+            logger.warning(
+                f"⚠️ Evento ignorado: {evento}"
             )
 
             return "", ""
@@ -117,7 +126,7 @@ def extraer_mensaje(payload: dict):
         if not data:
 
             logger.warning(
-                "Payload sin data."
+                "⚠️ Payload sin data."
             )
 
             return "", ""
@@ -136,16 +145,10 @@ def extraer_mensaje(payload: dict):
         if not remote_jid:
 
             logger.warning(
-                "remoteJid vacío."
+                "⚠️ remoteJid vacío."
             )
 
             return "", ""
-
-        telefono = (
-            remote_jid
-            .replace("@s.whatsapp.net", "")
-            .replace("@g.us", "")
-        )
 
         # =====================================================
         # IGNORAR GRUPOS
@@ -154,7 +157,7 @@ def extraer_mensaje(payload: dict):
         if "@g.us" in remote_jid:
 
             logger.info(
-                "Mensaje grupal ignorado."
+                "⚠️ Grupo ignorado."
             )
 
             return "", ""
@@ -163,18 +166,33 @@ def extraer_mensaje(payload: dict):
         # IGNORAR MENSAJES PROPIOS
         # =====================================================
 
-        from_me = key.get("fromMe", False)
+        from_me = key.get(
+            "fromMe",
+            False
+        )
 
         if from_me:
 
             logger.info(
-                "Mensaje propio ignorado."
+                "⚠️ Mensaje propio ignorado."
             )
 
             return "", ""
 
         # =====================================================
-        # MENSAJE
+        # TELEFONO
+        # =====================================================
+
+        telefono = (
+            remote_jid
+            .replace("@s.whatsapp.net", "")
+            .replace("@lid", "")
+            .replace(":", "")
+            .strip()
+        )
+
+        # =====================================================
+        # MESSAGE
         # =====================================================
 
         message = data.get("message", {})
@@ -208,7 +226,7 @@ def extraer_mensaje(payload: dict):
                 )
             )
 
-        # IMAGEN CON TEXTO
+        # IMAGEN
 
         elif "imageMessage" in message:
 
@@ -220,11 +238,11 @@ def extraer_mensaje(payload: dict):
                 )
                 .get(
                     "caption",
-                    ""
+                    "[IMAGEN]"
                 )
             )
 
-        # VIDEO CON TEXTO
+        # VIDEO
 
         elif "videoMessage" in message:
 
@@ -236,16 +254,38 @@ def extraer_mensaje(payload: dict):
                 )
                 .get(
                     "caption",
-                    ""
+                    "[VIDEO]"
                 )
             )
 
-        texto = texto.strip()
+        # AUDIO
+
+        elif "audioMessage" in message:
+
+            texto = "[AUDIO]"
+
+        # DOCUMENTO
+
+        elif "documentMessage" in message:
+
+            texto = "[DOCUMENTO]"
+
+        texto = str(texto).strip()
+
+        if not texto:
+
+            logger.warning(
+                "⚠️ Texto vacío."
+            )
+
+            return "", ""
 
         logger.info(
-            f"Mensaje extraído "
-            f"telefono={telefono} "
-            f"texto={texto}"
+            f"📲 TELEFONO EXTRAIDO: {telefono}"
+        )
+
+        logger.info(
+            f"💬 MENSAJE EXTRAIDO: {texto}"
         )
 
         return telefono, texto
@@ -253,7 +293,7 @@ def extraer_mensaje(payload: dict):
     except Exception as e:
 
         logger.error(
-            f"Error extrayendo mensaje: {str(e)}"
+            f"❌ ERROR EXTRAYENDO MENSAJE: {str(e)}"
         )
 
         return "", ""
@@ -270,6 +310,11 @@ def buscar_atleta_por_telefono(telefono_meta: str):
             normalizar_telefono_whatsapp(
                 telefono_meta
             )
+        )
+
+        logger.info(
+            f"📞 Buscando teléfono: "
+            f"{telefono_normalizado}"
         )
 
         perfiles = (
@@ -292,14 +337,14 @@ def buscar_atleta_por_telefono(telefono_meta: str):
             if telefono_db == telefono_normalizado:
 
                 logger.info(
-                    f"Atleta encontrado: "
+                    f"✅ Atleta encontrado: "
                     f"{perfil.get('nombre_completo')}"
                 )
 
                 return perfil
 
         logger.warning(
-            f"Número no encontrado: "
+            f"❌ Número no encontrado: "
             f"{telefono_normalizado}"
         )
 
@@ -308,13 +353,13 @@ def buscar_atleta_por_telefono(telefono_meta: str):
     except Exception as e:
 
         logger.error(
-            f"Error buscando atleta: {str(e)}"
+            f"❌ Error buscando atleta: {str(e)}"
         )
 
         return None
 
 # =========================================================
-# PROCESADOR PRINCIPAL
+# PROCESAR MENSAJE
 # =========================================================
 
 def procesar_mensaje(payload: dict):
@@ -326,7 +371,7 @@ def procesar_mensaje(payload: dict):
         if not telefono:
 
             logger.warning(
-                "Mensaje ignorado: teléfono vacío."
+                "⚠️ Teléfono vacío."
             )
 
             return
@@ -334,13 +379,13 @@ def procesar_mensaje(payload: dict):
         if not texto:
 
             logger.warning(
-                "Mensaje ignorado: texto vacío."
+                "⚠️ Texto vacío."
             )
 
             return
 
         logger.info(
-            f"Mensaje entrante "
+            f"📩 MENSAJE ENTRANTE "
             f"[{telefono}]: {texto}"
         )
 
@@ -351,7 +396,7 @@ def procesar_mensaje(payload: dict):
         if not atleta:
 
             logger.warning(
-                f"Número no registrado: "
+                f"⚠️ Usuario no registrado: "
                 f"{telefono}"
             )
 
@@ -369,7 +414,7 @@ def procesar_mensaje(payload: dict):
         )
 
         # =================================================
-        # LOG ENTRANTE
+        # GUARDAR MENSAJE ENTRANTE
         # =================================================
 
         registrar_log_whatsapp(
@@ -379,13 +424,13 @@ def procesar_mensaje(payload: dict):
             contenido=texto
         )
 
+        logger.info(
+            f"🧠 Procesando IA para {nombre}"
+        )
+
         # =================================================
         # IA
         # =================================================
-
-        logger.info(
-            f"Procesando IA para {nombre}"
-        )
 
         respuesta_ia = (
             procesar_consulta_ia_con_memoria(
@@ -401,7 +446,7 @@ def procesar_mensaje(payload: dict):
             )
 
         logger.info(
-            f"Respuesta IA: {respuesta_ia}"
+            f"🤖 RESPUESTA IA: {respuesta_ia}"
         )
 
         # =================================================
@@ -419,15 +464,15 @@ def procesar_mensaje(payload: dict):
         )
 
         logger.info(
-            f"Mensaje enviado "
-            f"a {nombre}. "
-            f"Estado={enviado}"
+            f"✅ Mensaje enviado "
+            f"a {nombre} "
+            f"estado={enviado}"
         )
 
     except Exception as e:
 
         logger.error(
-            f"Error procesando mensaje: {str(e)}"
+            f"❌ ERROR PROCESANDO MENSAJE: {str(e)}"
         )
 
 # =========================================================
@@ -446,7 +491,7 @@ async def recibir_interaccion_alumno(
         payload = await request.json()
 
         logger.info(
-            "Webhook recibido correctamente."
+            "✅ Webhook recibido correctamente."
         )
 
         background_tasks.add_task(
@@ -461,7 +506,7 @@ async def recibir_interaccion_alumno(
     except Exception as e:
 
         logger.error(
-            f"Error webhook: {str(e)}"
+            f"❌ Error webhook: {str(e)}"
         )
 
         return {
