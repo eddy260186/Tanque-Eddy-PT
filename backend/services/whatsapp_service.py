@@ -121,3 +121,13 @@ def enviar_mensaje_texto_evolution(nombre_instancia: str, alumno_id: str, entren
         error_msg = f"Error crítico conectando con API: {str(e)}"
         logger.error(error_msg)
         return {"exito": False, "error": error_msg}
+    # =========================================================================
+# 🔄 Alias de compatibilidad legacy para imports antiguos
+# =========================================================================
+
+def enviar_mensaje_texto_whatsapp(*args, **kwargs):
+    """
+    Alias temporal para mantener compatibilidad
+    con módulos antiguos durante el refactor.
+    """
+    return enviar_mensaje_texto_evolution(*args, **kwargs)
