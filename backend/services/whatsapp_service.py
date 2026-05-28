@@ -1,93 +1,109 @@
+
+import os
 import requests
-import streamlit as st
-from config.settings import settings
+
 from utils.logger import obtener_logger
 from database.queries import registrar_log_whatsapp
 
 logger = obtener_logger("WhatsAppService")
 
+
 class EvolutionAPI:
-    """
-    Conector de Alta Gama para el motor Evolution API alojado en Railway.
-    Gobierna la creación de instancias dinámicas y el despacho de flujos de IA.
-    """
+
     def __init__(self):
-        # Extraemos las credenciales guardadas de forma segura en los secretos del SaaS
-        self.base_url = st.secrets.get("EVOLUTION_API_URL", "https://evolution-api-production-a15fc.up.railway.app").rstrip("/")
-        self.api_key = st.secrets.get("EVOLUTION_API_KEY", "")
-        
+
+        self.base_url = os.getenv(
+            "EVOLUTION_API_URL",
+            "https://evolution-api-production-a15fc.up.railway.app"
+        ).rstrip("/")
+
+        self.api_key = os.getenv(
+            "EVOLUTION_API_KEY",
+            ""
+        )
+
         self.headers = {
             "Content-Type": "application/json",
             "apikey": self.api_key
         }
 
     def crear_instancia_y_obtener_qr(self, nombre_instancia):
-        """
-        Inicializa un contenedor virtual para el profesor en el cluster de Railway.
-        Devuelve el QR de emparejamiento Base64.
-        """
+
         url = f"{self.base_url}/instance/create"
+
         payload = {
             "instanceName": nombre_instancia,
             "qrcode": True,
             "integration": "WHATSAPP-BAILEYS"
         }
-        
-        try:
-            response = requests.post(url, headers=self.headers, json=payload, timeout=15)
-            data = response.json()
-            
-            if response.status_code in [200, 201]:
-                return {"exito": True, "qr_base64": data.get("qrcode", {}).get("base64")}
-            elif response.status_code == 403 or "already exists" in str(data.get("message", "")):
-                return self.conectar_instancia(nombre_instancia)
-            else:
-                return {"exito": False, "error": data.get("message", "Falla de comunicación con el servidor.")}
-        except Exception as e:
-            return {"exito": False, "error": f"Error de conexión de red: {str(e)}"}
 
-    def conectar_instancia(self, nombre_instancia):
-        """
-        Intenta recuperar el flujo del código QR si la instancia ya existe.
-        """
-        url = f"{self.base_url}/instance/connect/{nombre_instancia}"
         try:
-            response = requests.get(url, headers=self.headers, timeout=15)
+
+            response = requests.post(
+                url,
+                headers=self.headers,
+                json=payload,
+                timeout=20
+            )
+
             data = response.json()
-            if "base64" in data:
-                return {"exito": True, "qr_base64": data["base64"]}
-            elif data.get("code") == "instance_already_connected":
-                return {"exito": False, "error": "CONNECTED_ALREADY"}
-            return {"exito": False, "error": "No se pudo recuperar el flujo del código QR."}
+
+            if response.status_code in [200, 201]:
+
+                return {
+                    "exito": True,
+                    "qr_base64": data.get("qrcode", {}).get("base64")
+                }
+
+            return {
+                "exito": False,
+                "error": data.get("message", "Error desconocido")
+            }
+
         except Exception as e:
-            return {"exito": False, "error": str(e)}
+
+            logger.error(f"❌ Error creando instancia: {str(e)}")
+
+            return {
+                "exito": False,
+                "error": str(e)
+            }
+
 
 def normalizar_telefono_whatsapp(telefono: str) -> str:
-    """
-    Limpia el string del teléfono dejando únicamente los dígitos numéricos.
-    """
-    return "".join(filter(str.isdigit, str(telefono or "")))
 
-def enviar_mensaje_texto_evolution(nombre_instancia: str, alumno_id: str, entrenador_id: str, telefono: str, mensaje: str) -> dict:
-    """
-    Despacha un mensaje de texto automatizado en tiempo real.
-    """
-    base_url = st.secrets.get("EVOLUTION_API_URL", "https://evolution-api-production-a15fc.up.railway.app").rstrip("/")
-    api_key = st.secrets.get("EVOLUTION_API_KEY", "")
-    
+    return "".join(
+        filter(str.isdigit, str(telefono or ""))
+    )
+
+
+def enviar_mensaje_texto_evolution(
+    nombre_instancia: str,
+    alumno_id: str,
+    entrenador_id: str,
+    telefono: str,
+    mensaje: str
+):
+
+    base_url = os.getenv(
+        "EVOLUTION_API_URL",
+        "https://evolution-api-production-a15fc.up.railway.app"
+    ).rstrip("/")
+
+    api_key = os.getenv(
+        "EVOLUTION_API_KEY",
+        ""
+    )
+
     telefono_limpio = normalizar_telefono_whatsapp(telefono)
-    if not telefono_limpio or not mensaje or not mensaje.strip():
-        logger.error("Envío cancelado: Parámetros de teléfono o mensaje inválidos.")
-        return {"exito": False, "error": "El número de teléfono o el mensaje están vacíos."}
 
     url = f"{base_url}/message/sendText/{nombre_instancia}"
+
     headers = {
         "Content-Type": "application/json",
         "apikey": api_key
     }
-    
-    # 🔥 ACÁ ESTÁ LA MAGIA QUE ARREGLA EL ERROR 400 🔥
-    # Evolution API exige que la propiedad se llame "text" directamente en la raíz.
+
     payload = {
         "number": telefono_limpio,
         "options": {
@@ -98,36 +114,42 @@ def enviar_mensaje_texto_evolution(nombre_instancia: str, alumno_id: str, entren
     }
 
     try:
-        respuesta = requests.post(url, json=payload, headers=headers, timeout=15)
+
+        respuesta = requests.post(
+            url,
+            json=payload,
+            headers=headers,
+            timeout=20
+        )
+
         if respuesta.status_code in [200, 201]:
-            try:
-                registrar_log_whatsapp(
-                    alumno_id=alumno_id,
-                    entrenador_id=entrenador_id,
-                    direccion="saliente",
-                    contenido=mensaje.strip()
-                )
-            except Exception as log_err:
-                logger.warning(f"No se pudo registrar el log en la BD: {log_err}")
-                
-            logger.info(f"Mensaje enviado correctamente a {telefono_limpio}.")
-            return {"exito": True, "error": None}
-        
-        error_msg = f"Railway HTTP {respuesta.status_code}: {respuesta.text}"
-        logger.error(error_msg)
-        return {"exito": False, "error": error_msg}
-        
+
+            registrar_log_whatsapp(
+                alumno_id=alumno_id,
+                entrenador_id=entrenador_id,
+                direccion="saliente",
+                contenido=mensaje.strip()
+            )
+
+            return {
+                "exito": True
+            }
+
+        return {
+            "exito": False,
+            "error": respuesta.text
+        }
+
     except Exception as e:
-        error_msg = f"Error crítico conectando con API: {str(e)}"
-        logger.error(error_msg)
-        return {"exito": False, "error": error_msg}
-    # =========================================================================
-# 🔄 Alias de compatibilidad legacy para imports antiguos
-# =========================================================================
+
+        logger.error(f"❌ Error Evolution API: {str(e)}")
+
+        return {
+            "exito": False,
+            "error": str(e)
+        }
+
 
 def enviar_mensaje_texto_whatsapp(*args, **kwargs):
-    """
-    Alias temporal para mantener compatibilidad
-    con módulos antiguos durante el refactor.
-    """
+
     return enviar_mensaje_texto_evolution(*args, **kwargs)
