@@ -455,7 +455,7 @@ def procesar_mensaje(payload: dict):
 
         enviado = (
             enviar_mensaje_texto_whatsapp(
-                nombre_instancia="eddypt",
+                nombre_instancia="entrenador_455cb715",
                 alumno_id=alumno_id,
                 entrenador_id=entrenador_id,
                 telefono=telefono,

@@ -133,7 +133,7 @@ def procesar_consulta_ia_con_memoria(alumno_id: str, mensaje_alumno: str) -> str
             })
         contents.append({"role": "user", "parts": [mensaje_alumno]})
 
-        model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_instruction)
+        model = genai.GenerativeModel(model_name="gemini-1.5-pro", system_instruction=system_instruction)
         response = model.generate_content(contents)
         respuesta_texto = response.text.strip()
 
