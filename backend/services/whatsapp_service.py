@@ -52,16 +52,22 @@ def verificar_instancia():
 
         url = (
             f"{EVOLUTION_API_URL}"
-            f"/instance/connectionState/"
-            f"{WHATSAPP_INSTANCE}"
+            f"/instance/fetchInstances"
         )
 
         headers = {
             "apikey": EVOLUTION_API_KEY
         }
 
-        logger.info(f"🔍 Verificando instancia: {WHATSAPP_INSTANCE}")
-        logger.info(f"🔗 URL VERIFICACIÓN: {url}")
+        logger.info(
+            f"🔍 Verificando instancia: "
+            f"{WHATSAPP_INSTANCE}"
+        )
+
+        logger.info(
+            f"🔗 URL VERIFICACIÓN: "
+            f"{url}"
+        )
 
         response = requests.get(
             url,
@@ -82,27 +88,62 @@ def verificar_instancia():
         if response.status_code != 200:
 
             logger.error(
-                "❌ La instancia no existe "
-                "o no está conectada."
+                "❌ Error obteniendo instancias"
             )
 
             return False
 
         data = response.json()
 
-        estado = (
-            data.get("instance", {})
-            .get("state", "")
+        if not isinstance(data, list):
+
+            logger.error(
+                "❌ Evolution no devolvió lista"
+            )
+
+            return False
+
+        for instancia in data:
+
+            nombre = (
+                instancia
+                .get("name", "")
+            )
+
+            conexion = (
+                instancia
+                .get("connectionStatus", "")
+            )
+
+            logger.info(
+                f"📲 Instancia encontrada: "
+                f"{nombre} -> {conexion}"
+            )
+
+            if (
+                nombre == WHATSAPP_INSTANCE
+                and
+                conexion.lower() == "open"
+            ):
+
+                logger.info(
+                    "✅ Instancia conectada"
+                )
+
+                return True
+
+        logger.error(
+            "❌ La instancia no existe "
+            "o no está conectada."
         )
 
-        logger.info(f"📶 ESTADO INSTANCIA: {estado}")
-
-        return estado.lower() == "open"
+        return False
 
     except Exception as e:
 
         logger.error(
-            f"❌ Error verificando instancia: {str(e)}"
+            f"❌ Error verificando instancia: "
+            f"{str(e)}"
         )
 
         return False
@@ -154,7 +195,10 @@ def enviar_mensaje_texto_evolution(
             f"{WHATSAPP_INSTANCE}"
         )
 
-        logger.info(f"🔗 URL EVOLUTION: {url}")
+        logger.info(
+            f"🔗 URL EVOLUTION: "
+            f"{url}"
+        )
 
         # ==================================================
         # HEADERS
@@ -175,7 +219,8 @@ def enviar_mensaje_texto_evolution(
         }
 
         logger.info(
-            f"📦 PAYLOAD: {payload}"
+            f"📦 PAYLOAD: "
+            f"{payload}"
         )
 
         # ==================================================
@@ -222,7 +267,8 @@ def enviar_mensaje_texto_evolution(
     except Exception as e:
 
         logger.error(
-            f"❌ Error Evolution API: {str(e)}"
+            f"❌ Error Evolution API: "
+            f"{str(e)}"
         )
 
         return {
