@@ -100,10 +100,6 @@ def extraer_mensaje(payload: dict):
             f"📡 EVENTO RECIBIDO: {evento}"
         )
 
-        # =====================================================
-        # ACEPTAR EVENTOS IMPORTANTES
-        # =====================================================
-
         eventos_validos = [
             "messages.upsert",
             "MESSAGES_UPSERT"
@@ -117,10 +113,6 @@ def extraer_mensaje(payload: dict):
 
             return "", ""
 
-        # =====================================================
-        # DATA
-        # =====================================================
-
         data = payload.get("data", {})
 
         if not data:
@@ -130,10 +122,6 @@ def extraer_mensaje(payload: dict):
             )
 
             return "", ""
-
-        # =====================================================
-        # KEY
-        # =====================================================
 
         key = data.get("key", {})
 
@@ -150,10 +138,6 @@ def extraer_mensaje(payload: dict):
 
             return "", ""
 
-        # =====================================================
-        # IGNORAR GRUPOS
-        # =====================================================
-
         if "@g.us" in remote_jid:
 
             logger.info(
@@ -161,10 +145,6 @@ def extraer_mensaje(payload: dict):
             )
 
             return "", ""
-
-        # =====================================================
-        # IGNORAR MENSAJES PROPIOS
-        # =====================================================
 
         from_me = key.get(
             "fromMe",
@@ -179,10 +159,6 @@ def extraer_mensaje(payload: dict):
 
             return "", ""
 
-        # =====================================================
-        # TELEFONO
-        # =====================================================
-
         telefono = (
             remote_jid
             .replace("@s.whatsapp.net", "")
@@ -191,15 +167,9 @@ def extraer_mensaje(payload: dict):
             .strip()
         )
 
-        # =====================================================
-        # MESSAGE
-        # =====================================================
-
         message = data.get("message", {})
 
         texto = ""
-
-        # TEXTO SIMPLE
 
         if "conversation" in message:
 
@@ -209,8 +179,6 @@ def extraer_mensaje(payload: dict):
                     ""
                 )
             )
-
-        # TEXTO EXTENDIDO
 
         elif "extendedTextMessage" in message:
 
@@ -226,8 +194,6 @@ def extraer_mensaje(payload: dict):
                 )
             )
 
-        # IMAGEN
-
         elif "imageMessage" in message:
 
             texto = (
@@ -241,8 +207,6 @@ def extraer_mensaje(payload: dict):
                     "[IMAGEN]"
                 )
             )
-
-        # VIDEO
 
         elif "videoMessage" in message:
 
@@ -258,13 +222,9 @@ def extraer_mensaje(payload: dict):
                 )
             )
 
-        # AUDIO
-
         elif "audioMessage" in message:
 
             texto = "[AUDIO]"
-
-        # DOCUMENTO
 
         elif "documentMessage" in message:
 
@@ -413,10 +373,6 @@ def procesar_mensaje(payload: dict):
             "Atleta"
         )
 
-        # =================================================
-        # GUARDAR MENSAJE ENTRANTE
-        # =================================================
-
         registrar_log_whatsapp(
             alumno_id=alumno_id,
             entrenador_id=entrenador_id,
@@ -427,10 +383,6 @@ def procesar_mensaje(payload: dict):
         logger.info(
             f"🧠 Procesando IA para {nombre}"
         )
-
-        # =================================================
-        # IA
-        # =================================================
 
         respuesta_ia = (
             procesar_consulta_ia_con_memoria(
@@ -450,12 +402,38 @@ def procesar_mensaje(payload: dict):
         )
 
         # =================================================
+        # INSTANCIA REAL DEL PAYLOAD
+        # =================================================
+
+        instancia_real = payload.get(
+            "instance",
+            ""
+        )
+
+        logger.info(
+            f"📲 INSTANCIA PAYLOAD: "
+            f"{instancia_real}"
+        )
+
+        if not instancia_real:
+
+            instancia_real = (
+                settings.WHATSAPP_INSTANCE
+            )
+
+            logger.warning(
+                f"⚠️ Payload sin instancia. "
+                f"Usando fallback: "
+                f"{instancia_real}"
+            )
+
+        # =================================================
         # ENVIAR RESPUESTA
         # =================================================
 
         enviado = (
             enviar_mensaje_texto_whatsapp(
-                nombre_instancia="entrenador_455cb715",
+                nombre_instancia=instancia_real,
                 alumno_id=alumno_id,
                 entrenador_id=entrenador_id,
                 telefono=telefono,
