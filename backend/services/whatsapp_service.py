@@ -95,6 +95,15 @@ def verificar_instancia():
 
         data = response.json()
 
+        # ==================================================
+        # EVOLUTION PUEDE DEVOLVER:
+        # LISTA o {"instance": [...]}
+        # ==================================================
+
+        if isinstance(data, dict):
+
+            data = data.get("instance", [])
+
         if not isinstance(data, list):
 
             logger.error(
@@ -120,17 +129,19 @@ def verificar_instancia():
                 f"{nombre} -> {conexion}"
             )
 
-            if (
-                nombre == WHATSAPP_INSTANCE
-                and
-                conexion.lower() == "open"
-            ):
+            if nombre == WHATSAPP_INSTANCE:
 
-                logger.info(
-                    "✅ Instancia conectada"
-                )
+                if conexion.lower() in [
+                    "open",
+                    "connected",
+                    "online"
+                ]:
 
-                return True
+                    logger.info(
+                        "✅ Instancia conectada"
+                    )
+
+                    return True
 
         logger.error(
             "❌ La instancia no existe "
@@ -149,15 +160,29 @@ def verificar_instancia():
         return False
 
 # ==========================================================
-# ENVIAR MENSAJE
+# FUNCIÓN PRINCIPAL
 # ==========================================================
 
-def enviar_mensaje_texto_evolution(
-    telefono: str,
-    mensaje: str
+def enviar_mensaje_texto_whatsapp(
+    nombre_instancia: str = None,
+    alumno_id: str = None,
+    entrenador_id: str = None,
+    telefono: str = "",
+    mensaje: str = ""
 ):
 
     try:
+
+        # ==================================================
+        # VALIDAR MENSAJE
+        # ==================================================
+
+        if not mensaje:
+
+            return {
+                "exito": False,
+                "error": "Mensaje vacío"
+            }
 
         # ==================================================
         # VALIDAR INSTANCIA
@@ -189,10 +214,16 @@ def enviar_mensaje_texto_evolution(
         # URL ENVÍO
         # ==================================================
 
+        instancia_final = (
+            nombre_instancia
+            if nombre_instancia
+            else WHATSAPP_INSTANCE
+        )
+
         url = (
             f"{EVOLUTION_API_URL}"
             f"/message/sendText/"
-            f"{WHATSAPP_INSTANCE}"
+            f"{instancia_final}"
         )
 
         logger.info(
@@ -250,9 +281,17 @@ def enviar_mensaje_texto_evolution(
 
         if response.status_code in [200, 201]:
 
+            try:
+
+                resposta_json = response.json()
+
+            except:
+
+                resposta_json = response.text
+
             return {
                 "exito": True,
-                "respuesta": response.json()
+                "respuesta": resposta_json
             }
 
         # ==================================================
@@ -275,3 +314,17 @@ def enviar_mensaje_texto_evolution(
             "exito": False,
             "error": str(e)
         }
+
+# ==========================================================
+# COMPATIBILIDAD TOTAL
+# ==========================================================
+
+def enviar_mensaje_texto_evolution(
+    telefono: str,
+    mensaje: str
+):
+
+    return enviar_mensaje_texto_whatsapp(
+        telefono=telefono,
+        mensaje=mensaje
+    )
