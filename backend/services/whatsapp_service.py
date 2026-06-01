@@ -320,11 +320,17 @@ def enviar_mensaje_texto_whatsapp(
 # ==========================================================
 
 def enviar_mensaje_texto_evolution(
-    telefono: str,
-    mensaje: str
+    nombre_instancia: str = None,
+    alumno_id: str = None,
+    entrenador_id: str = None,
+    telefono: str = "",
+    mensaje: str = ""
 ):
 
     return enviar_mensaje_texto_whatsapp(
+        nombre_instancia=nombre_instancia,
+        alumno_id=alumno_id,
+        entrenador_id=entrenador_id,
         telefono=telefono,
         mensaje=mensaje
     )
