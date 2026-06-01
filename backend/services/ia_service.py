@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import datetime as dt
 from datetime import date
 
@@ -12,13 +12,23 @@ logger = obtener_logger("IAServiceMaster")
 # CONFIGURAR GEMINI
 # =========================================================
 
+client = None
+
 if settings.GEMINI_API_KEY:
 
-    genai.configure(
-        api_key=settings.GEMINI_API_KEY
-    )
+    try:
 
-    logger.info("✅ Gemini configurado correctamente.")
+        client = genai.Client(
+            api_key=settings.GEMINI_API_KEY
+        )
+
+        logger.info("✅ Gemini configurado correctamente.")
+
+    except Exception as e:
+
+        logger.error(
+            f"❌ Error configurando Gemini: {str(e)}"
+        )
 
 else:
 
@@ -163,6 +173,10 @@ def procesar_consulta_ia_con_memoria(
             f"🧠 Procesando IA para alumno: {alumno_id}"
         )
 
+        if client is None:
+
+            return "❌ Gemini no configurado."
+
         fecha_hoy = date.today().isoformat()
 
         # =====================================================
@@ -264,25 +278,18 @@ CLIENTE:
         )
 
         # =====================================================
-        # GEMINI
+        # GEMINI NUEVO SDK
         # =====================================================
 
-        model = genai.GenerativeModel(
-    "models/gemini-1.5-flash"
-)
-
-        response = model.generate_content(
-            prompt_final
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt_final
         )
+
+        respuesta_texto = response.text
 
         logger.info(
             "✅ Respuesta Gemini recibida."
-        )
-
-        respuesta_texto = getattr(
-            response,
-            "text",
-            None
         )
 
         if not respuesta_texto:
