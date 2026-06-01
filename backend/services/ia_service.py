@@ -282,9 +282,9 @@ CLIENTE:
         # =====================================================
 
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt_final
-        )
+    model="gemini-2.0-flash-exp",
+    contents=prompt_final
+)
 
         respuesta_texto = response.text
 
