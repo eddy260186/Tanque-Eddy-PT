@@ -18,7 +18,7 @@ from backend.services.ia_service import (
 )
 
 from backend.services.whatsapp_service import (
-    enviar_mensaje_texto_whatsapp,
+    enviar_mensaje_texto_evolution,
     normalizar_telefono_whatsapp
 )
 
@@ -394,7 +394,8 @@ def procesar_mensaje(payload: dict):
         if not respuesta_ia:
 
             respuesta_ia = (
-                "No pude procesar tu mensaje."
+                "Estoy actualizando mis servidores IA. "
+                "Probá nuevamente en unos minutos."
             )
 
         logger.info(
@@ -432,7 +433,7 @@ def procesar_mensaje(payload: dict):
         # =================================================
 
         enviado = (
-            enviar_mensaje_texto_whatsapp(
+            enviar_mensaje_texto_evolution(
                 nombre_instancia=instancia_real,
                 alumno_id=alumno_id,
                 entrenador_id=entrenador_id,
