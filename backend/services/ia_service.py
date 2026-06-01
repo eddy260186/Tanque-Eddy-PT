@@ -28,7 +28,7 @@ else:
 # GESTION CREDITOS IA
 # =========================================================
 
-def gestionar_ia_con_creditos(email_usuario: str) -> tuple[bool, int]:
+def gestionar_ia_con_creditos(email_usuario: str):
 
     try:
 
@@ -42,71 +42,67 @@ def gestionar_ia_con_creditos(email_usuario: str) -> tuple[bool, int]:
             .execute()
         )
 
-        if res.data:
+        if not res.data:
 
-            perfil = res.data[0]
+            return False, 0
 
-            compro_guia = perfil.get(
-                "guia_comprada",
-                False
-            )
+        perfil = res.data[0]
 
-            valor_db = perfil.get(
-                "creditos_ia"
-            )
+        compro_guia = perfil.get(
+            "guia_comprada",
+            False
+        )
 
-            creditos_actuales = (
-                0 if valor_db is None else int(valor_db)
-            )
+        creditos_actuales = int(
+            perfil.get("creditos_ia") or 0
+        )
 
-            ultima_recarga_str = perfil.get(
-                "fecha_ultima_recarga"
-            )
+        ultima_recarga_str = perfil.get(
+            "fecha_ultima_recarga"
+        )
 
-            if compro_guia:
+        if compro_guia:
 
-                hoy = dt.date.today()
+            hoy = dt.date.today()
 
-                try:
+            try:
 
-                    ultima_recarga = (
-                        dt.datetime.strptime(
-                            ultima_recarga_str,
-                            "%Y-%m-%d"
-                        ).date()
-                        if ultima_recarga_str
-                        else None
-                    )
+                ultima_recarga = (
+                    dt.datetime.strptime(
+                        ultima_recarga_str,
+                        "%Y-%m-%d"
+                    ).date()
+                    if ultima_recarga_str
+                    else None
+                )
 
-                except:
+            except:
 
-                    ultima_recarga = None
+                ultima_recarga = None
 
-                if (
-                    ultima_recarga is None
-                    or (hoy - ultima_recarga).days >= 30
-                ):
+            if (
+                ultima_recarga is None
+                or (hoy - ultima_recarga).days >= 30
+            ):
 
-                    creditos_actuales = 30
+                creditos_actuales = 30
 
-                    (
-                        supabase
-                        .table("perfiles_atletas")
-                        .update({
-                            "creditos_ia": 30,
-                            "fecha_ultima_recarga": str(hoy)
-                        })
-                        .eq("email", email_usuario)
-                        .execute()
-                    )
+                (
+                    supabase
+                    .table("perfiles_atletas")
+                    .update({
+                        "creditos_ia": 30,
+                        "fecha_ultima_recarga": str(hoy)
+                    })
+                    .eq("email", email_usuario)
+                    .execute()
+                )
 
-                    logger.info(
-                        f"🔄 Créditos renovados: {email_usuario}"
-                    )
+                logger.info(
+                    f"🔄 Créditos renovados: {email_usuario}"
+                )
 
-            if creditos_actuales > 0:
-
-                return True, creditos_actuales
+        return creditos_actuales > 0, creditos_actuales
 
     except Exception as e:
 
@@ -114,7 +110,7 @@ def gestionar_ia_con_creditos(email_usuario: str) -> tuple[bool, int]:
             f"❌ Error créditos IA: {str(e)}"
         )
 
-    return False, 0
+        return False, 0
 
 # =========================================================
 # DESCONTAR CREDITOS
@@ -123,11 +119,14 @@ def gestionar_ia_con_creditos(email_usuario: str) -> tuple[bool, int]:
 def descontar_credito(
     email_usuario: str,
     creditos_actuales: int
-) -> int:
+):
 
     try:
 
-        nuevo_saldo = creditos_actuales - 1
+        nuevo_saldo = max(
+            creditos_actuales - 1,
+            0
+        )
 
         (
             supabase
@@ -156,9 +155,13 @@ def descontar_credito(
 def procesar_consulta_ia_con_memoria(
     alumno_id: str,
     mensaje_alumno: str
-) -> str:
+):
 
     try:
+
+        logger.info(
+            f"🧠 Procesando IA para alumno: {alumno_id}"
+        )
 
         fecha_hoy = date.today().isoformat()
 
@@ -183,12 +186,11 @@ def procesar_consulta_ia_con_memoria(
 
             return (
                 "⚠️ Alcanzaste el límite diario "
-                "de consultas IA. "
-                "Mañana seguimos entrenando 💪"
+                "de consultas IA 💪"
             )
 
         # =====================================================
-        # PERFIL ATLETA
+        # PERFIL CLIENTE
         # =====================================================
 
         atleta_query = (
@@ -222,14 +224,18 @@ def procesar_consulta_ia_con_memoria(
             "Mantenerse saludable"
         )
 
+        logger.info(
+            f"✅ Perfil encontrado: {nombre}"
+        )
+
         # =====================================================
-        # SYSTEM PROMPT
+        # PROMPT FINAL
         # =====================================================
 
         prompt_final = f"""
-Sos la IA oficial de Eddy Personal Trainer Software Elite.
+Sos la IA oficial de Eddy Personal Trainer.
 
-Tu función es ayudar en:
+Ayudás únicamente en:
 - fitness
 - musculación
 - nutrición
@@ -237,24 +243,25 @@ Tu función es ayudar en:
 - hábitos saludables
 
 DATOS CLIENTE:
+
 Nombre: {nombre}
-Género: {genero}
+Genero: {genero}
 Objetivo: {objetivo}
 
 REGLAS:
-1. Respuestas cortas.
-2. Máximo 4 líneas.
-3. Estilo argentino profesional.
-4. No hables de política.
-5. No hables de temas ilegales.
-6. Si preguntan algo ajeno al fitness:
-"Solo puedo ayudarte en entrenamiento y nutrición."
+- Máximo 4 líneas.
+- Respuesta clara.
+- Estilo argentino.
+- Profesional.
+- Motivador.
 
-MENSAJE CLIENTE:
+CLIENTE:
 {mensaje_alumno}
-
-RESPONDE COMO ENTRENADOR ARGENTINO.
 """
+
+        logger.info(
+            "🚀 Enviando prompt a Gemini..."
+        )
 
         # =====================================================
         # GEMINI
@@ -265,11 +272,11 @@ RESPONDE COMO ENTRENADOR ARGENTINO.
         )
 
         response = model.generate_content(
-            prompt_final,
-            generation_config={
-                "temperature": 0.7,
-                "max_output_tokens": 300
-            }
+            prompt_final
+        )
+
+        logger.info(
+            "✅ Respuesta Gemini recibida."
         )
 
         respuesta_texto = getattr(
@@ -281,8 +288,7 @@ RESPONDE COMO ENTRENADOR ARGENTINO.
         if not respuesta_texto:
 
             respuesta_texto = (
-                "⚠️ No pude generar "
-                "respuesta en este momento."
+                "⚠️ Gemini no devolvió texto."
             )
 
         respuesta_texto = str(
@@ -315,16 +321,20 @@ RESPONDE COMO ENTRENADOR ARGENTINO.
             .execute()
         )
 
+        logger.info(
+            "✅ Historial guardado."
+        )
+
         return respuesta_texto
 
     except Exception as e:
 
+        error_real = str(e)
+
         logger.error(
-            f"❌ Error crítico IA: {str(e)}"
+            f"❌ ERROR REAL GEMINI: {error_real}"
         )
 
         return (
-            "👋 Estoy actualizando "
-            "mis servidores IA. "
-            "Probá nuevamente en unos minutos."
+            f"❌ ERROR IA:\n{error_real}"
         )
