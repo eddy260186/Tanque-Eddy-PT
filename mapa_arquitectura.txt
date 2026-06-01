@@ -2,23 +2,152 @@
 ==================================================
 
 📂 ./
+│   📄 01-variables.py
+│   📄 02-strings.py
+│   📄 03-aritmetrica.py
+│   📄 04-comparacion.py
+│   📄 05-input.py
+│   📄 06-conversion.py
+│   📄 07-operadores logicos.py
+│   📄 08-if.py
+│   📄 09-conversor.py
+│   📄 10-lista.py
+│   📄 42-tarea_append.py
+│   📄 42.tarea_pop.py
+│   📄 APLICACION DE AGUA.py
+│   📄 app001.py
+│   📄 app13calorias.py
+│   📄 APPCALORIAAS15.PY
+│   📄 appcalorias11.py
+│   📄 appcalorias12.py
+│   📄 appcalorias14.py
+│   📄 appcqalorias.py
+│   📄 appdeficit10.py
+│   📄 appdeficit9.py
+│   📄 appnutricion11.py
+│   📄 APPNUTRICIONPDF.py
+│   📄 appnutricionprueba1.py
 │   📄 app_nutricion.py
+│   📄 app_nutricion_RESPALDO.py
+│   📄 app_nutricion_viejo.py
+│   📄 boleanos.py
+│   📄 boleanos1.py
+│   📄 boleanos_udemy.py
+│   📄 calculadora simple.py
+│   📄 calculadora_nutricional.py
+│   📄 clase placticaudemy.py
+│   📄 clima.py
+│   📄 control-de-flujo.py
+│   📄 control-de-flujo3.py
+│   📄 control-flujo-1.py
+│   📄 control-flujo4.py
+│   📄 conversor de tiempo.py
+│   📄 conversor tarea.py
+│   📄 datos_usuarios.json
+│   📄 deficitcalorico.py
+│   📄 deficitcalorico_2.py
+│   📄 deficitcalorico_3.py
+│   📄 deficitcalorico_4.py
+│   📄 deficitcalorico_5.py
+│   📄 DEFICITCALORICO_6.PY
+│   📄 DEFICITCALORICO_8.PY
+│   📄 DEFICIT_07.PY
+│   📄 defigitcalorico_1.py
+│   📄 diccionario.py
+│   📄 diccionario1.py
+│   📄 diccionario2.py
+│   📄 diccionario3.py
+│   📄 diccionario4.py
+│   📄 diccionario5.py
+│   📄 diccionario6.py
+│   📄 ejerciciossubstringudemy.py
+│   📄 flujo-de-control2.py
+│   📄 Formatear 1.py
+│   📄 Formatear cadna.py
+│   📄 grafico_progresion.png
+│   📄 Historial_Atletas.csv
+│   📄 indexUdemy.py
+│   📄 indexUdemy1.py
+│   📄 insert.py
+│   📄 listas.py
+│   📄 list_1.py
 │   📄 logo.png
 │   📄 logo_dorado.png
 │   📄 logo_rosa.png
 │   📄 logo_tanque.png
 │   📄 mapa_arquitectura.txt
 │   📄 mapear.py
+│   📄 metodo_find.py
+│   📄 operadores Udemy.py
 │   📄 packages.txt
+│   📄 palindromo01.py
+│   📄 plan_nutricional.pdf
+│   📄 plan_nutricional_eddy_dfsfd.pdf
+│   📄 plan_nutricional_eddy_jauregi.pdf
+│   📄 plan_nutricional_H_111.0kg.txt
+│   📄 plan_nutricional_M_80.0kg.pdf
+│   📄 plan_nutricional_M_85.0kg.pdf
 │   📄 portada.py
+│   📄 progresion.png
+│   📄 proyecto-final-1.py
+│   📄 PROYECTOFINAL.PY
+│   📄 PROYECTOFINAL1_2.PY
+│   📄 PROYECTOFINAL2.PY
+│   📄 prueba_pdf.py
 │   📄 qr_code.png
+│   📄 redondear.py
+│   📄 registros_nutricionales.txt
+│   📄 registros_usuarios.txt
+│   📄 registros_usuarios_avanzado.txt
+│   📄 remove-1.py
+│   📄 remove.py
 │   📄 requirements.txt
+│   📄 router.py
+│   📄 runtime.txt
+│   📄 set-add.py
+│   📄 set-sorteo.py
+│   📄 set.py
+│   📄 sof.py
+│   📄 sort.py
+│   📄 split.py
+│   📄 streamlit.err.log
+│   📄 streamlit.out.log
 │   📄 styles.py
+│   📄 tarea43.py
+│   📄 tarea431.py
+│   📄 tarea44.py
+│   📄 tarea45.py
+│   📄 tarea46.py
+│   📄 tarea47.py
+│   📄 tarea48.py
+│   📄 tareas_replace.py
+│   📄 tareaudemy.py
+│   📄 tareaudemyindex3.py
+│   📄 tarea_join.py
+│   📄 tarea_longitud_len.py
+│   📄 tarea_upper.py
+│   📄 tareraudemy2.py
+│   📄 tupla2.py
+│   📄 tuple.py
+│   📄 tuple01.py
+│   📄 udemy_primer_Proyecto.py
 │   📄 __init__.py
 │   📂 ai/
-│   │   📄 gemini.py
+│   │   📄 nutrition_ai.py
+│   │   📄 workout_ai.py
 │   │   📄 __init__.py
+│   │   📂 providers/
+│   │   │   📄 gemini_provider.py
+│   │   │   📄 __init__.py
+│   📂 application/
+│   │   📄 actualizar_plan.py
+│   │   📄 __init__.py
+│   📂 archivos eliminados/
+│   │   📄 gemini.py
+│   │   📂 ideas para mejorar mi app/
+│   │   │   📄 ideas para mi app nutricion.docx
 │   📂 automation/
+│   │   📄 daily_jobs.py
 │   │   📄 mensajes.py
 │   │   📄 scheduler.py
 │   │   📄 __init__.py
@@ -27,6 +156,7 @@
 │   │   📄 __init__.py
 │   │   📂 memory/
 │   │   │   📄 __init__.py
+│   │   📂 repositories/
 │   │   📂 services/
 │   │   │   📄 ia_service.py
 │   │   │   📄 payment_service.py
@@ -43,6 +173,11 @@
 │   │   │   📄 __init__.py
 │   📂 config/
 │   │   📄 settings.py
+│   │   📄 __init__.py
+│   📂 core/
+│   │   📄 constants.py
+│   │   📄 permissions.py
+│   │   📄 session_manager.py
 │   │   📄 __init__.py
 │   📂 data/
 │   │   📄 alimentos.py
@@ -72,8 +207,6 @@
 │   │   │   📄 alumno.py
 │   │   │   📄 entrenador.py
 │   │   │   📄 __init__.py
-│   📂 ideas para mejorar mi app/
-│   │   📄 ideas para mi app nutricion.docx
 │   📂 models/
 │   │   📄 atleta.py
 │   │   📄 automatizacion.py
