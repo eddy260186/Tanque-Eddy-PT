@@ -94,11 +94,17 @@ def extraer_mensaje(payload: dict):
             f"📦 PAYLOAD COMPLETO: {payload}"
         )
 
-        evento = payload.get("event", "")
+        evento = str(
+            payload.get("event", "")
+        ).strip()
 
         logger.info(
             f"📡 EVENTO RECIBIDO: {evento}"
         )
+
+        # =================================================
+        # SOLO PROCESAR MENSAJES REALES
+        # =================================================
 
         eventos_validos = [
             "messages.upsert",
@@ -111,24 +117,31 @@ def extraer_mensaje(payload: dict):
                 f"⚠️ Evento ignorado: {evento}"
             )
 
-            return "", ""
+            return None
 
-        data = payload.get("data", {})
+        data = payload.get("data")
 
-        if not data:
+        if not isinstance(data, dict):
 
             logger.warning(
-                "⚠️ Payload sin data."
+                "⚠️ Payload sin data válida."
             )
 
-            return "", ""
+            return None
 
         key = data.get("key", {})
 
-        remote_jid = key.get(
-            "remoteJid",
-            ""
-        )
+        if not isinstance(key, dict):
+
+            logger.warning(
+                "⚠️ Key inválida."
+            )
+
+            return None
+
+        remote_jid = str(
+            key.get("remoteJid", "")
+        ).strip()
 
         if not remote_jid:
 
@@ -136,7 +149,11 @@ def extraer_mensaje(payload: dict):
                 "⚠️ remoteJid vacío."
             )
 
-            return "", ""
+            return None
+
+        # =================================================
+        # IGNORAR GRUPOS
+        # =================================================
 
         if "@g.us" in remote_jid:
 
@@ -144,7 +161,11 @@ def extraer_mensaje(payload: dict):
                 "⚠️ Grupo ignorado."
             )
 
-            return "", ""
+            return None
+
+        # =================================================
+        # IGNORAR MENSAJES PROPIOS
+        # =================================================
 
         from_me = key.get(
             "fromMe",
@@ -157,7 +178,7 @@ def extraer_mensaje(payload: dict):
                 "⚠️ Mensaje propio ignorado."
             )
 
-            return "", ""
+            return None
 
         telefono = (
             remote_jid
@@ -167,9 +188,31 @@ def extraer_mensaje(payload: dict):
             .strip()
         )
 
+        if not telefono:
+
+            logger.warning(
+                "⚠️ Teléfono vacío."
+            )
+
+            return None
+
+        # =================================================
+        # MESSAGE
+        # =================================================
+
         message = data.get("message", {})
 
+        if not isinstance(message, dict):
+
+            logger.warning(
+                "⚠️ Message inválido."
+            )
+
+            return None
+
         texto = ""
+
+        # TEXTO SIMPLE
 
         if "conversation" in message:
 
@@ -179,6 +222,8 @@ def extraer_mensaje(payload: dict):
                     ""
                 )
             )
+
+        # TEXTO EXTENDIDO
 
         elif "extendedTextMessage" in message:
 
@@ -194,6 +239,8 @@ def extraer_mensaje(payload: dict):
                 )
             )
 
+        # IMAGEN
+
         elif "imageMessage" in message:
 
             texto = (
@@ -207,6 +254,8 @@ def extraer_mensaje(payload: dict):
                     "[IMAGEN]"
                 )
             )
+
+        # VIDEO
 
         elif "videoMessage" in message:
 
@@ -222,9 +271,13 @@ def extraer_mensaje(payload: dict):
                 )
             )
 
+        # AUDIO
+
         elif "audioMessage" in message:
 
             texto = "[AUDIO]"
+
+        # DOCUMENTO
 
         elif "documentMessage" in message:
 
@@ -238,7 +291,7 @@ def extraer_mensaje(payload: dict):
                 "⚠️ Texto vacío."
             )
 
-            return "", ""
+            return None
 
         logger.info(
             f"📲 TELEFONO EXTRAIDO: {telefono}"
@@ -248,7 +301,10 @@ def extraer_mensaje(payload: dict):
             f"💬 MENSAJE EXTRAIDO: {texto}"
         )
 
-        return telefono, texto
+        return {
+            "telefono": telefono,
+            "texto": texto
+        }
 
     except Exception as e:
 
@@ -256,7 +312,7 @@ def extraer_mensaje(payload: dict):
             f"❌ ERROR EXTRAYENDO MENSAJE: {str(e)}"
         )
 
-        return "", ""
+        return None
 
 # =========================================================
 # BUSCAR ATLETA
@@ -326,23 +382,14 @@ def procesar_mensaje(payload: dict):
 
     try:
 
-        telefono, texto = extraer_mensaje(payload)
+        resultado = extraer_mensaje(payload)
 
-        if not telefono:
-
-            logger.warning(
-                "⚠️ Teléfono vacío."
-            )
+        if not resultado:
 
             return
 
-        if not texto:
-
-            logger.warning(
-                "⚠️ Texto vacío."
-            )
-
-            return
+        telefono = resultado["telefono"]
+        texto = resultado["texto"]
 
         logger.info(
             f"📩 MENSAJE ENTRANTE "
@@ -403,18 +450,12 @@ def procesar_mensaje(payload: dict):
         )
 
         # =================================================
-        # INSTANCIA REAL DEL PAYLOAD
+        # INSTANCIA
         # =================================================
 
-        instancia_real = payload.get(
-            "instance",
-            ""
-        )
-
-        logger.info(
-            f"📲 INSTANCIA PAYLOAD: "
-            f"{instancia_real}"
-        )
+        instancia_real = str(
+            payload.get("instance", "")
+        ).strip()
 
         if not instancia_real:
 
@@ -428,17 +469,20 @@ def procesar_mensaje(payload: dict):
                 f"{instancia_real}"
             )
 
+        logger.info(
+            f"📲 INSTANCIA USADA: "
+            f"{instancia_real}"
+        )
+
         # =================================================
         # ENVIAR RESPUESTA
         # =================================================
 
         enviado = (
             enviar_mensaje_texto_evolution(
-                nombre_instancia=instancia_real,
-                alumno_id=alumno_id,
-                entrenador_id=entrenador_id,
                 telefono=telefono,
-                mensaje=respuesta_ia
+                mensaje=respuesta_ia,
+                nombre_instancia=instancia_real
             )
         )
 
