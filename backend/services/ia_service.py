@@ -268,8 +268,8 @@ CLIENTE:
         # =====================================================
 
         model = genai.GenerativeModel(
-            "gemini-1.5-flash"
-        )
+    "models/gemini-1.5-flash"
+)
 
         response = model.generate_content(
             prompt_final
