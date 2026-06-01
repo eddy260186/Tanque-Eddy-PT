@@ -285,7 +285,7 @@ CLIENTE:
         # =====================================================
 
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.0-flash-001",
             contents=prompt_final
         )
 
