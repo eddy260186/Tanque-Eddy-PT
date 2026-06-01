@@ -278,13 +278,16 @@ CLIENTE:
         )
 
         # =====================================================
-        # GEMINI NUEVO SDK
+        # GEMINI SDK — MODELO CORREGIDO
+        # ✅ "gemini-2.0-flash-exp" fue deprecado.
+        # Usamos "gemini-2.0-flash" (estable y gratuito).
+        # Alternativa económica: "gemini-1.5-flash"
         # =====================================================
 
         response = client.models.generate_content(
-    model="gemini-2.0-flash-exp",
-    contents=prompt_final
-)
+            model="gemini-2.0-flash",
+            contents=prompt_final
+        )
 
         respuesta_texto = response.text
 
