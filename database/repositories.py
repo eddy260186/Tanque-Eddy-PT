@@ -1,15 +1,15 @@
-# database/repositories.py
 
 from database.conexion import supabase
 from utils.logger import obtener_logger
+from automation.generador_automatizaciones import generar_automatizaciones_alumno
 
 logger = obtener_logger("Repositories")
 
 
 class AtletaRepository:
     """
-    Clase exclusiva para manejar las consultas de atletas.
-    Será el núcleo central de IA + WhatsApp + Automatizaciones.
+    Clase exclusiva para manejar consultas y actualizaciones
+    del perfil central del atleta.
     """
 
     @staticmethod
@@ -31,7 +31,8 @@ class AtletaRepository:
     ) -> bool:
 
         """
-        Actualiza TODA la información viva del atleta.
+        Actualiza toda la información viva del atleta
+        y genera automatizaciones inteligentes.
         """
 
         try:
@@ -75,7 +76,7 @@ class AtletaRepository:
                 datos_actualizacion["hora_entreno"] = hora_entreno
 
             # =====================================================
-            # UPDATE CENTRAL
+            # ACTUALIZAR PERFIL CENTRAL
             # =====================================================
 
             response = (
@@ -90,6 +91,14 @@ class AtletaRepository:
                 f"✅ Perfil atleta actualizado correctamente: {alumno_id}"
             )
 
+            # =====================================================
+            # GENERAR AUTOMATIZACIONES AUTOMÁTICAS
+            # =====================================================
+
+            generar_automatizaciones_alumno(
+                alumno_id
+            )
+
             return len(response.data) > 0
 
         except Exception as e:
@@ -99,3 +108,4 @@ class AtletaRepository:
             )
 
             return False
+
