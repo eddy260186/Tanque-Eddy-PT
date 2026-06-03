@@ -1,3 +1,4 @@
+
 from fastapi import (
     APIRouter,
     Request,
@@ -20,6 +21,10 @@ from backend.services.ia_service import (
 from backend.services.whatsapp_service import (
     enviar_mensaje_texto_evolution,
     normalizar_telefono_whatsapp
+)
+
+from backend.services.whatsapp_message_processor import (
+    guardar_interaccion_atleta
 )
 
 logger = obtener_logger("WhatsAppWebhook")
@@ -102,10 +107,6 @@ def extraer_mensaje(payload: dict):
             f"📡 EVENTO RECIBIDO: {evento}"
         )
 
-        # =================================================
-        # SOLO PROCESAR MENSAJES REALES
-        # =================================================
-
         eventos_validos = [
             "messages.upsert",
             "MESSAGES_UPSERT"
@@ -151,10 +152,6 @@ def extraer_mensaje(payload: dict):
 
             return None
 
-        # =================================================
-        # IGNORAR GRUPOS
-        # =================================================
-
         if "@g.us" in remote_jid:
 
             logger.info(
@@ -162,10 +159,6 @@ def extraer_mensaje(payload: dict):
             )
 
             return None
-
-        # =================================================
-        # IGNORAR MENSAJES PROPIOS
-        # =================================================
 
         from_me = key.get(
             "fromMe",
@@ -196,10 +189,6 @@ def extraer_mensaje(payload: dict):
 
             return None
 
-        # =================================================
-        # MESSAGE
-        # =================================================
-
         message = data.get("message", {})
 
         if not isinstance(message, dict):
@@ -212,8 +201,6 @@ def extraer_mensaje(payload: dict):
 
         texto = ""
 
-        # TEXTO SIMPLE
-
         if "conversation" in message:
 
             texto = (
@@ -222,8 +209,6 @@ def extraer_mensaje(payload: dict):
                     ""
                 )
             )
-
-        # TEXTO EXTENDIDO
 
         elif "extendedTextMessage" in message:
 
@@ -239,8 +224,6 @@ def extraer_mensaje(payload: dict):
                 )
             )
 
-        # IMAGEN
-
         elif "imageMessage" in message:
 
             texto = (
@@ -254,8 +237,6 @@ def extraer_mensaje(payload: dict):
                     "[IMAGEN]"
                 )
             )
-
-        # VIDEO
 
         elif "videoMessage" in message:
 
@@ -271,13 +252,9 @@ def extraer_mensaje(payload: dict):
                 )
             )
 
-        # AUDIO
-
         elif "audioMessage" in message:
 
             texto = "[AUDIO]"
-
-        # DOCUMENTO
 
         elif "documentMessage" in message:
 
@@ -328,11 +305,6 @@ def buscar_atleta_por_telefono(telefono_meta: str):
             )
         )
 
-        logger.info(
-            f"📞 Buscando teléfono: "
-            f"{telefono_normalizado}"
-        )
-
         perfiles = (
             supabase
             .table("perfiles_atletas")
@@ -352,17 +324,7 @@ def buscar_atleta_por_telefono(telefono_meta: str):
 
             if telefono_db == telefono_normalizado:
 
-                logger.info(
-                    f"✅ Atleta encontrado: "
-                    f"{perfil.get('nombre_completo')}"
-                )
-
                 return perfil
-
-        logger.warning(
-            f"❌ Número no encontrado: "
-            f"{telefono_normalizado}"
-        )
 
         return None
 
@@ -391,21 +353,11 @@ def procesar_mensaje(payload: dict):
         telefono = resultado["telefono"]
         texto = resultado["texto"]
 
-        logger.info(
-            f"📩 MENSAJE ENTRANTE "
-            f"[{telefono}]: {texto}"
-        )
-
         atleta = buscar_atleta_por_telefono(
             telefono
         )
 
         if not atleta:
-
-            logger.warning(
-                f"⚠️ Usuario no registrado: "
-                f"{telefono}"
-            )
 
             return
 
@@ -427,6 +379,15 @@ def procesar_mensaje(payload: dict):
             contenido=texto
         )
 
+        # =================================================
+        # PROCESADOR INTELIGENTE
+        # =================================================
+
+        guardar_interaccion_atleta(
+            alumno_id=alumno_id,
+            mensaje=texto
+        )
+
         logger.info(
             f"🧠 Procesando IA para {nombre}"
         )
@@ -445,14 +406,6 @@ def procesar_mensaje(payload: dict):
                 "Probá nuevamente en unos minutos."
             )
 
-        logger.info(
-            f"🤖 RESPUESTA IA: {respuesta_ia}"
-        )
-
-        # =================================================
-        # INSTANCIA
-        # =================================================
-
         instancia_real = str(
             payload.get("instance", "")
         ).strip()
@@ -462,21 +415,6 @@ def procesar_mensaje(payload: dict):
             instancia_real = (
                 settings.WHATSAPP_INSTANCE
             )
-
-            logger.warning(
-                f"⚠️ Payload sin instancia. "
-                f"Usando fallback: "
-                f"{instancia_real}"
-            )
-
-        logger.info(
-            f"📲 INSTANCIA USADA: "
-            f"{instancia_real}"
-        )
-
-        # =================================================
-        # ENVIAR RESPUESTA
-        # =================================================
 
         enviado = (
             enviar_mensaje_texto_evolution(
@@ -536,3 +474,4 @@ async def recibir_interaccion_alumno(
             "status": "error",
             "message": str(e)
         }
+

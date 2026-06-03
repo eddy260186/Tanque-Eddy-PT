@@ -1,3 +1,4 @@
+
 from google import genai
 import datetime as dt
 from datetime import date
@@ -210,9 +211,14 @@ def procesar_consulta_ia_con_memoria(
         atleta_query = (
             supabase
             .table("perfiles_atletas")
-            .select(
-                "nombre_completo, genero, objetivo_principal"
-            )
+            .select("""
+                nombre_completo,
+                genero,
+                objetivo_principal,
+                telefono,
+                tipo_plan,
+                entrenador_id
+            """)
             .eq("id", alumno_id)
             .execute()
         )
@@ -238,9 +244,96 @@ def procesar_consulta_ia_con_memoria(
             "Mantenerse saludable"
         )
 
+        telefono = atleta_data.get(
+            "telefono",
+            "No definido"
+        )
+
+        tipo_plan = atleta_data.get(
+            "tipo_plan",
+            "Plan general"
+        )
+
         logger.info(
             f"✅ Perfil encontrado: {nombre}"
         )
+
+        # =====================================================
+        # BIOMETRIA
+        # =====================================================
+
+        biometria_query = (
+            supabase
+            .table("evaluaciones_biometricas")
+            .select("*")
+            .eq("alumno_id", alumno_id)
+            .limit(1)
+            .execute()
+        )
+
+        biometria = {}
+
+        if biometria_query.data:
+
+            biometria = biometria_query.data[0]
+
+        peso = biometria.get(
+            "peso_actual",
+            "No definido"
+        )
+
+        edad = biometria.get(
+            "edad",
+            "No definida"
+        )
+
+        experiencia = biometria.get(
+            "experiencia_entrenamiento",
+            "No definida"
+        )
+
+        objetivo_biometrico = biometria.get(
+            "objetivo_fisico",
+            "No definido"
+        )
+
+        # =====================================================
+        # HISTORIAL IA
+        # =====================================================
+
+        historial_query = (
+            supabase
+            .table("historial_ia")
+            .select(
+                "rol_mensaje, contenido"
+            )
+            .eq("alumno_id", alumno_id)
+            .order("fecha_creacion", desc=True)
+            .limit(6)
+            .execute()
+        )
+
+        historial_texto = ""
+
+        if historial_query.data:
+
+            historial_query.data.reverse()
+
+            for item in historial_query.data:
+
+                rol = item.get(
+                    "rol_mensaje",
+                    "user"
+                )
+
+                contenido = item.get(
+                    "contenido",
+                    ""
+                )
+
+                historial_texto += (
+                    f"{rol}: {contenido}\n"
+                )
 
         # =====================================================
         # PROMPT FINAL
@@ -249,40 +342,47 @@ def procesar_consulta_ia_con_memoria(
         prompt_final = f"""
 Sos la IA oficial de Eddy Personal Trainer.
 
-Ayudás únicamente en:
+Especialista en:
 - fitness
-- musculación
+- hipertrofia
+- pérdida de grasa
 - nutrición
-- motivación
+- recomposición corporal
 - hábitos saludables
 
-DATOS CLIENTE:
+INFORMACIÓN DEL CLIENTE:
 
 Nombre: {nombre}
 Genero: {genero}
-Objetivo: {objetivo}
+Objetivo principal: {objetivo}
+Objetivo físico: {objetivo_biometrico}
+Peso actual: {peso}
+Edad: {edad}
+Experiencia: {experiencia}
+Tipo de plan: {tipo_plan}
 
-REGLAS:
-- Máximo 4 líneas.
-- Respuesta clara.
-- Estilo argentino.
-- Profesional.
-- Motivador.
+HISTORIAL RECIENTE:
+{historial_texto}
 
-CLIENTE:
+INSTRUCCIONES:
+
+- Respuestas personalizadas.
+- Habla como entrenador profesional argentino.
+- Máximo 6 líneas.
+- Sé claro y práctico.
+- Da ejercicios específicos.
+- Da recomendaciones útiles.
+- No repitas frases genéricas.
+- Motiva sin exagerar.
+- Si el usuario es principiante explicá simple.
+
+MENSAJE DEL CLIENTE:
 {mensaje_alumno}
 """
 
         logger.info(
             "🚀 Enviando prompt a Gemini..."
         )
-
-        # =====================================================
-        # GEMINI SDK — MODELO CORREGIDO
-        # ✅ "gemini-2.0-flash-exp" fue deprecado.
-        # Usamos "gemini-2.0-flash" (estable y gratuito).
-        # Alternativa económica: "gemini-1.5-flash"
-        # =====================================================
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -348,3 +448,4 @@ CLIENTE:
         return (
             f"❌ ERROR IA:\n{error_real}"
         )
+
