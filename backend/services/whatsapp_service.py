@@ -28,7 +28,9 @@ WHATSAPP_INSTANCE = os.getenv(
 # NORMALIZAR TELÉFONO
 # ==========================================================
 
-def normalizar_telefono_whatsapp(numero: str) -> str:
+def normalizar_telefono_whatsapp(
+    numero: str
+) -> str:
 
     numero = str(numero)
 
@@ -65,11 +67,6 @@ def verificar_instancia():
             f"{WHATSAPP_INSTANCE}"
         )
 
-        logger.info(
-            f"🔗 URL VERIFICACIÓN: "
-            f"{url}"
-        )
-
         response = requests.get(
             url,
             headers=headers,
@@ -95,11 +92,6 @@ def verificar_instancia():
             return False
 
         data = response.json()
-
-        # ==================================================
-        # EVOLUTION PUEDE DEVOLVER:
-        # LISTA o {"instance": [...]}
-        # ==================================================
 
         if isinstance(data, dict):
 
@@ -144,9 +136,8 @@ def verificar_instancia():
 
                     return True
 
-        logger.error(
-            "❌ La instancia no existe "
-            "o no está conectada."
+        logger.warning(
+            "⚠️ Instancia no conectada."
         )
 
         return False
@@ -161,7 +152,7 @@ def verificar_instancia():
         return False
 
 # ==========================================================
-# FUNCIÓN PRINCIPAL
+# ENVIAR MENSAJE
 # ==========================================================
 
 def enviar_mensaje_texto_whatsapp(
@@ -174,10 +165,6 @@ def enviar_mensaje_texto_whatsapp(
 
     try:
 
-        # ==================================================
-        # VALIDAR MENSAJE
-        # ==================================================
-
         if not mensaje:
 
             return {
@@ -185,40 +172,21 @@ def enviar_mensaje_texto_whatsapp(
                 "error": "Mensaje vacío"
             }
 
-        # ==================================================
-        # VALIDAR INSTANCIA
-        # ==================================================
-
-        if not verificar_instancia():
-
-            return {
-                "exito": False,
-                "error": "Instancia no conectada"
-            }
-
-        # ==================================================
-        # NORMALIZAR TELÉFONO
-        # ==================================================
-
         telefono_limpio = (
             normalizar_telefono_whatsapp(
                 telefono
             )
         )
 
-        logger.info(
-            f"📲 Enviando WhatsApp a "
-            f"{telefono_limpio}"
-        )
-
-        # ==================================================
-        # URL ENVÍO
-        # ==================================================
-
         instancia_final = (
             nombre_instancia
             if nombre_instancia
             else WHATSAPP_INSTANCE
+        )
+
+        logger.info(
+            f"📲 Enviando WhatsApp a "
+            f"{telefono_limpio}"
         )
 
         url = (
@@ -227,23 +195,10 @@ def enviar_mensaje_texto_whatsapp(
             f"{instancia_final}"
         )
 
-        logger.info(
-            f"🔗 URL EVOLUTION: "
-            f"{url}"
-        )
-
-        # ==================================================
-        # HEADERS
-        # ==================================================
-
         headers = {
             "Content-Type": "application/json",
             "apikey": EVOLUTION_API_KEY
         }
-
-        # ==================================================
-        # PAYLOAD
-        # ==================================================
 
         payload = {
             "number": telefono_limpio,
@@ -254,10 +209,6 @@ def enviar_mensaje_texto_whatsapp(
             f"📦 PAYLOAD: "
             f"{payload}"
         )
-
-        # ==================================================
-        # REQUEST
-        # ==================================================
 
         response = requests.post(
             url,
@@ -276,17 +227,13 @@ def enviar_mensaje_texto_whatsapp(
             f"{response.text}"
         )
 
-        # ==================================================
-        # RESPUESTA EXITOSA
-        # ==================================================
-
         if response.status_code in [200, 201]:
 
             try:
 
                 resposta_json = response.json()
 
-            except:
+            except Exception:
 
                 resposta_json = response.text
 
@@ -294,10 +241,6 @@ def enviar_mensaje_texto_whatsapp(
                 "exito": True,
                 "respuesta": resposta_json
             }
-
-        # ==================================================
-        # ERROR EVOLUTION
-        # ==================================================
 
         return {
             "exito": False,
@@ -317,7 +260,7 @@ def enviar_mensaje_texto_whatsapp(
         }
 
 # ==========================================================
-# COMPATIBILIDAD TOTAL
+# COMPATIBILIDAD LEGACY
 # ==========================================================
 
 def enviar_mensaje_texto_evolution(
@@ -337,10 +280,215 @@ def enviar_mensaje_texto_evolution(
     )
 
 # ==========================================================
-# COMPATIBILIDAD PANEL ENTRENADOR
+# EVOLUTION API MULTI-ENTRENADOR
 # ==========================================================
 
 class EvolutionAPI:
+
+    def __init__(self):
+
+        self.base_url = EVOLUTION_API_URL
+        self.api_key = EVOLUTION_API_KEY
+
+    # ======================================================
+    # CREAR INSTANCIA + OBTENER QR
+    # ======================================================
+
+    def crear_instancia_y_obtener_qr(
+        self,
+        nombre_instancia: str
+    ):
+
+        try:
+
+            headers = {
+                "Content-Type": "application/json",
+                "apikey": self.api_key
+            }
+
+            payload = {
+                "instanceName": nombre_instancia,
+                "qrcode": True,
+                "integration": "WHATSAPP-BAILEYS"
+            }
+
+            url_create = (
+                f"{self.base_url}"
+                f"/instance/create"
+            )
+
+            logger.info(
+                f"🚀 Creando instancia: "
+                f"{nombre_instancia}"
+            )
+
+            response = requests.post(
+                url_create,
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+
+            logger.info(
+                f"📡 RESPONSE CREATE: "
+                f"{response.text}"
+            )
+
+            data = response.json()
+
+            # ==================================================
+            # QR DIRECTO
+            # ==================================================
+
+            if (
+                isinstance(data, dict)
+                and "qrcode" in data
+                and isinstance(data["qrcode"], dict)
+                and data["qrcode"].get("base64")
+            ):
+
+                return {
+                    "exito": True,
+                    "qr_base64": data["qrcode"]["base64"]
+                }
+
+            # ==================================================
+            # QR SIMPLE
+            # ==================================================
+
+            if (
+                isinstance(data, dict)
+                and data.get("base64")
+            ):
+
+                return {
+                    "exito": True,
+                    "qr_base64": data["base64"]
+                }
+
+            # ==================================================
+            # SI YA EXISTE → RECONECTAR
+            # ==================================================
+
+            logger.info(
+                "♻️ Instancia ya existe. "
+                "Intentando reconectar..."
+            )
+
+            url_connect = (
+                f"{self.base_url}"
+                f"/instance/connect/"
+                f"{nombre_instancia}"
+            )
+
+            resp_connect = requests.get(
+                url_connect,
+                headers=headers,
+                timeout=30
+            )
+
+            logger.info(
+                f"📡 RESPONSE CONNECT: "
+                f"{resp_connect.text}"
+            )
+
+            data_connect = resp_connect.json()
+
+            if data_connect.get("base64"):
+
+                return {
+                    "exito": True,
+                    "qr_base64": data_connect["base64"]
+                }
+
+            return {
+                "exito": False,
+                "error": (
+                    "La instancia ya está conectada "
+                    "o el QR expiró."
+                )
+            }
+
+        except Exception as e:
+
+            logger.error(
+                f"❌ Error creando instancia: "
+                f"{str(e)}"
+            )
+
+            return {
+                "exito": False,
+                "error": str(e)
+            }
+
+    # ======================================================
+    # ESTADO INSTANCIA
+    # ======================================================
+
+    def obtener_estado_instancia(
+        self,
+        nombre_instancia: str
+    ):
+
+        try:
+
+            headers = {
+                "apikey": self.api_key
+            }
+
+            url = (
+                f"{self.base_url}"
+                f"/instance/connectionState/"
+                f"{nombre_instancia}"
+            )
+
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=20
+            )
+
+            if response.status_code != 200:
+
+                return {
+                    "conectado": False
+                }
+
+            data = response.json()
+
+            estado = str(
+                data.get(
+                    "instance",
+                    {}
+                ).get(
+                    "state",
+                    ""
+                )
+            ).lower()
+
+            return {
+                "conectado": estado in [
+                    "open",
+                    "connected"
+                ],
+                "estado": estado
+            }
+
+        except Exception as e:
+
+            logger.error(
+                f"❌ Error estado instancia: "
+                f"{str(e)}"
+            )
+
+            return {
+                "conectado": False,
+                "error": str(e)
+            }
+
+    # ======================================================
+    # ENVIAR MENSAJE
+    # ======================================================
 
     @staticmethod
     def enviar_mensaje(
