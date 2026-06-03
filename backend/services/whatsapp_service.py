@@ -334,3 +334,21 @@ def enviar_mensaje_texto_evolution(
         telefono=telefono,
         mensaje=mensaje
     )
+# ==========================================================
+# COMPATIBILIDAD PANEL ENTRENADOR
+# ==========================================================
+
+class EvolutionAPI:
+
+    @staticmethod
+    def enviar_mensaje(
+        telefono: str,
+        mensaje: str,
+        nombre_instancia: str = None
+    ):
+
+        return enviar_mensaje_texto_whatsapp(
+            telefono=telefono,
+            mensaje=mensaje,
+            nombre_instancia=nombre_instancia
+        )
