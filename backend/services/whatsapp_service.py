@@ -1,3 +1,4 @@
+
 import os
 import requests
 import logging
@@ -334,6 +335,7 @@ def enviar_mensaje_texto_evolution(
         telefono=telefono,
         mensaje=mensaje
     )
+
 # ==========================================================
 # COMPATIBILIDAD PANEL ENTRENADOR
 # ==========================================================
@@ -352,3 +354,4 @@ class EvolutionAPI:
             mensaje=mensaje,
             nombre_instancia=nombre_instancia
         )
+
