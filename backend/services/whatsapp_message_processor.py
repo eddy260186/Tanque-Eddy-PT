@@ -1,8 +1,8 @@
-
 import re
 
 from utils.logger import obtener_logger
 from database.conexion import supabase
+from backend.services.entrenamiento_service import guardar_entrenamiento_estructurado
 
 logger = obtener_logger("WhatsAppMessageProcessor")
 
@@ -18,10 +18,46 @@ def detectar_intencion_mensaje(
     texto = mensaje.lower().strip()
 
     # =====================================================
+    # ENTRENAMIENTO
+    # (se evalúa ANTES que el peso corporal, porque
+    # "sentadilla 60kg" tiene kg pero es entrenamiento)
+    # =====================================================
+
+    palabras_entreno = [
+        "entrene",
+        "entrené",
+        "gym",
+        "piernas",
+        "pecho",
+        "espalda",
+        "sentadilla",
+        "press",
+        "prensa",
+        "remo",
+        "curl",
+        "dominadas",
+        "peso muerto",
+        "hice",
+        "series",
+        "repeticiones",
+        "reps"
+    ]
+
+    if any(
+        palabra in texto
+        for palabra in palabras_entreno
+    ):
+
+        return {
+            "tipo": "entrenamiento",
+            "detalle": mensaje
+        }
+
+    # =====================================================
     # PESO CORPORAL
     # =====================================================
 
-    patron_peso = r"(\d+)\s?kg"
+    patron_peso = r"(\d+(?:\.\d+)?)\s?kg"
 
     match_peso = re.search(
         patron_peso,
@@ -35,31 +71,6 @@ def detectar_intencion_mensaje(
             "valor": float(
                 match_peso.group(1)
             )
-        }
-
-    # =====================================================
-    # ENTRENAMIENTO
-    # =====================================================
-
-    palabras_entreno = [
-        "entrene",
-        "entrené",
-        "gym",
-        "piernas",
-        "pecho",
-        "espalda",
-        "sentadilla",
-        "press"
-    ]
-
-    if any(
-        palabra in texto
-        for palabra in palabras_entreno
-    ):
-
-        return {
-            "tipo": "entrenamiento",
-            "detalle": mensaje
         }
 
     # =====================================================
@@ -164,35 +175,39 @@ def guardar_interaccion_atleta(
 
         # =====================================================
         # GUARDAR ENTRENAMIENTO
+        # (extrae con IA: ejercicio, peso, series, reps
+        # y los guarda en ejercicios_realizados)
         # =====================================================
 
         elif tipo == "entrenamiento":
 
-            supabase.table(
-                "ejercicios_realizados"
-            ).insert({
-                "alumno_id": alumno_id,
-                "descripcion": mensaje
-            }).execute()
+            cantidad = guardar_entrenamiento_estructurado(
+                alumno_id,
+                mensaje
+            )
 
             logger.info(
-                "✅ Entrenamiento guardado."
+                f"✅ Entrenamiento guardado "
+                f"({cantidad} ejercicios)."
             )
 
         # =====================================================
-        # GUARDAR HISTORIAL IA
+        # REGISTRAR MENSAJE ENTRANTE
+        # (en tu tabla mensajes_whatsapp existente)
         # =====================================================
 
         supabase.table(
-            "historial_interacciones"
+            "mensajes_whatsapp"
         ).insert({
             "alumno_id": alumno_id,
-            "mensaje": mensaje,
-            "tipo_detectado": tipo
+            "direccion": "entrante",
+            "tipo_mensaje": tipo,
+            "contenido": mensaje,
+            "estado_envio": "recibido"
         }).execute()
 
         logger.info(
-            "✅ Historial guardado."
+            "✅ Mensaje registrado."
         )
 
         return resultado

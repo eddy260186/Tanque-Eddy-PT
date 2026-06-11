@@ -269,7 +269,8 @@ def procesar_consulta_ia_con_memoria(
             supabase
             .table("evaluaciones_biometricas")
             .select("*")
-            .eq("alumno_id", alumno_id)
+            .eq("perfil_id", alumno_id)
+            .order("fecha", desc=True)
             .limit(1)
             .execute()
         )
@@ -281,7 +282,7 @@ def procesar_consulta_ia_con_memoria(
             biometria = biometria_query.data[0]
 
         peso = biometria.get(
-            "peso_actual",
+            "peso",
             "No definido"
         )
 
@@ -291,12 +292,12 @@ def procesar_consulta_ia_con_memoria(
         )
 
         experiencia = biometria.get(
-            "experiencia_entrenamiento",
+            "nivel_experiencia",
             "No definida"
         )
 
         objetivo_biometrico = biometria.get(
-            "objetivo_fisico",
+            "meta",
             "No definido"
         )
 
