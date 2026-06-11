@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+
 from database.conexion import supabase
 from utils.logger import obtener_logger
 
@@ -85,6 +86,10 @@ def generar_automatizaciones_alumno(alumno_id: str):
             hora_dt - timedelta(hours=2)
         ).strftime("%H:%M")
 
+        pre_entreno = (
+            hora_dt - timedelta(hours=1)
+        ).strftime("%H:%M")
+
         post_entreno = (
             hora_dt + timedelta(minutes=90)
         ).strftime("%H:%M")
@@ -107,6 +112,13 @@ def generar_automatizaciones_alumno(alumno_id: str):
                 "tipo_alerta": "agua",
                 "hora_programada": agua_1,
                 "mensaje_plantilla": f"Meta diaria: {agua}L"
+            },
+
+            {
+                "alumno_id": alumno_id,
+                "tipo_alerta": "pre_entrenamiento",
+                "hora_programada": pre_entreno,
+                "mensaje_plantilla": "Aviso 60 min antes"
             },
 
             {

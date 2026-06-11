@@ -23,6 +23,7 @@ from backend.services.payment_service import validar_comprobante_pago
 from backend.services.plan_service import generar_menu_dinamico, generar_rutina_entrenamiento
 from backend.services.ia_service import gestionar_ia_con_creditos, descontar_credito
 from automation.generador_automatizaciones import generar_automatizaciones_alumno
+from backend.services.onboarding_service import generar_plan_inicial_completo
 
 def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, genero_idx: int, fecha_nac_atleta):
     """
@@ -275,13 +276,39 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                         "ultima_actualizacion": datetime.now().isoformat()
                     }).eq("id", perfil_id).execute()
 
+                    # 🌱 PLAN INICIAL AUTOMÁTICO DESDE LA BD PROPIA
+                    # (solo la primera vez: si ya tiene rutinas/comidas, no pisa nada)
+                    dias_creados, comidas_creadas = 0, 0
+                    try:
+                        dias_creados, comidas_creadas = generar_plan_inicial_completo(
+                            alumno_id=perfil_id,
+                            tipo_entreno=tipo_entreno,
+                            nivel_experiencia=nivel_experiencia,
+                            dias_entreno=dias_entreno,
+                            p_g_total=p_g_total,
+                            c_g_total=c_g_total,
+                            g_g_total=g_g_total,
+                            num_comidas=num_comidas,
+                            dieta_tipo=dieta_tipo,
+                            pais=pais,
+                            cal_objetivo=cal_obj,
+                            hora_despertar=hora_despertar.strftime("%H:%M"),
+                            num_opciones=num_opciones
+                        )
+                    except Exception:
+                        pass
+
                     # 🤖 REGENERAR EL DÍA DEL AGENTE CON LOS HORARIOS NUEVOS
+                    # (despues del plan, para que incluya las comidas nuevas)
                     try:
                         generar_automatizaciones_alumno(perfil_id)
                     except Exception:
                         pass
 
-                    st.success("✅ ¡Evolución y Plan guardados al 100%! Tu seguimiento por WhatsApp ya usa tus nuevos horarios.")
+                    if dias_creados or comidas_creadas:
+                        st.success(f"✅ ¡Datos guardados! Te generamos tu plan inicial: {dias_creados} días de rutina y {comidas_creadas} comidas. Tu seguimiento por WhatsApp ya está activo. 🎉")
+                    else:
+                        st.success("✅ ¡Evolución y Plan guardados al 100%! Tu seguimiento por WhatsApp ya usa tus nuevos horarios.")
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 

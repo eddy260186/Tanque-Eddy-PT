@@ -143,11 +143,10 @@ def ejecutar_ciclo_automatizacion():
             hora_disparo_real = hora_objeto.strftime("%H:%M:00")
             tipo_ajustado = tipo
 
-            # Lógica original: Si es entrenamiento, avisa 1 hora antes
-            if tipo == "entrenamiento":
-                hora_dt = datetime.combine(fecha_hoy, hora_objeto) - timedelta(hours=1)
-                hora_disparo_real = hora_dt.strftime("%H:%M:00")
-                tipo_ajustado = "pre_entrenamiento"
+            # NOTA: el pre-aviso de 60 min ahora es su propia
+            # automatizacion (tipo pre_entrenamiento) creada por
+            # el generador. "entrenamiento" dispara a su hora
+            # con la rutina completa.
 
             if hora_actual_str != hora_disparo_real:
                 continue

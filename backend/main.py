@@ -8,6 +8,9 @@ from backend.webhooks.whatsapp_webhook import (
     router as whatsapp_router
 )
 
+# Scheduler de automatizaciones
+from automation.scheduler import iniciar_scheduler
+
 logger = obtener_logger("BackendPrincipal")
 
 # =========================================================
@@ -41,6 +44,25 @@ app.include_router(
     prefix="/webhooks",
     tags=["WhatsApp"]
 )
+
+# =========================================================
+# STARTUP: ENCENDER EL RELOJ MAESTRO
+# =========================================================
+
+@app.on_event("startup")
+def startup_event():
+
+    logger.info("🚀 Backend iniciando...")
+
+    try:
+
+        iniciar_scheduler()
+
+    except Exception as e:
+
+        logger.error(
+            f"❌ Error iniciando scheduler: {str(e)}"
+        )
 
 # =========================================================
 # ROOT

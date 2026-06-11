@@ -325,6 +325,35 @@ def componer_resumen_matutino(
 
         msg += f"\n\nObjetivo nutricional del día:\n{macros}"
 
+    # 🛒 LISTA DE COMPRAS: el dia 1 de cada mes
+    if datetime.now().day == 1:
+
+        try:
+
+            lista = (
+                supabase
+                .table("listas_compras")
+                .select("detalle")
+                .eq("alumno_id", alumno_id)
+                .eq("activa", True)
+                .order("fecha_generada", desc=True)
+                .limit(1)
+                .execute()
+            )
+
+            if lista.data:
+
+                msg += (
+                    "\n\n🛒 ARRANCA EL MES — "
+                    "Tu lista de compras:\n"
+                )
+
+                msg += lista.data[0]["detalle"]
+
+        except Exception:
+
+            pass
+
     msg += "\n\n¡Vamos por un gran día! 🔥"
 
     return msg
@@ -346,12 +375,31 @@ def componer_mensaje_comida(
     emoji = EMOJIS_COMIDA.get(tipo_comida, "🍴")
     titulo = NOMBRES_COMIDA.get(
         tipo_comida,
-        tipo_comida.capitalize()
+        tipo_comida.replace("_", " ").capitalize()
     )
+
+    # 🔄 ROTACION DE OPCIONES: cada dia toca una distinta
+    opciones = comida.get("opciones") or []
+
+    if isinstance(opciones, list) and opciones:
+
+        indice = datetime.now().toordinal() % len(opciones)
+
+        detalle = opciones[indice]
+
+        extra = (
+            f"\n\n(Opción {indice + 1} de {len(opciones)} "
+            f"de tu plan)"
+        )
+
+    else:
+
+        detalle = comida.get("detalle", "")
+        extra = ""
 
     msg = f"{titulo} {emoji}\n"
     msg += "Hoy corresponde:\n\n"
-    msg += comida.get("detalle", "")
+    msg += detalle + extra
 
     if comida.get("kcal"):
         msg += f"\n\nAproximadamente {comida['kcal']} kcal."

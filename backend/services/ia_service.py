@@ -5,6 +5,7 @@ from datetime import date
 from config.settings import settings
 from database.conexion import supabase
 from utils.logger import obtener_logger
+from backend.services.entrenamiento_service import obtener_historial_entrenamientos
 
 logger = obtener_logger("IAServiceMaster")
 
@@ -220,7 +221,15 @@ def procesar_consulta_ia_con_memoria(
                 objetivo_principal,
                 telefono,
                 tipo_plan,
-                entrenador_id
+                entrenador_id,
+                hora_entreno,
+                hora_despertar,
+                hora_dormir,
+                agua_actual,
+                rutina_activa,
+                dias_entreno,
+                lesiones,
+                restricciones_alimentarias
             """)
             .eq("id", alumno_id)
             .execute()
@@ -257,8 +266,153 @@ def procesar_consulta_ia_con_memoria(
             "Plan general"
         )
 
+        hora_entreno = atleta_data.get(
+            "hora_entreno"
+        ) or "No definida"
+
+        hora_despertar = str(
+            atleta_data.get("hora_despertar")
+            or "No definida"
+        )
+
+        hora_dormir = str(
+            atleta_data.get("hora_dormir")
+            or "No definida"
+        )
+
+        agua_meta = atleta_data.get(
+            "agua_actual"
+        ) or "No definida"
+
+        rutina_activa = atleta_data.get(
+            "rutina_activa"
+        ) or "Sin rutina asignada"
+
+        dias_entreno = atleta_data.get(
+            "dias_entreno"
+        ) or "No definidos"
+
+        lesiones = atleta_data.get(
+            "lesiones"
+        ) or "Ninguna registrada"
+
+        restricciones = atleta_data.get(
+            "restricciones_alimentarias"
+        ) or "Ninguna registrada"
+
         logger.info(
             f"✅ Perfil encontrado: {nombre}"
+        )
+
+        # =====================================================
+        # HORARIOS PROGRAMADOS (recordatorios del alumno)
+        # =====================================================
+
+        horarios_texto = "Sin recordatorios programados."
+
+        try:
+
+            auto_query = (
+                supabase
+                .table("automatizaciones")
+                .select(
+                    "tipo_alerta, hora_programada, mensaje_plantilla"
+                )
+                .eq("alumno_id", alumno_id)
+                .eq("activo", True)
+                .order("hora_programada")
+                .execute()
+            )
+
+            if auto_query.data:
+
+                lineas_horario = []
+
+                for a in auto_query.data:
+
+                    hora_txt = str(
+                        a.get("hora_programada") or ""
+                    )[:5]
+
+                    lineas_horario.append(
+                        f"- {hora_txt} → "
+                        f"{a.get('tipo_alerta', '')}: "
+                        f"{a.get('mensaje_plantilla', '')}"
+                    )
+
+                horarios_texto = "\n".join(
+                    lineas_horario
+                )
+
+        except Exception as e:
+
+            logger.warning(
+                f"⚠️ No pude leer automatizaciones: {str(e)}"
+            )
+
+        # =====================================================
+        # PLAN DE COMIDAS (la dieta oficial en la BD)
+        # =====================================================
+
+        plan_comidas_texto = "Sin plan de comidas cargado."
+
+        try:
+
+            comidas_query = (
+                supabase
+                .table("comidas_programadas")
+                .select("tipo_comida, hora, detalle, opciones, kcal")
+                .eq("alumno_id", alumno_id)
+                .eq("activa", True)
+                .order("hora")
+                .execute()
+            )
+
+            if comidas_query.data:
+
+                lineas_comida = []
+
+                for cmd in comidas_query.data:
+
+                    hora_c = str(cmd.get("hora") or "")[:5]
+
+                    tipo_c = str(
+                        cmd.get("tipo_comida") or ""
+                    ).replace("_", " ").capitalize()
+
+                    kcal_c = (
+                        f" (~{cmd['kcal']} kcal)"
+                        if cmd.get("kcal") else ""
+                    )
+
+                    opciones_c = cmd.get("opciones") or []
+
+                    if isinstance(opciones_c, list) and opciones_c:
+                        detalle_c = " / ".join(
+                            str(o) for o in opciones_c[:3]
+                        )
+                    else:
+                        detalle_c = cmd.get("detalle", "")
+
+                    lineas_comida.append(
+                        f"- {hora_c} {tipo_c}{kcal_c}: {detalle_c}"
+                    )
+
+                plan_comidas_texto = "\n".join(lineas_comida)
+
+        except Exception as e:
+
+            logger.warning(
+                f"⚠️ No pude leer plan de comidas: {str(e)}"
+            )
+
+        # =====================================================
+        # HISTORIAL DE ENTRENAMIENTOS
+        # =====================================================
+
+        entrenos_texto = obtener_historial_entrenamientos(
+            alumno_id,
+            limite=12
         )
 
         # =====================================================
@@ -364,8 +518,25 @@ Peso actual: {peso}
 Edad: {edad}
 Experiencia: {experiencia}
 Tipo de plan: {tipo_plan}
+Rutina activa: {rutina_activa}
+Días de entreno por semana: {dias_entreno}
+Hora de entrenamiento: {hora_entreno}
+Se despierta: {hora_despertar}
+Se acuesta: {hora_dormir}
+Meta de agua diaria: {agua_meta} litros
+Lesiones: {lesiones}
+Restricciones alimentarias: {restricciones}
 
-HISTORIAL RECIENTE:
+HORARIOS Y RECORDATORIOS PROGRAMADOS DEL ALUMNO:
+{horarios_texto}
+
+PLAN DE COMIDAS OFICIAL DEL ALUMNO (fuente de verdad):
+{plan_comidas_texto}
+
+ULTIMOS ENTRENAMIENTOS REGISTRADOS:
+{entrenos_texto}
+
+HISTORIAL RECIENTE DE CONVERSACION:
 {historial_texto}
 
 INSTRUCCIONES:
@@ -379,6 +550,17 @@ INSTRUCCIONES:
 - No repitas frases genéricas.
 - Motiva sin exagerar.
 - Si el usuario es principiante explicá simple.
+- Si pregunta por horarios (agua, comidas, entreno),
+  respondé con SUS horarios programados de arriba.
+- Usá sus últimos entrenamientos para sugerir
+  progresión de cargas (ej: si hizo 60kg, sugerí 62.5kg).
+- Si tiene lesiones, evitá ejercicios que las agraven.
+- Su dieta oficial es el PLAN DE COMIDAS de arriba:
+  no inventes otra dieta, recordale lo que le toca.
+- Si dice que NO TIENE un alimento de su plan,
+  sugerí un reemplazo EQUIVALENTE en proteína/carbos/grasa
+  y respetando su tipo de dieta y restricciones
+  (ej: sin pollo → misma cantidad de merluza o atún).
 
 MENSAJE DEL CLIENTE:
 {mensaje_alumno}
