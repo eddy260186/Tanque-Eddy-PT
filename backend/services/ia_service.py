@@ -1,5 +1,4 @@
-
-from google import genai
+import google.generativeai as genai
 import datetime as dt
 from datetime import date
 
@@ -19,8 +18,12 @@ if settings.GEMINI_API_KEY:
 
     try:
 
-        client = genai.Client(
+        genai.configure(
             api_key=settings.GEMINI_API_KEY
+        )
+
+        client = genai.GenerativeModel(
+            "gemini-2.0-flash"
         )
 
         logger.info("✅ Gemini configurado correctamente.")
@@ -384,9 +387,8 @@ MENSAJE DEL CLIENTE:
             "🚀 Enviando prompt a Gemini..."
         )
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt_final
+        response = client.generate_content(
+            prompt_final
         )
 
         respuesta_texto = response.text
@@ -448,4 +450,3 @@ MENSAJE DEL CLIENTE:
         return (
             f"❌ ERROR IA:\n{error_real}"
         )
-
