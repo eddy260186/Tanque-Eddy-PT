@@ -22,6 +22,7 @@ from frontend.components.graficos import (
 from backend.services.payment_service import validar_comprobante_pago
 from backend.services.plan_service import generar_menu_dinamico, generar_rutina_entrenamiento
 from backend.services.ia_service import gestionar_ia_con_creditos, descontar_credito
+from automation.generador_automatizaciones import generar_automatizaciones_alumno
 
 def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, genero_idx: int, fecha_nac_atleta):
     """
@@ -35,6 +36,22 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
     genero = "m" if genero_idx == 0 else "f"
     hoy = date.today()
     edad = hoy.year - fecha_nac_atleta.year - ((hoy.month, hoy.day) < (fecha_nac_atleta.month, fecha_nac_atleta.day))
+
+    # Cargar datos ya guardados del perfil (para usarlos como valores por defecto)
+    try:
+        _row = supabase.table("perfiles_atletas").select(
+            "telefono, hora_despertar, hora_dormir, lesiones, restricciones_alimentarias"
+        ).eq("id", perfil_id).execute()
+        _datos_perfil = _row.data[0] if _row.data else {}
+    except Exception:
+        _datos_perfil = {}
+
+    def _hora_guardada(campo, hh, mm):
+        try:
+            valor = str(_datos_perfil.get(campo) or "")[:5]
+            return datetime.strptime(valor, "%H:%M").time()
+        except Exception:
+            return time(hh, mm)
 
     # 🎨 COMPILACIÓN INDESTRUCTIBLE DE VARIABLES VISUALES
     accent_color = "#FFB6C1" if genero == "f" else "#d4af37"
@@ -107,7 +124,28 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
             "Danza / Baile Deportivo", "Gimnasia Artística / Rítmica", "Rehabilitación / Fisioterapia Activa", "Ninguno (Sedentario)"
         ])
         dias_entreno = st.slider("Días de entrenamiento por semana:", 0, 7, 3)
-        hora_entreno = st.time_input("¿A qué hora entrena?", time(18, 0))
+        hora_entreno = st.time_input("¿A qué hora entrena?", _hora_guardada("hora_entreno", 18, 0) if _datos_perfil.get("hora_entreno") else time(18, 0))
+
+        st.divider()
+        st.header("⏰ Rutina Diaria (para tu seguimiento)")
+        hora_despertar = st.time_input("¿A qué hora te despertás?", _hora_guardada("hora_despertar", 6, 30))
+        hora_dormir = st.time_input("¿A qué hora te acostás?", _hora_guardada("hora_dormir", 23, 0))
+        telefono_wa = st.text_input(
+            "📱 WhatsApp (con código de país):",
+            value=_datos_perfil.get("telefono") or "",
+            placeholder="549114XXXXXXX",
+            help="Acá te llega el seguimiento diario del Team Eddy."
+        )
+        lesiones_txt = st.text_area(
+            "🏥 Lesiones o limitaciones:",
+            value=_datos_perfil.get("lesiones") or "",
+            placeholder="Ej: hernia lumbar, rodilla derecha..."
+        )
+        restricciones_txt = st.text_area(
+            "🚫 Restricciones alimentarias:",
+            value=_datos_perfil.get("restricciones_alimentarias") or "",
+            placeholder="Ej: alergia al maní, sin lactosa..."
+        )
         
         st.divider()
         tipo_objetivo = st.selectbox("Meta Principal:", [
@@ -209,7 +247,35 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                         "embarazo": {"es_embarazada": embarazada_bool, "meses_gestacion": meses_gestacion if embarazada_bool else 0}
                     }
                     supabase.table("historial_planes").insert({"perfil_id": perfil_id, "tipo_plan": dieta_tipo, "detalle_macros": info_extra_json, "rutina_asignada": f"Rutina de {tipo_entreno} ({dias_entreno} días)"}).execute()
-                    st.success("✅ ¡Evolución y Plan guardados al 100%!")
+
+                    # 🔥 ACTUALIZAR EL PERFIL CENTRAL (lo que lee el agente de WhatsApp)
+                    supabase.table("perfiles_atletas").update({
+                        "peso_actual": peso_actual,
+                        "nivel_experiencia": nivel_experiencia,
+                        "tipo_entrenamiento": tipo_entreno,
+                        "dias_entreno": dias_entreno,
+                        "hora_entreno": hora_entreno.strftime("%H:%M"),
+                        "hora_despertar": hora_despertar.strftime("%H:%M"),
+                        "hora_dormir": hora_dormir.strftime("%H:%M"),
+                        "telefono": telefono_wa.strip() or None,
+                        "lesiones": lesiones_txt.strip() or None,
+                        "restricciones_alimentarias": restricciones_txt.strip() or None,
+                        "objetivo_actual": tipo_objetivo,
+                        "dieta_activa": dieta_tipo,
+                        "calorias_actuales": int(cal_obj),
+                        "agua_actual": agua_total,
+                        "peso_objetivo": kg_a_cambiar,
+                        "plazo_meses": int(meses_plazo),
+                        "ultima_actualizacion": datetime.now().isoformat()
+                    }).eq("id", perfil_id).execute()
+
+                    # 🤖 REGENERAR EL DÍA DEL AGENTE CON LOS HORARIOS NUEVOS
+                    try:
+                        generar_automatizaciones_alumno(perfil_id)
+                    except Exception:
+                        pass
+
+                    st.success("✅ ¡Evolución y Plan guardados al 100%! Tu seguimiento por WhatsApp ya usa tus nuevos horarios.")
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
