@@ -264,7 +264,13 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                         "dieta_activa": dieta_tipo,
                         "calorias_actuales": int(cal_obj),
                         "agua_actual": agua_total,
-                        "peso_objetivo": kg_a_cambiar,
+                        "peso_objetivo": (
+                            peso_actual - kg_a_cambiar
+                            if any(x in tipo_objetivo for x in ["Pérdida", "Definición"])
+                            else peso_actual + kg_a_cambiar
+                            if "Volumen" in tipo_objetivo
+                            else peso_actual
+                        ),
                         "plazo_meses": int(meses_plazo),
                         "ultima_actualizacion": datetime.now().isoformat()
                     }).eq("id", perfil_id).execute()

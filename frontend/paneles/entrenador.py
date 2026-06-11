@@ -210,6 +210,16 @@ def panel_entrenador(entrenador_uuid):
     peso_objetivo = alumno.get("peso_objetivo", 0.0) if alumno.get("peso_objetivo") else (peso_actual - 5.0 if peso_actual else 70.0)
     plazo_meses = alumno.get("plazo_meses", 4) if alumno.get("plazo_meses") else 3
 
+    # 🛡️ Blindaje: nunca dejar que un dato fuera de rango rompa los inputs
+    try:
+        peso_objetivo = max(30.0, min(250.0, float(peso_objetivo)))
+    except Exception:
+        peso_objetivo = 70.0
+    try:
+        plazo_meses = max(1, min(24, int(plazo_meses)))
+    except Exception:
+        plazo_meses = 3
+
     with col_stats:
         cm1, cm2, cm3 = st.columns(3)
         with cm1:
