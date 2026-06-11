@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, date, time as dt_time
 from database.conexion import supabase
 from backend.services.whatsapp_service import enviar_mensaje_texto_evolution
 from automation.mensajes import obtener_plantilla_mensaje
+from automation.agente_diario import componer_mensaje_dinamico
 from ai.workout_ai import redactar_motivacion_matutina
 from utils.logger import obtener_logger
 
@@ -154,11 +155,23 @@ def ejecutar_ciclo_automatizacion():
             if not telefono_alumno:
                 continue
 
-            mensaje_final = obtener_plantilla_mensaje(
+            primer_nombre = str(nombre_alumno).split()[0]
+
+            # 1) Intentar componer mensaje dinamico desde la BD
+            mensaje_final = componer_mensaje_dinamico(
                 tipo_alerta=tipo_ajustado,
-                nombre_alumno=nombre_alumno,
+                alumno_id=alumno_id,
+                nombre=primer_nombre,
                 detalle=detalle_especifico,
             )
+
+            # 2) Fallback: plantilla estatica de siempre
+            if not mensaje_final:
+                mensaje_final = obtener_plantilla_mensaje(
+                    tipo_alerta=tipo_ajustado,
+                    nombre_alumno=nombre_alumno,
+                    detalle=detalle_especifico,
+                )
 
             instancia_nombre = f"coach_{str(entrenador_id)[:8]}"
             

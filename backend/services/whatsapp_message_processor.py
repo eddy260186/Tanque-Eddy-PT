@@ -18,6 +18,23 @@ def detectar_intencion_mensaje(
     texto = mensaje.lower().strip()
 
     # =====================================================
+    # CHECKIN NOCTURNO (respuesta 1 / 2 / 3)
+    # =====================================================
+
+    if texto in ("1", "2", "3"):
+
+        mapa = {
+            "1": "si",
+            "2": "parcial",
+            "3": "no"
+        }
+
+        return {
+            "tipo": "checkin",
+            "valor": mapa[texto]
+        }
+
+    # =====================================================
     # ENTRENAMIENTO
     # (se evalúa ANTES que el peso corporal, porque
     # "sentadilla 60kg" tiene kg pero es entrenamiento)
@@ -171,6 +188,25 @@ def guardar_interaccion_atleta(
             logger.info(
                 f"✅ Peso actualizado: "
                 f"{nuevo_peso}kg"
+            )
+
+        # =====================================================
+        # GUARDAR CHECKIN NOCTURNO
+        # =====================================================
+
+        elif tipo == "checkin":
+
+            supabase.table(
+                "checkins_diarios"
+            ).insert({
+                "alumno_id": alumno_id,
+                "respuesta": resultado.get("valor"),
+                "detalle": mensaje
+            }).execute()
+
+            logger.info(
+                f"✅ Checkin guardado: "
+                f"{resultado.get('valor')}"
             )
 
         # =====================================================
