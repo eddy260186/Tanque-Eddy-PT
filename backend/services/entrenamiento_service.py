@@ -24,7 +24,7 @@ if settings.GEMINI_API_KEY:
         )
 
         modelo_extractor = genai.GenerativeModel(
-            "gemini-2.0-flash"
+            "gemini-2.5-flash"
         )
 
         logger.info("✅ Extractor Gemini configurado.")

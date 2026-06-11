@@ -23,7 +23,7 @@ if settings.GEMINI_API_KEY:
         )
 
         client = genai.GenerativeModel(
-            "gemini-2.0-flash"
+            "gemini-2.5-flash"
         )
 
         logger.info("✅ Gemini configurado correctamente.")
