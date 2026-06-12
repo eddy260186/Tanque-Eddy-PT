@@ -57,6 +57,11 @@ def generar_automatizaciones_alumno(alumno_id: str):
             or "06:30"
         )[:5]
 
+        hora_dormir = str(
+            atleta.get("hora_dormir")
+            or "23:00"
+        )[:5]
+
         agua = float(
             atleta.get("agua_actual")
             or 3.0
@@ -82,10 +87,6 @@ def generar_automatizaciones_alumno(alumno_id: str):
             "%H:%M"
         )
 
-        agua_1 = (
-            hora_dt - timedelta(hours=2)
-        ).strftime("%H:%M")
-
         pre_entreno = (
             hora_dt - timedelta(hours=1)
         ).strftime("%H:%M")
@@ -105,13 +106,6 @@ def generar_automatizaciones_alumno(alumno_id: str):
                 "tipo_alerta": "resumen_diario",
                 "hora_programada": hora_despertar,
                 "mensaje_plantilla": "Resumen del día"
-            },
-
-            {
-                "alumno_id": alumno_id,
-                "tipo_alerta": "agua",
-                "hora_programada": agua_1,
-                "mensaje_plantilla": f"Meta diaria: {agua}L"
             },
 
             {
@@ -142,6 +136,69 @@ def generar_automatizaciones_alumno(alumno_id: str):
                 "mensaje_plantilla": "Cierre del día"
             }
         ]
+
+        # =====================================================
+        # AGUA PERIODICA (desde despertar+1h hasta dormir-1h)
+        # Cambiar INTERVALO_AGUA_HORAS para mas/menos frecuencia
+        # =====================================================
+
+        INTERVALO_AGUA_HORAS = 2
+
+        try:
+
+            inicio_agua = datetime.strptime(
+                hora_despertar, "%H:%M"
+            ) + timedelta(hours=1)
+
+            fin_agua = datetime.strptime(
+                hora_dormir, "%H:%M"
+            ) - timedelta(hours=1)
+
+            # Cuantas tomas entran en el dia
+            total_tomas = 0
+            cursor = inicio_agua
+
+            while cursor <= fin_agua and total_tomas < 12:
+                total_tomas += 1
+                cursor += timedelta(
+                    hours=INTERVALO_AGUA_HORAS
+                )
+
+            litros_por_toma = (
+                round(agua / total_tomas, 2)
+                if total_tomas else agua
+            )
+
+            cursor = inicio_agua
+            numero_toma = 1
+
+            while (
+                cursor <= fin_agua
+                and numero_toma <= total_tomas
+            ):
+
+                automatizaciones.append({
+                    "alumno_id": alumno_id,
+                    "tipo_alerta": "agua",
+                    "hora_programada": cursor.strftime("%H:%M"),
+                    "mensaje_plantilla": (
+                        f"Toma {numero_toma} de {total_tomas} "
+                        f"· ~{litros_por_toma}L "
+                        f"· Meta diaria: {agua}L"
+                    )
+                })
+
+                cursor += timedelta(
+                    hours=INTERVALO_AGUA_HORAS
+                )
+
+                numero_toma += 1
+
+        except Exception as e:
+
+            logger.warning(
+                f"⚠️ No pude programar agua periodica: {str(e)}"
+            )
 
         # =====================================================
         # COMIDAS PROGRAMADAS DEL ALUMNO
