@@ -24,6 +24,7 @@ from backend.services.plan_service import generar_menu_dinamico, generar_rutina_
 from backend.services.ia_service import gestionar_ia_con_creditos, descontar_credito
 from automation.generador_automatizaciones import generar_automatizaciones_alumno
 from backend.services.onboarding_service import generar_plan_inicial_completo
+from backend.services.suplementos_ia import asignar_suplementacion_automatica
 
 def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, genero_idx: int, fecha_nac_atleta):
     """
@@ -295,6 +296,14 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                             hora_despertar=hora_despertar.strftime("%H:%M"),
                             num_opciones=num_opciones
                         )
+                    except Exception:
+                        pass
+
+                    # 💊 SUPLEMENTACIÓN AUTOMÁTICA (invisible para el alumno)
+                    # Solo asigna si es un caso seguro; embarazo/enfermedad
+                    # quedan para revisión manual del entrenador.
+                    try:
+                        asignar_suplementacion_automatica(perfil_id)
                     except Exception:
                         pass
 

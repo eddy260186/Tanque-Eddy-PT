@@ -18,6 +18,11 @@ from database.conexion import supabase
 from utils.logger import obtener_logger
 from automation.generador_automatizaciones import generar_automatizaciones_alumno
 
+try:
+    from data.suplementos import suplementos_db
+except Exception:
+    suplementos_db = {}
+
 logger = obtener_logger("GestionAgente")
 
 DIAS = [
@@ -651,3 +656,376 @@ def tab_actividad_alumno(alumno_id: str):
         st.info(
             "Todavía no respondió ningún checkin nocturno."
         )
+
+
+# =========================================================
+# PESTANIA: SUPLEMENTACION POR ALUMNO
+# =========================================================
+
+MOMENTOS_SUPLE = {
+    "manana": "☀️ Mañana",
+    "pre_entreno": "⚡ Pre-entreno",
+    "intra_entreno": "💧 Intra-entreno",
+    "post_entreno": "💪 Post-entreno",
+    "noche": "🌙 Noche",
+    "comidas": "🍽️ Con comidas"
+}
+
+
+def tab_suplementacion(alumno_id: str):
+
+    st.markdown(
+        "<div class='seccion-titulo-vip'>"
+        "💊 Suplementación del Atleta</div>",
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        "Elegí de tu catálogo qué suplementos toma este "
+        "alumno y en qué momento. El agente se los envía "
+        "por WhatsApp a la hora exacta."
+    )
+
+    # Cargar lo ya asignado
+    try:
+
+        res = (
+            supabase
+            .table("suplementos_alumno")
+            .select("*")
+            .eq("alumno_id", alumno_id)
+            .eq("activo", True)
+            .execute()
+        )
+
+        asignados = res.data or []
+
+    except Exception as e:
+
+        st.error(f"No pude cargar suplementos: {e}")
+
+        return
+
+    # Mostrar lo asignado, agrupado por momento
+    if asignados:
+
+        st.markdown("**Suplementos asignados:**")
+
+        for momento, label in MOMENTOS_SUPLE.items():
+
+            items_momento = [
+                s for s in asignados
+                if s.get("momento") == momento
+            ]
+
+            if not items_momento:
+                continue
+
+            st.markdown(f"**{label}**")
+
+            for s in items_momento:
+
+                col_s1, col_s2 = st.columns([6, 1])
+
+                with col_s1:
+
+                    texto = f"• {s.get('nombre', '')}"
+
+                    if s.get("dosis"):
+                        texto += f" — {s['dosis']}"
+
+                    st.markdown(texto)
+
+                with col_s2:
+
+                    if st.button(
+                        "🗑️",
+                        key=f"del_sup_{s['id']}",
+                        help="Quitar"
+                    ):
+
+                        try:
+
+                            supabase.table(
+                                "suplementos_alumno"
+                            ).delete().eq(
+                                "id", s["id"]
+                            ).execute()
+
+                            generar_automatizaciones_alumno(
+                                alumno_id
+                            )
+
+                            st.rerun()
+
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+    else:
+
+        st.info(
+            "Este alumno todavía no tiene suplementos "
+            "asignados. Agregá desde el catálogo abajo. 👇"
+        )
+
+    st.write("---")
+
+    # Agregar desde el catalogo
+    st.markdown("**➕ Asignar suplemento del catálogo:**")
+
+    if not suplementos_db:
+
+        st.warning(
+            "No se pudo cargar el catálogo "
+            "(data/suplementos.py)."
+        )
+
+        return
+
+    col_a1, col_a2 = st.columns(2)
+
+    with col_a1:
+
+        momento_sel = st.selectbox(
+            "Momento:",
+            list(MOMENTOS_SUPLE.keys()),
+            format_func=lambda m: MOMENTOS_SUPLE.get(m, m),
+            key=f"momento_sup_{alumno_id}"
+        )
+
+    # Opciones del catalogo para ese momento
+    catalogo_momento = suplementos_db.get(momento_sel, [])
+
+    opciones = {
+        f"{s['nombre']} ({s.get('dosis', '')})": s
+        for s in catalogo_momento
+    }
+
+    with col_a2:
+
+        elegido = st.selectbox(
+            "Suplemento:",
+            list(opciones.keys()),
+            key=f"sup_elegido_{alumno_id}"
+        ) if opciones else None
+
+    if elegido and st.button(
+        "💾 Asignar a este alumno",
+        type="primary",
+        use_container_width=True,
+        key=f"add_sup_{alumno_id}"
+    ):
+
+        sup = opciones[elegido]
+
+        try:
+
+            supabase.table(
+                "suplementos_alumno"
+            ).insert({
+                "alumno_id": alumno_id,
+                "momento": momento_sel,
+                "nombre": sup.get("nombre"),
+                "dosis": sup.get("dosis"),
+                "nota": sup.get("nota"),
+                "activo": True
+            }).execute()
+
+            # Regenerar agenda para que incluya el aviso
+            generar_automatizaciones_alumno(alumno_id)
+
+            st.success(
+                f"✅ {sup.get('nombre')} asignado. "
+                f"El agente ya lo incluye."
+            )
+
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"Error asignando: {e}")
+
+
+# =========================================================
+# PESTANIA: SUPLEMENTACION (solo entrenador, invisible al alumno)
+# =========================================================
+
+MOMENTOS_SUPLE = [
+    "manana", "pre_entreno", "intra_entreno",
+    "post_entreno", "noche", "comidas"
+]
+
+NOMBRES_MOMENTO = {
+    "manana": "☀️ Mañana",
+    "pre_entreno": "⚡ Pre-entreno",
+    "intra_entreno": "💧 Intra-entreno",
+    "post_entreno": "💪 Post-entreno",
+    "noche": "🌙 Noche",
+    "comidas": "🍽️ Con comidas"
+}
+
+
+def tab_suplementacion(alumno_id: str):
+
+    from backend.services.suplementos_ia import (
+        asignar_suplementacion_automatica,
+        requiere_revision_manual
+    )
+
+    try:
+        from data.suplementos import suplementos_db
+    except Exception:
+        suplementos_db = {}
+
+    st.markdown(
+        "<div class='seccion-titulo-vip'>"
+        "💊 Suplementación del Atleta</div>",
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        "El alumno NO ve esto en su panel. Solo recibe "
+        "los avisos por WhatsApp a su hora. Acá controlás "
+        "su suplementación."
+    )
+
+    # --- Chequear si es caso de revision manual ---
+    try:
+        perfil = (
+            supabase.table("perfiles_atletas")
+            .select("*").eq("id", alumno_id).execute()
+        )
+        atleta = perfil.data[0] if perfil.data else {}
+    except Exception:
+        atleta = {}
+
+    revisar, motivo = requiere_revision_manual(atleta)
+
+    if revisar:
+        st.warning(
+            f"⚠️ Este alumno requiere suplementación "
+            f"MANUAL por seguridad ({motivo}). El motor "
+            f"automático no asigna nada en estos casos. "
+            f"Cargá vos lo que corresponda, idealmente con "
+            f"aval médico."
+        )
+
+    # --- Botón de generación automática ---
+    col_a, col_b = st.columns([2, 1])
+
+    with col_a:
+        if not revisar:
+            st.info(
+                "🤖 El motor puede asignar el stack ideal "
+                "según el objetivo y perfil del alumno."
+            )
+
+    with col_b:
+        if not revisar and st.button(
+            "🤖 Generar automático",
+            use_container_width=True,
+            key=f"gen_suple_{alumno_id}"
+        ):
+            estado, detalle = asignar_suplementacion_automatica(
+                alumno_id, solo_si_vacio=False
+            )
+            if estado == "asignado":
+                st.success(f"✅ Asignado: {detalle}")
+            elif estado == "revision_manual":
+                st.warning(f"⚠️ Requiere manual: {detalle}")
+            else:
+                st.error(f"Error: {detalle}")
+            st.rerun()
+
+    st.write("---")
+
+    # --- Listar suplementos actuales ---
+    try:
+        res = (
+            supabase.table("suplementos_alumno")
+            .select("*")
+            .eq("alumno_id", alumno_id)
+            .order("momento")
+            .execute()
+        )
+        suples = res.data or []
+    except Exception as e:
+        st.error(f"No pude cargar suplementos: {e}")
+        suples = []
+
+    if suples:
+        por_momento = {}
+        for s in suples:
+            por_momento.setdefault(s["momento"], []).append(s)
+
+        for momento in MOMENTOS_SUPLE:
+            items = por_momento.get(momento, [])
+            if not items:
+                continue
+            st.markdown(f"**{NOMBRES_MOMENTO.get(momento, momento)}**")
+            for s in items:
+                col_s1, col_s2 = st.columns([6, 1])
+                with col_s1:
+                    estado = "🟢" if s.get("activo") else "🔴"
+                    txt = f"{estado} {s.get('nombre','')}"
+                    if s.get("dosis"):
+                        txt += f" — {s['dosis']}"
+                    if s.get("nota"):
+                        txt += f"  _{s['nota']}_"
+                    st.markdown(txt)
+                with col_s2:
+                    if st.button("🗑️", key=f"del_sup_{s['id']}"):
+                        supabase.table("suplementos_alumno")\
+                            .delete().eq("id", s["id"]).execute()
+                        st.rerun()
+    else:
+        st.info("Sin suplementación cargada todavía.")
+
+    st.write("---")
+
+    # --- Agregar manual desde el catálogo ---
+    st.markdown("**➕ Agregar suplemento manual:**")
+
+    with st.form(key=f"form_suple_{alumno_id}", clear_on_submit=True):
+
+        momento_sel = st.selectbox(
+            "Momento:",
+            MOMENTOS_SUPLE,
+            format_func=lambda m: NOMBRES_MOMENTO.get(m, m)
+        )
+
+        catalogo_momento = suplementos_db.get(momento_sel, [])
+        opciones_nombres = [
+            s["nombre"] for s in catalogo_momento
+        ]
+
+        if opciones_nombres:
+            elegido = st.selectbox(
+                "Suplemento (de tu catálogo):",
+                opciones_nombres
+            )
+        else:
+            elegido = st.text_input("Suplemento:")
+
+        dosis_custom = st.text_input(
+            "Dosis (opcional, sino usa la del catálogo):"
+        )
+
+        if st.form_submit_button(
+            "💾 Agregar", type="primary",
+            use_container_width=True
+        ):
+            # Buscar datos del catalogo
+            datos_cat = next(
+                (s for s in catalogo_momento
+                 if s["nombre"] == elegido), {}
+            )
+            supabase.table("suplementos_alumno").insert({
+                "alumno_id": alumno_id,
+                "momento": momento_sel,
+                "nombre": elegido,
+                "dosis": dosis_custom or datos_cat.get("dosis"),
+                "nota": datos_cat.get("nota"),
+                "activo": True
+            }).execute()
+            st.success("✅ Suplemento agregado.")
+            st.rerun()

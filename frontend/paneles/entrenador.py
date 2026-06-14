@@ -5,7 +5,7 @@ from database.conexion import supabase
 
 # 🔥 IMPORTAMOS EL CASO DE USO DE NUESTRA NUEVA CAPA DE APLICACIÓN
 from application.actualizar_plan import ejecutar_actualizacion_plan
-from frontend.paneles.gestion_agente import tab_rutina_semanal, tab_plan_comidas, tab_actividad_alumno
+from frontend.paneles.gestion_agente import tab_rutina_semanal, tab_plan_comidas, tab_actividad_alumno, tab_suplementacion
 
 def _calcular_edad(fecha_nac):
     if not fecha_nac:
@@ -249,12 +249,13 @@ def panel_entrenador(entrenador_uuid):
     # =========================================================================
     # ÁREA DE EXPEDIENTE 360 GRADOS
     # =========================================================================
-    tab_diagnostico, tab_antropometria, tab_prescripcion, tab_rutina_sem, tab_comidas, tab_actividad, tab_seguimiento, tab_whatsapp_saas = st.tabs([
+    tab_diagnostico, tab_antropometria, tab_prescripcion, tab_rutina_sem, tab_comidas, tab_suple, tab_actividad, tab_seguimiento, tab_whatsapp_saas = st.tabs([
         "🔍 Diagnóstico Funcional", 
         "📏 Anatomía y Medidas", 
         "📝 Modificar Planificación (Rutina/Dieta)", 
         "📅 Rutina Semanal",
         "🍽️ Plan de Comidas",
+        "💊 Suplementación",
         "🏋️ Actividad WhatsApp",
         "📈 Gráfica de Progreso Real",
         "📲 Vinculación WhatsApp QR"
@@ -447,6 +448,12 @@ def panel_entrenador(entrenador_uuid):
     with tab_comidas:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
         tab_plan_comidas(alumno_id)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # TAB: SUPLEMENTACIÓN (solo entrenador, invisible al alumno)
+    with tab_suple:
+        st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
+        tab_suplementacion(alumno_id)
         st.markdown("</div>", unsafe_allow_html=True)
 
     # TAB 8: ACTIVIDAD REPORTADA POR WHATSAPP

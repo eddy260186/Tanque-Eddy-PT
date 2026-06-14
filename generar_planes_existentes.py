@@ -22,6 +22,7 @@ load_dotenv()
 from database.conexion import supabase
 from backend.services.onboarding_service import generar_plan_inicial_completo
 from automation.generador_automatizaciones import generar_automatizaciones_alumno
+from backend.services.suplementos_ia import asignar_suplementacion_automatica
 
 
 def main():
@@ -109,22 +110,36 @@ def main():
             )
         )
 
+        # --- Suplementación automática (por detrás) ---
+
+        estado_sup, _ = asignar_suplementacion_automatica(
+            alumno_id, solo_si_vacio=True
+        )
+
         # --- Regenerar agenda con todo incluido ---
 
         generar_automatizaciones_alumno(alumno_id)
+
+        suple_txt = {
+            "asignado": "💊 suplementos asignados",
+            "revision_manual": "⚠️ suplementación MANUAL (caso médico)",
+            "ya_tenia": "💊 ya tenía suplementos",
+            "error": "💊 sin suplementos"
+        }.get(estado_sup, "")
 
         if dias_creados or comidas_creadas:
 
             print(
                 f"✅ {nombre}: {dias_creados} días de rutina, "
-                f"{comidas_creadas} comidas, agenda regenerada."
+                f"{comidas_creadas} comidas, {suple_txt}, "
+                f"agenda regenerada."
             )
 
         else:
 
             print(
-                f"♻️  {nombre}: ya tenía plan "
-                f"(no se pisó nada), agenda regenerada."
+                f"♻️  {nombre}: ya tenía plan, {suple_txt}, "
+                f"agenda regenerada."
             )
 
     print("\nListo. 🏆")
