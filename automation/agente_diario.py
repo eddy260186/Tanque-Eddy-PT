@@ -9,6 +9,13 @@ La IA no espera mensajes: dirige al alumno todo el dia.
 from datetime import datetime
 
 from database.conexion import supabase
+
+try:
+    from data.suplementos import suplementos_db, creatina_dia_descanso
+except Exception:
+    suplementos_db = {}
+    creatina_dia_descanso = None
+
 from utils.logger import obtener_logger
 
 logger = obtener_logger("AgenteDiario")
@@ -267,6 +274,64 @@ def obtener_comida(
         return None
 
 
+
+# =========================================================
+# RESUMEN CALORICO DEL DIA (todas las comidas)
+# =========================================================
+
+def obtener_resumen_calorico(alumno_id: str):
+
+    """
+    Devuelve (total_kcal, texto_desglose) con todas
+    las comidas activas del alumno y sus calorias.
+    """
+
+    try:
+
+        res = (
+            supabase
+            .table("comidas_programadas")
+            .select("tipo_comida, hora, kcal")
+            .eq("alumno_id", alumno_id)
+            .eq("activa", True)
+            .order("hora")
+            .execute()
+        )
+
+        if not res.data:
+            return 0, ""
+
+        total = 0
+        partes = []
+
+        for cmd in res.data:
+
+            kcal = int(cmd.get("kcal") or 0)
+
+            total += kcal
+
+            tipo = str(
+                cmd.get("tipo_comida") or ""
+            ).replace("_", " ").capitalize()
+
+            if kcal:
+                partes.append(f"{tipo} {kcal}")
+            else:
+                partes.append(tipo)
+
+        desglose = " · ".join(partes)
+
+        return total, desglose
+
+    except Exception as e:
+
+        logger.error(
+            f"❌ Error resumen calorico: {str(e)}"
+        )
+
+        return 0, ""
+
+
 # =========================================================
 # COMPOSITORES DE MENSAJES
 # =========================================================
@@ -324,6 +389,14 @@ def componer_resumen_matutino(
     if macros:
 
         msg += f"\n\nObjetivo nutricional del día:\n{macros}"
+
+    # Total calorico y reparto de comidas
+    total_kcal, desglose = obtener_resumen_calorico(alumno_id)
+
+    if total_kcal:
+        msg += f"\n\n📊 Hoy comés {total_kcal} kcal repartidas en:"
+        if desglose:
+            msg += f"\n{desglose}"
 
     # 🛒 LISTA DE COMPRAS: el dia 1 de cada mes
     if datetime.now().day == 1:
@@ -402,7 +475,15 @@ def componer_mensaje_comida(
     msg += detalle + extra
 
     if comida.get("kcal"):
-        msg += f"\n\nAproximadamente {comida['kcal']} kcal."
+        msg += f"\n\n🔥 Esta comida: ~{comida['kcal']} kcal"
+
+    # Desglose del dia completo
+    total, desglose = obtener_resumen_calorico(alumno_id)
+
+    if total:
+        msg += f"\n\n📊 Meta del día: {total} kcal"
+        if desglose:
+            msg += f"\n{desglose}"
 
     return msg
 
@@ -501,6 +582,58 @@ def componer_checkin_nocturno(
     )
 
 
+
+# =========================================================
+# SUPLEMENTACION (desde data/suplementos.py)
+# =========================================================
+
+EMOJIS_SUPLE = {
+    "manana": "☀️",
+    "pre_entreno": "⚡",
+    "post_entreno": "💪",
+    "noche": "🌙"
+}
+
+TITULOS_SUPLE = {
+    "manana": "Suplementos de la mañana",
+    "pre_entreno": "Suplementos PRE-entreno",
+    "post_entreno": "Suplementos POST-entreno",
+    "noche": "Suplementos de la noche"
+}
+
+
+def componer_suplementacion(momento: str, nombre: str = ""):
+
+    """
+    Arma el mensaje de suplementos para un momento dado.
+    Devuelve None si ese momento no tiene suplementos.
+    """
+
+    items = suplementos_db.get(momento) or []
+
+    if not items:
+        return None
+
+    emoji = EMOJIS_SUPLE.get(momento, "💊")
+    titulo = TITULOS_SUPLE.get(momento, "Suplementos")
+
+    msg = f"{emoji} {titulo}\n\n"
+
+    for sup in items:
+
+        linea = f"• {sup.get('nombre', '')}"
+
+        if sup.get("dosis"):
+            linea += f" — {sup['dosis']}"
+
+        if sup.get("nota"):
+            linea += f" ({sup['nota']})"
+
+        msg += linea + "\n"
+
+    return msg.strip()
+
+
 # =========================================================
 # DISPATCHER PRINCIPAL
 # =========================================================
@@ -559,6 +692,17 @@ def componer_mensaje_dinamico(
             return componer_checkin_nocturno(
                 nombre
             )
+
+        if tipo_alerta in (
+            "suple_manana",
+            "suple_pre_entreno",
+            "suple_post_entreno",
+            "suple_noche"
+        ):
+
+            momento = tipo_alerta.replace("suple_", "")
+
+            return componer_suplementacion(momento, nombre)
 
         return None
 

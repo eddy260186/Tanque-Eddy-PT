@@ -95,6 +95,27 @@ def generar_automatizaciones_alumno(alumno_id: str):
             hora_dt + timedelta(minutes=90)
         ).strftime("%H:%M")
 
+        # Suplementos: pre 40min antes, post al terminar (+5min)
+        suple_pre = (
+            hora_dt - timedelta(minutes=40)
+        ).strftime("%H:%M")
+
+        suple_post = (
+            hora_dt + timedelta(minutes=5)
+        ).strftime("%H:%M")
+
+        # Suplemento de la mañana: 15 min despues de despertar
+        suple_manana = (
+            datetime.strptime(hora_despertar, "%H:%M")
+            + timedelta(minutes=15)
+        ).strftime("%H:%M")
+
+        # Suplemento de la noche: 30 min antes de dormir
+        suple_noche = (
+            datetime.strptime(hora_dormir, "%H:%M")
+            - timedelta(minutes=30)
+        ).strftime("%H:%M")
+
         # =====================================================
         # AUTOMATIZACIONES BASE
         # =====================================================
@@ -134,6 +155,34 @@ def generar_automatizaciones_alumno(alumno_id: str):
                 "tipo_alerta": "checkin_nocturno",
                 "hora_programada": "22:00",
                 "mensaje_plantilla": "Cierre del día"
+            },
+
+            {
+                "alumno_id": alumno_id,
+                "tipo_alerta": "suple_manana",
+                "hora_programada": suple_manana,
+                "mensaje_plantilla": "Suplementos mañana"
+            },
+
+            {
+                "alumno_id": alumno_id,
+                "tipo_alerta": "suple_pre_entreno",
+                "hora_programada": suple_pre,
+                "mensaje_plantilla": "Suplementos pre-entreno"
+            },
+
+            {
+                "alumno_id": alumno_id,
+                "tipo_alerta": "suple_post_entreno",
+                "hora_programada": suple_post,
+                "mensaje_plantilla": "Suplementos post-entreno"
+            },
+
+            {
+                "alumno_id": alumno_id,
+                "tipo_alerta": "suple_noche",
+                "hora_programada": suple_noche,
+                "mensaje_plantilla": "Suplementos noche"
             }
         ]
 
