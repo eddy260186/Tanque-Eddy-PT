@@ -284,6 +284,19 @@ def generar_comidas_iniciales(
             (cal_objetivo or 0) / max(1, num_comidas)
         ) or None
 
+        # Macros por comida = total / cantidad de comidas
+        prote_por_comida = int(
+            (p_g_total or 0) / max(1, num_comidas)
+        ) or None
+
+        carbos_por_comida = int(
+            (c_g_total or 0) / max(1, num_comidas)
+        ) or None
+
+        grasa_por_comida = int(
+            (g_g_total or 0) / max(1, num_comidas)
+        ) or None
+
         filas = []
 
         for nombre_comida, opciones in menus.items():
@@ -320,6 +333,9 @@ def generar_comidas_iniciales(
                 "detalle": opciones_limpias[0],
                 "opciones": opciones_limpias,
                 "kcal": kcal_por_comida,
+                "proteina_g": prote_por_comida,
+                "carbos_g": carbos_por_comida,
+                "grasa_g": grasa_por_comida,
                 "activa": True
             })
 

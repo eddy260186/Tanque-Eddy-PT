@@ -172,6 +172,16 @@ def ejecutar_ciclo_automatizacion():
                     detalle=detalle_especifico,
                 )
 
+            # 3) Si NO hay contenido (ni dinamico ni plantilla),
+            # no enviamos nada y marcamos como ejecutada para
+            # no reintentar. Evita el mensaje generico vacio.
+            if not mensaje_final:
+                supabase.table("automatizaciones")\
+                    .update({"ultima_ejecucion": fecha_hoy.isoformat()})\
+                    .eq("id", tarea["id"])\
+                    .execute()
+                continue
+
             instancia_nombre = f"coach_{str(entrenador_id)[:8]}"
             
             exito = enviar_mensaje_texto_evolution(

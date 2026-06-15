@@ -477,6 +477,21 @@ def componer_mensaje_comida(
     if comida.get("kcal"):
         msg += f"\n\n🔥 Esta comida: ~{comida['kcal']} kcal"
 
+    # Macros del plato (proteína / carbos / grasa)
+    macros_plato = []
+
+    if comida.get("proteina_g"):
+        macros_plato.append(f"P: {comida['proteina_g']}g")
+
+    if comida.get("carbos_g"):
+        macros_plato.append(f"C: {comida['carbos_g']}g")
+
+    if comida.get("grasa_g"):
+        macros_plato.append(f"G: {comida['grasa_g']}g")
+
+    if macros_plato:
+        msg += "\n💪 " + " · ".join(macros_plato)
+
     # Desglose del dia completo
     total, desglose = obtener_resumen_calorico(alumno_id)
 
@@ -602,15 +617,48 @@ TITULOS_SUPLE = {
 }
 
 
-def componer_suplementacion(momento: str, nombre: str = ""):
+def componer_suplementacion(
+    momento: str,
+    nombre: str = "",
+    alumno_id: str = ""
+):
 
     """
-    Arma el mensaje de suplementos para un momento dado.
-    Devuelve None si ese momento no tiene suplementos.
+    Arma el mensaje de suplementos para un momento dado,
+    leyendo los suplementos ASIGNADOS al alumno desde
+    la tabla suplementos_alumno.
+
+    Devuelve None si el alumno no tiene suplementos
+    asignados en ese momento (asi no le llega un mensaje
+    vacio o generico).
     """
 
-    items = suplementos_db.get(momento) or []
+    items = []
 
+    # 1. Leer lo que el entrenador le asigno a ESTE alumno
+    try:
+
+        res = (
+            supabase
+            .table("suplementos_alumno")
+            .select("nombre, dosis, nota")
+            .eq("alumno_id", alumno_id)
+            .eq("momento", momento)
+            .eq("activo", True)
+            .execute()
+        )
+
+        items = res.data or []
+
+    except Exception as e:
+
+        logger.error(
+            f"❌ Error leyendo suplementos: {str(e)}"
+        )
+
+        return None
+
+    # Si no tiene nada asignado en este momento, no molestar
     if not items:
         return None
 
@@ -702,7 +750,9 @@ def componer_mensaje_dinamico(
 
             momento = tipo_alerta.replace("suple_", "")
 
-            return componer_suplementacion(momento, nombre)
+            return componer_suplementacion(
+                momento, nombre, alumno_id
+            )
 
         return None
 

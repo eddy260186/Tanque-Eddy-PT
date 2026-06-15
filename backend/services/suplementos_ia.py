@@ -33,13 +33,19 @@ PALABRAS_EMBARAZO = [
     "lactancia", "amamant", "lactando"
 ]
 
+# Solo condiciones GRAVES que contraindican suplementos.
+# Condiciones leves (colesterol, intolerancias) NO bloquean:
+# el alumno recibe su stack normal.
 PALABRAS_ENFERMEDAD = [
-    "diabetes", "hipertension", "hipertensión",
-    "renal", "riñon", "riñón", "rinon",
-    "higado", "hígado", "hepat",
-    "corazon", "corazón", "cardiac", "cardíac",
-    "tiroide", "epileps", "cancer", "cáncer",
-    "anticoagul", "marcapasos", "arritmia"
+    "diabetes", "diabetic",
+    "hipertension", "hipertensión", "presion alta", "presión alta",
+    "renal", "riñon", "riñón", "rinon", "nefro",
+    "higado", "hígado", "hepat", "cirrosis",
+    "corazon", "corazón", "cardiac", "cardíac", "cardio",
+    "tiroide", "epileps", "convuls",
+    "cancer", "cáncer", "oncolog", "quimio",
+    "anticoagul", "marcapasos", "arritmia",
+    "insuficiencia"
 ]
 
 
