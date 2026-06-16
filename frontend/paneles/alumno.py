@@ -60,8 +60,6 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
     bg_plot = "#1A1A1A"
 
     # ==========================================
-    # CONSTRUCCIÓN DEL MENÚ LATERAL (SIDEBAR VIP)
-    # ==========================================
     with st.sidebar:
         st.header("🏢 Branding")
         nombres_sidebar = ["logo.png", "logo(1).png", "logo.png.png"]
@@ -105,7 +103,47 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
             st.session_state["usuario_actual"] = None
             st.rerun()
             
-        st.divider()
+
+
+    # ==========================================================
+    # CABECERA DORADA DE BIENVENIDA
+    # ==========================================================
+    _primer_nombre = (nombre if nombre else "Atleta Elite").split()[0]
+    st.markdown(
+        f"""
+        <div style="display:flex; align-items:center; gap:14px; padding:18px 20px;
+                    background:linear-gradient(180deg,#121722,#0d1119);
+                    border:1px solid rgba(212,175,55,0.35); border-radius:14px; margin-bottom:18px;">
+            <div style="width:50px; height:50px; border-radius:50%; background:rgba(212,175,55,0.12);
+                        border:1.5px solid #d4af37; display:flex; align-items:center; justify-content:center;
+                        font-size:24px;">💪</div>
+            <div style="flex:1;">
+                <div style="color:#f4d47c; font-size:20px; font-weight:750;">Hola, {_primer_nombre}</div>
+                <div style="color:#b7bdca; font-size:13px;">Bienvenido a tu Portal Elite</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ==========================================================
+    # PESTAÑAS DEL PANEL
+    # ==========================================================
+    tab_datos, tab_inicio, tab_dieta, tab_entreno, tab_progreso, tab_pdf = st.tabs([
+        "⚙️ Mis Datos",
+        "🏠 Inicio",
+        "🍽️ Mi Dieta",
+        "🏋️ Entreno",
+        "📈 Progreso",
+        "🔒 Mi Plan PDF"
+    ])
+
+    # ==========================================================
+    # PESTAÑA: MIS DATOS — toda la carga de información del alumno
+    # ==========================================================
+    with tab_datos:
+        st.subheader("⚙️ Mis Datos")
+        st.caption("Completá tu información. Al guardar, se genera tu plan automático y tu seguimiento por WhatsApp. 🎯")
 
         st.header("📏 Medidas Actuales")
         embarazada_bool = False
@@ -166,70 +204,27 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
         num_comidas = st.selectbox("Cantidad de comidas al día:", [1, 2, 3, 4, 5, 6], index=3)
         num_opciones = st.slider("¿Cuántas opciones de menú por comida?", min_value=1, max_value=10, value=5)
 
-    # ==========================================
-    # BIOMETRÍA Y SALUD ELITE
-    # ==========================================
-    st.subheader("📏 Salud y Biometría Elite")
-    st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🔑 Base Científica (Grasa y Salud)</p>", unsafe_allow_html=True)
-    col_b1, col_b2 = st.columns(2)
-    with col_b1: cintura = st.number_input("Perímetro de Cinta / Cintura (cm):", value=85.0, key="medida_cintura")
-    with col_b2: cadera = st.number_input("Perímetro de Cadera (cm):", value=95.0, key="medida_cadera")
+        st.subheader("📏 Salud y Biometría Elite")
+        st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🔑 Base Científica (Grasa y Salud)</p>", unsafe_allow_html=True)
+        col_b1, col_b2 = st.columns(2)
+        with col_b1: cintura = st.number_input("Perímetro de Cinta / Cintura (cm):", value=85.0, key="medida_cintura")
+        with col_b2: cadera = st.number_input("Perímetro de Cadera (cm):", value=95.0, key="medida_cadera")
 
-    st.divider()
-    st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🦅 Tren Superior Premium</p>", unsafe_allow_html=True)
-    col_sup1, col_sup2, col_sup3 = st.columns(3)
-    with col_sup1: cuello = st.number_input("Perímetro de Cuello (cm):", value=38.0, key="medida_cuello")
-    with col_sup2: torso = st.number_input("Pectoral / Torso (cm):", value=100.0, key="medida_torso")
-    with col_sup3: brazos = st.number_input("Brazos (Promedio cm):", value=35.0, key="medida_brazos")
-
-    st.divider()
-    st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🍑 Tren Inferior y Escultura Estética</p>", unsafe_allow_html=True)
-    col_inf1, col_inf2, col_inf3 = st.columns(3)
-    with col_inf1: gluteos = st.number_input("Perímetro de Glúteos (cm):", value=98.0, key="medida_gluteos")
-    with col_inf2: piernas = st.number_input("Muslos / Piernas (cm):", value=55.0, key="medida_piernas")
-    with col_inf3: pantorrillas = st.number_input("Pantorrillas (cm):", value=38.0, key="medida_pantorrillas")
-
-    # Cálculos Biométricos Cruzados
-    rcc_valor = round(cintura / cadera, 2) if cadera > 0 else 0
-    rfm, masa_magra, tmb = calcular_biometria(genero, estatura, cintura, peso_actual)
-
-    pal_base = 1.2 if dias_entreno == 0 else (1.3 if dias_entreno <= 2 else (1.45 if dias_entreno <= 4 else (1.6 if dias_entreno <= 6 else 1.75)))
-    bonus_deporte = 0.15 if any(x in tipo_entreno for x in ["CrossFit", "Resistencia", "Artes Marciales"]) else (0.10 if any(x in tipo_entreno for x in ["Fuerza", "Powerlifting", "Calistenia", "Equipo", "Raqueta", "Gimnasia"]) else 0.05)
-    if dias_entreno == 0 or "Ninguno" in tipo_entreno: bonus_deporte = 0.0
-
-    factor_actividad = pal_base + bonus_deporte
-    cal_mant = tmb * factor_actividad
-    if embarazada_bool: cal_mant += 340 if meses_gestacion <= 6 else 450
-
-    ajuste_diario = (kg_a_cambiar * 7000) / (meses_plazo * 30) if meses_plazo > 0 else 0
-
-    if embarazada_bool and any(x in tipo_objetivo for x in ["Pérdida", "Definición", "Recomposición"]):
-        cal_obj = cal_mant
-        dif = 0
-    else:
-        if "Pérdida" in tipo_objetivo: dif = -ajuste_diario
-        elif "Definición" in tipo_objetivo: dif = -(ajuste_diario * 1.3)
-        elif "Recomposición" in tipo_objetivo: dif = -300 if cal_mant > 1500 else -150
-        elif "Volumen Limpio" in tipo_objetivo: dif = ajuste_diario
-        elif "Volumen Agresivo" in tipo_objetivo: dif = ajuste_diario * 1.5
-        else: dif = 0
-        cal_obj = cal_mant + dif
-
-    p_g_total = peso_actual * (2.2 if "Hiper" in dieta_tipo else 1.8)
-    if "Keto" in dieta_tipo:
-        c_g_total = 30.0
-        g_g_total = (cal_obj - (p_g_total * 4) - 120) / 9
-    else:
-        g_g_total = (cal_obj * 0.30) / 9
-        c_g_total = (cal_obj - (p_g_total * 4) - (g_g_total * 9)) / 4
-
-    agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
-
-    # (el gráfico de macros ahora se muestra en la pestaña Progreso)
-
-    # CRM DE GUARDADO
-    with st.sidebar:
         st.divider()
+        st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🦅 Tren Superior Premium</p>", unsafe_allow_html=True)
+        col_sup1, col_sup2, col_sup3 = st.columns(3)
+        with col_sup1: cuello = st.number_input("Perímetro de Cuello (cm):", value=38.0, key="medida_cuello")
+        with col_sup2: torso = st.number_input("Pectoral / Torso (cm):", value=100.0, key="medida_torso")
+        with col_sup3: brazos = st.number_input("Brazos (Promedio cm):", value=35.0, key="medida_brazos")
+
+        st.divider()
+        st.markdown("<p style='color:#d4af37; font-weight:bold; font-size:16px; margin-bottom:5px;'>🍑 Tren Inferior y Escultura Estética</p>", unsafe_allow_html=True)
+        col_inf1, col_inf2, col_inf3 = st.columns(3)
+        with col_inf1: gluteos = st.number_input("Perímetro de Glúteos (cm):", value=98.0, key="medida_gluteos")
+        with col_inf2: piernas = st.number_input("Muslos / Piernas (cm):", value=55.0, key="medida_piernas")
+        with col_inf3: pantorrillas = st.number_input("Pantorrillas (cm):", value=38.0, key="medida_pantorrillas")
+
+
         if st.button("💾 Guardar Progreso en Supabase", type="primary", use_container_width=True):
             if nombre:
                 try:
@@ -320,57 +315,60 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
-    # ==========================================================
-    # CUERPO PRINCIPAL — REORGANIZADO EN PESTAÑAS PREMIUM
-    # (toda la lógica de arriba queda intacta; acá solo
-    #  cambia cómo se PRESENTA la información)
-    # ==========================================================
 
-    # Cálculos de proyección (se usan en Progreso y en el PDF)
+    # ==========================================================
+    # CÁLCULOS (usan los inputs de Mis Datos)
+    # ==========================================================
+    rcc_valor = round(cintura / cadera, 2) if cadera > 0 else 0
+    rfm, masa_magra, tmb = calcular_biometria(genero, estatura, cintura, peso_actual)
+
+    pal_base = 1.2 if dias_entreno == 0 else (1.3 if dias_entreno <= 2 else (1.45 if dias_entreno <= 4 else (1.6 if dias_entreno <= 6 else 1.75)))
+    bonus_deporte = 0.15 if any(x in tipo_entreno for x in ["CrossFit", "Resistencia", "Artes Marciales"]) else (0.10 if any(x in tipo_entreno for x in ["Fuerza", "Powerlifting", "Calistenia", "Equipo", "Raqueta", "Gimnasia"]) else 0.05)
+    if dias_entreno == 0 or "Ninguno" in tipo_entreno: bonus_deporte = 0.0
+
+    factor_actividad = pal_base + bonus_deporte
+    cal_mant = tmb * factor_actividad
+    if embarazada_bool: cal_mant += 340 if meses_gestacion <= 6 else 450
+
+    ajuste_diario = (kg_a_cambiar * 7000) / (meses_plazo * 30) if meses_plazo > 0 else 0
+
+    if embarazada_bool and any(x in tipo_objetivo for x in ["Pérdida", "Definición", "Recomposición"]):
+        cal_obj = cal_mant
+        dif = 0
+    else:
+        if "Pérdida" in tipo_objetivo: dif = -ajuste_diario
+        elif "Definición" in tipo_objetivo: dif = -(ajuste_diario * 1.3)
+        elif "Recomposición" in tipo_objetivo: dif = -300 if cal_mant > 1500 else -150
+        elif "Volumen Limpio" in tipo_objetivo: dif = ajuste_diario
+        elif "Volumen Agresivo" in tipo_objetivo: dif = ajuste_diario * 1.5
+        else: dif = 0
+        cal_obj = cal_mant + dif
+
+    p_g_total = peso_actual * (2.2 if "Hiper" in dieta_tipo else 1.8)
+    if "Keto" in dieta_tipo:
+        c_g_total = 30.0
+        g_g_total = (cal_obj - (p_g_total * 4) - 120) / 9
+    else:
+        g_g_total = (cal_obj * 0.30) / 9
+        c_g_total = (cal_obj - (p_g_total * 4) - (g_g_total * 9)) / 4
+
+    agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
+
+
+    # ==========================================================
+    # CÁLCULOS DE PROYECCIÓN Y MENÚS (para Progreso, Dieta, Entreno, PDF)
+    # ==========================================================
     kg_mes_real = (dif * 30) / 7000
     fechas_reales = [(datetime.now() + pd.DateOffset(months=i)).strftime("%d/%m/%Y") for i in range(int(meses_plazo) + 1)]
     pesos_prog = [peso_actual + (kg_mes_real * i) for i in range(len(fechas_reales))]
 
-    # Menús y rutinas (se usan en Dieta, Entreno y PDF)
     diccionario_menus, lista_compras = generar_menu_dinamico(
         p_g_total, c_g_total, g_g_total, num_comidas, num_opciones, dieta_tipo, pais
     )
     diccionario_rutinas = generar_rutina_entrenamiento(tipo_entreno, nivel_experiencia, dias_entreno)
 
-    # --- Cabecera de bienvenida premium ---
-    primer_nombre = (nombre if nombre else "Atleta Elite").split()[0]
-    st.markdown(
-        f"""
-        <div style="display:flex; align-items:center; gap:14px; padding:18px 20px;
-                    background:linear-gradient(180deg,#121722,#0d1119);
-                    border:1px solid rgba(212,175,55,0.35); border-radius:14px; margin-bottom:18px;">
-            <div style="width:50px; height:50px; border-radius:50%; background:rgba(212,175,55,0.12);
-                        border:1.5px solid #d4af37; display:flex; align-items:center; justify-content:center;
-                        font-size:24px;">💪</div>
-            <div style="flex:1;">
-                <div style="color:#f4d47c; font-size:20px; font-weight:750;">Hola, {primer_nombre}</div>
-                <div style="color:#b7bdca; font-size:13px;">{tipo_objetivo} · {nivel_experiencia}</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="color:#d4af37; font-size:22px; font-weight:750;">{int(cal_obj)}</div>
-                <div style="color:#b7bdca; font-size:11px;">kcal objetivo</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # --- LAS PESTAÑAS ---
-    tab_inicio, tab_dieta, tab_entreno, tab_progreso, tab_pdf = st.tabs([
-        "🏠 Inicio",
-        "🍽️ Mi Dieta",
-        "🏋️ Entreno",
-        "📈 Progreso",
-        "🔒 Mi Plan PDF"
-    ])
-
     # ==========================================================
-    # PESTAÑA 1 — INICIO (resumen del día + consultoría IA)
+    # PESTAÑA: INICIO (resumen del día + consultoría IA)
     # ==========================================================
     with tab_inicio:
         st.markdown("#### 📊 Tu resumen de hoy")
@@ -385,7 +383,6 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
 
         st.divider()
 
-        # --- CONSULTORÍA IA TEAM EDDY ---
         st.subheader("🏆 Consultoría Directa con Eddy Personal Trainer")
         puedo_usar, total_creditos = gestionar_ia_con_creditos(st.session_state['usuario_actual'])
 
@@ -410,7 +407,7 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
             st.error("🚫 Ya agotaste tus consultas de prueba.")
 
     # ==========================================================
-    # PESTAÑA 2 — MI DIETA (plan de comidas)
+    # PESTAÑA: MI DIETA
     # ==========================================================
     with tab_dieta:
         st.subheader(f"🍽️ Plan de {num_comidas} Comidas ({int(cal_obj)} kcal)")
@@ -422,7 +419,7 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                 st.write(op)
 
     # ==========================================================
-    # PESTAÑA 3 — ENTRENO (plan de entrenamiento)
+    # PESTAÑA: ENTRENO
     # ==========================================================
     with tab_entreno:
         st.subheader(f"🏋️‍♂️ Plan de Entrenamiento ({nivel_experiencia})")
@@ -435,29 +432,26 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                 st.write(ex)
 
     # ==========================================================
-    # PESTAÑA 4 — PROGRESO (todos los gráficos juntos)
+    # PESTAÑA: PROGRESO (todos los gráficos juntos)
     # ==========================================================
     with tab_progreso:
         st.subheader("📈 Tu Progreso y Proyección")
 
-        # Gráfico dona de macros
         st.markdown("##### 🥗 Distribución de Macros")
         renderizar_grafico_macros_sidebar(p_g_total, c_g_total, g_g_total)
 
         st.divider()
 
-        # Gráfico de proyección de peso
         st.markdown("##### 📉 Proyección de Peso")
         renderizar_grafico_proyeccion(fechas_reales, pesos_prog, accent_color)
 
         st.divider()
 
-        # Evolución histórica
         st.markdown("##### 📊 Evolución Histórica")
         renderizar_evolucion_historica(perfil_id, peso_actual, rfm, brazos, piernas, tipo_objetivo)
 
     # ==========================================================
-    # PESTAÑA 5 — MI PLAN PDF (pago + descarga protegida)
+    # PESTAÑA: MI PLAN PDF (pago + descarga protegida)
     # ==========================================================
     with tab_pdf:
         st.markdown("### 🔒 Descarga Protegida")
@@ -481,7 +475,6 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                     else:
                         st.error(mensaje_pago)
 
-        # --- ENTORNO DE CONSTRUCCIÓN DE PDF ---
         if st.session_state.pago_validado:
             st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
 
