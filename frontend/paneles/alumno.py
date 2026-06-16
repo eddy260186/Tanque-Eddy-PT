@@ -224,6 +224,44 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
         with col_inf2: piernas = st.number_input("Muslos / Piernas (cm):", value=55.0, key="medida_piernas")
         with col_inf3: pantorrillas = st.number_input("Pantorrillas (cm):", value=38.0, key="medida_pantorrillas")
 
+        # --- Cálculos biométricos (antes del guardado) ---
+        # ==========================================================
+        # CÁLCULOS (usan los inputs de Mis Datos)
+        # ==========================================================
+        rcc_valor = round(cintura / cadera, 2) if cadera > 0 else 0
+        rfm, masa_magra, tmb = calcular_biometria(genero, estatura, cintura, peso_actual)
+
+        pal_base = 1.2 if dias_entreno == 0 else (1.3 if dias_entreno <= 2 else (1.45 if dias_entreno <= 4 else (1.6 if dias_entreno <= 6 else 1.75)))
+        bonus_deporte = 0.15 if any(x in tipo_entreno for x in ["CrossFit", "Resistencia", "Artes Marciales"]) else (0.10 if any(x in tipo_entreno for x in ["Fuerza", "Powerlifting", "Calistenia", "Equipo", "Raqueta", "Gimnasia"]) else 0.05)
+        if dias_entreno == 0 or "Ninguno" in tipo_entreno: bonus_deporte = 0.0
+
+        factor_actividad = pal_base + bonus_deporte
+        cal_mant = tmb * factor_actividad
+        if embarazada_bool: cal_mant += 340 if meses_gestacion <= 6 else 450
+
+        ajuste_diario = (kg_a_cambiar * 7000) / (meses_plazo * 30) if meses_plazo > 0 else 0
+
+        if embarazada_bool and any(x in tipo_objetivo for x in ["Pérdida", "Definición", "Recomposición"]):
+            cal_obj = cal_mant
+            dif = 0
+        else:
+            if "Pérdida" in tipo_objetivo: dif = -ajuste_diario
+            elif "Definición" in tipo_objetivo: dif = -(ajuste_diario * 1.3)
+            elif "Recomposición" in tipo_objetivo: dif = -300 if cal_mant > 1500 else -150
+            elif "Volumen Limpio" in tipo_objetivo: dif = ajuste_diario
+            elif "Volumen Agresivo" in tipo_objetivo: dif = ajuste_diario * 1.5
+            else: dif = 0
+            cal_obj = cal_mant + dif
+
+        p_g_total = peso_actual * (2.2 if "Hiper" in dieta_tipo else 1.8)
+        if "Keto" in dieta_tipo:
+            c_g_total = 30.0
+            g_g_total = (cal_obj - (p_g_total * 4) - 120) / 9
+        else:
+            g_g_total = (cal_obj * 0.30) / 9
+            c_g_total = (cal_obj - (p_g_total * 4) - (g_g_total * 9)) / 4
+
+        agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
 
         if st.button("💾 Guardar Progreso en Supabase", type="primary", use_container_width=True):
             if nombre:
@@ -316,43 +354,6 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                     st.error(f"❌ Error al guardar: {e}")
 
 
-    # ==========================================================
-    # CÁLCULOS (usan los inputs de Mis Datos)
-    # ==========================================================
-    rcc_valor = round(cintura / cadera, 2) if cadera > 0 else 0
-    rfm, masa_magra, tmb = calcular_biometria(genero, estatura, cintura, peso_actual)
-
-    pal_base = 1.2 if dias_entreno == 0 else (1.3 if dias_entreno <= 2 else (1.45 if dias_entreno <= 4 else (1.6 if dias_entreno <= 6 else 1.75)))
-    bonus_deporte = 0.15 if any(x in tipo_entreno for x in ["CrossFit", "Resistencia", "Artes Marciales"]) else (0.10 if any(x in tipo_entreno for x in ["Fuerza", "Powerlifting", "Calistenia", "Equipo", "Raqueta", "Gimnasia"]) else 0.05)
-    if dias_entreno == 0 or "Ninguno" in tipo_entreno: bonus_deporte = 0.0
-
-    factor_actividad = pal_base + bonus_deporte
-    cal_mant = tmb * factor_actividad
-    if embarazada_bool: cal_mant += 340 if meses_gestacion <= 6 else 450
-
-    ajuste_diario = (kg_a_cambiar * 7000) / (meses_plazo * 30) if meses_plazo > 0 else 0
-
-    if embarazada_bool and any(x in tipo_objetivo for x in ["Pérdida", "Definición", "Recomposición"]):
-        cal_obj = cal_mant
-        dif = 0
-    else:
-        if "Pérdida" in tipo_objetivo: dif = -ajuste_diario
-        elif "Definición" in tipo_objetivo: dif = -(ajuste_diario * 1.3)
-        elif "Recomposición" in tipo_objetivo: dif = -300 if cal_mant > 1500 else -150
-        elif "Volumen Limpio" in tipo_objetivo: dif = ajuste_diario
-        elif "Volumen Agresivo" in tipo_objetivo: dif = ajuste_diario * 1.5
-        else: dif = 0
-        cal_obj = cal_mant + dif
-
-    p_g_total = peso_actual * (2.2 if "Hiper" in dieta_tipo else 1.8)
-    if "Keto" in dieta_tipo:
-        c_g_total = 30.0
-        g_g_total = (cal_obj - (p_g_total * 4) - 120) / 9
-    else:
-        g_g_total = (cal_obj * 0.30) / 9
-        c_g_total = (cal_obj - (p_g_total * 4) - (g_g_total * 9)) / 4
-
-    agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
 
 
     # ==========================================================
