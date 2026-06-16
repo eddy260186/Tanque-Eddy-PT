@@ -225,7 +225,8 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
 
     agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
 
-    # (el gráfico de macros ahora se muestra en la pestaña Progreso)
+    # Llama al componente de dona de macros
+    renderizar_grafico_macros_sidebar(p_g_total, c_g_total, g_g_total)
 
     # CRM DE GUARDADO
     with st.sidebar:
@@ -320,203 +321,129 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
-    # ==========================================================
-    # CUERPO PRINCIPAL — REORGANIZADO EN PESTAÑAS PREMIUM
-    # (toda la lógica de arriba queda intacta; acá solo
-    #  cambia cómo se PRESENTA la información)
-    # ==========================================================
+    st.info(f"Atleta: **{nombre if nombre else 'Eddy PT'}** | RCC: {rcc_valor} | **Grasa Est. (RFM): {rfm}%** | Nivel: {nivel_experiencia}")
+    col_r1, col_r2, col_r3, col_r4 = st.columns(4)
+    col_r1.metric("Mantenimiento", f"{int(cal_mant)} kcal")
+    col_r2.metric("Ajuste Diario", f"{int(dif)} kcal", delta=int(dif))
+    col_r3.metric("Objetivo Final", f"{int(cal_obj)} kcal")
+    col_r4.metric("💧 Agua (Con Entreno)", f"{agua_total} L")
 
-    # Cálculos de proyección (se usan en Progreso y en el PDF)
-    kg_mes_real = (dif * 30) / 7000
+    # Cálculos y renderizado de la Proyección de peso
+    kg_mes_real = (dif * 30) / 7000 
     fechas_reales = [(datetime.now() + pd.DateOffset(months=i)).strftime("%d/%m/%Y") for i in range(int(meses_plazo) + 1)]
     pesos_prog = [peso_actual + (kg_mes_real * i) for i in range(len(fechas_reales))]
 
-    # Menús y rutinas (se usan en Dieta, Entreno y PDF)
+    # Renderiza gráfico de proyección interactivo pasando el color de acento
+    renderizar_grafico_proyeccion(fechas_reales, pesos_prog, accent_color)
+
+    # Renderiza todo el bloque histórico conectado en vivo
+    renderizar_evolucion_historica(perfil_id, peso_actual, rfm, brazos, piernas, tipo_objetivo)
+
+    # ==========================================
+    # SUPLEMENTACIÓN Y MENÚ DINÁMICO VIA SERVICE
+    # ==========================================
+    st.subheader(f"🍽️ Plan de {num_comidas} Comidas ({int(cal_obj)} kcal)")
+    
     diccionario_menus, lista_compras = generar_menu_dinamico(
         p_g_total, c_g_total, g_g_total, num_comidas, num_opciones, dieta_tipo, pais
     )
-    diccionario_rutinas = generar_rutina_entrenamiento(tipo_entreno, nivel_experiencia, dias_entreno)
 
-    # --- Cabecera de bienvenida premium ---
-    primer_nombre = (nombre if nombre else "Atleta Elite").split()[0]
-    st.markdown(
-        f"""
-        <div style="display:flex; align-items:center; gap:14px; padding:18px 20px;
-                    background:linear-gradient(180deg,#121722,#0d1119);
-                    border:1px solid rgba(212,175,55,0.35); border-radius:14px; margin-bottom:18px;">
-            <div style="width:50px; height:50px; border-radius:50%; background:rgba(212,175,55,0.12);
-                        border:1.5px solid #d4af37; display:flex; align-items:center; justify-content:center;
-                        font-size:24px;">💪</div>
-            <div style="flex:1;">
-                <div style="color:#f4d47c; font-size:20px; font-weight:750;">Hola, {primer_nombre}</div>
-                <div style="color:#b7bdca; font-size:13px;">{tipo_objetivo} · {nivel_experiencia}</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="color:#d4af37; font-size:22px; font-weight:750;">{int(cal_obj)}</div>
-                <div style="color:#b7bdca; font-size:11px;">kcal objetivo</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    for nombre_base, opciones in diccionario_menus.items():
+        st.button(f"› ✨ {nombre_base}", use_container_width=True, disabled=True)
+        for op in opciones:
+            st.write(op)
 
-    # --- LAS PESTAÑAS ---
-    tab_inicio, tab_dieta, tab_entreno, tab_progreso, tab_pdf = st.tabs([
-        "🏠 Inicio",
-        "🍽️ Mi Dieta",
-        "🏋️ Entreno",
-        "📈 Progreso",
-        "🔒 Mi Plan PDF"
-    ])
+    # --- CONSULTORÍA IA TEAM EDDY ---
+    st.divider()
+    st.subheader("🏆 Consultoría Directa con Eddy Personal Trainer")
+    puedo_usar, total_creditos = gestionar_ia_con_creditos(st.session_state['usuario_actual'])
 
-    # ==========================================================
-    # PESTAÑA 1 — INICIO (resumen del día + consultoría IA)
-    # ==========================================================
-    with tab_inicio:
-        st.markdown("#### 📊 Tu resumen de hoy")
+    if puedo_usar:
+        st.info(f"Hola Tanque, hoy tenés **{total_creditos}** consultas disponibles con el equipo.")
+        pregunta_atleta = st.text_area("¿Qué duda tenés hoy para el equipo, Tanque?", placeholder="Ej: Eddy, ¿qué puedo cenar hoy para recuperar después de hacer piernas?")
 
-        col_r1, col_r2, col_r3, col_r4 = st.columns(4)
-        col_r1.metric("Mantenimiento", f"{int(cal_mant)} kcal")
-        col_r2.metric("Ajuste Diario", f"{int(dif)} kcal", delta=int(dif))
-        col_r3.metric("Objetivo Final", f"{int(cal_obj)} kcal")
-        col_r4.metric("💧 Agua", f"{agua_total} L")
-
-        st.info(f"Atleta: **{nombre if nombre else 'Eddy PT'}** | RCC: {rcc_valor} | **Grasa Est. (RFM): {rfm}%** | Nivel: {nivel_experiencia}")
-
-        st.divider()
-
-        # --- CONSULTORÍA IA TEAM EDDY ---
-        st.subheader("🏆 Consultoría Directa con Eddy Personal Trainer")
-        puedo_usar, total_creditos = gestionar_ia_con_creditos(st.session_state['usuario_actual'])
-
-        if puedo_usar:
-            st.info(f"Hola Tanque, hoy tenés **{total_creditos}** consultas disponibles con el equipo.")
-            pregunta_atleta = st.text_area("¿Qué duda tenés hoy para el equipo, Tanque?", placeholder="Ej: Eddy, ¿qué puedo cenar hoy para recuperar después de hacer piernas?")
-
-            if st.button("💬 ENVIAR CONSULTA AL TEAM EDDY", use_container_width=True):
-                if pregunta_atleta:
-                    with st.spinner("Bancame un toque..."):
-                        prompt_eddy = f"Actuá como Eddy, un Personal Trainer de Élite argentino. Tu estilo es motivador, directo y profesional, usando modismos como 'Tanque', 'Dale con todo', 'viste', 'metele mecha'. Pregunta del atleta: {pregunta_atleta} Firmá siempre al final: Team Eddy - Software Elite."
-                        try:
-                            respuesta_texto = generar_texto(prompt=prompt_eddy)
-                            st.markdown("### 📢 Respuesta de Eddy:")
-                            st.write(respuesta_texto)
-                            descontar_credito(st.session_state['usuario_actual'], total_creditos)
-                        except Exception as e:
-                            st.error(f"Se cortó la conexión, Tanque: {e}")
-                else:
-                    st.warning("Escribime algo antes de enviar, Tanque.")
-        else:
-            st.error("🚫 Ya agotaste tus consultas de prueba.")
-
-    # ==========================================================
-    # PESTAÑA 2 — MI DIETA (plan de comidas)
-    # ==========================================================
-    with tab_dieta:
-        st.subheader(f"🍽️ Plan de {num_comidas} Comidas ({int(cal_obj)} kcal)")
-        st.caption(f"Dieta {dieta_tipo} · {num_opciones} opciones por comida")
-
-        for nombre_base, opciones in diccionario_menus.items():
-            st.button(f"› ✨ {nombre_base}", use_container_width=True, disabled=True)
-            for op in opciones:
-                st.write(op)
-
-    # ==========================================================
-    # PESTAÑA 3 — ENTRENO (plan de entrenamiento)
-    # ==========================================================
-    with tab_entreno:
-        st.subheader(f"🏋️‍♂️ Plan de Entrenamiento ({nivel_experiencia})")
-        st.caption(f"{tipo_entreno} · {dias_entreno} días por semana")
-
-        st.button("› 👁️ VER RUTINA GENERADA", use_container_width=True, disabled=True)
-        for k, v in diccionario_rutinas.items():
-            st.markdown(f"**{k}**")
-            for ex in v:
-                st.write(ex)
-
-    # ==========================================================
-    # PESTAÑA 4 — PROGRESO (todos los gráficos juntos)
-    # ==========================================================
-    with tab_progreso:
-        st.subheader("📈 Tu Progreso y Proyección")
-
-        # Gráfico dona de macros
-        st.markdown("##### 🥗 Distribución de Macros")
-        renderizar_grafico_macros_sidebar(p_g_total, c_g_total, g_g_total)
-
-        st.divider()
-
-        # Gráfico de proyección de peso
-        st.markdown("##### 📉 Proyección de Peso")
-        renderizar_grafico_proyeccion(fechas_reales, pesos_prog, accent_color)
-
-        st.divider()
-
-        # Evolución histórica
-        st.markdown("##### 📊 Evolución Histórica")
-        renderizar_evolucion_historica(perfil_id, peso_actual, rfm, brazos, piernas, tipo_objetivo)
-
-    # ==========================================================
-    # PESTAÑA 5 — MI PLAN PDF (pago + descarga protegida)
-    # ==========================================================
-    with tab_pdf:
-        st.markdown("### 🔒 Descarga Protegida")
-
-        if "pago_validado" not in st.session_state:
-            st.session_state.pago_validado = False
-
-        if not st.session_state.pago_validado:
-            st.info("Para descargar tu Plan Elite, ingresa el número de operación de tu pago.")
-            col_p, col_v = st.columns(2)
-            with col_p:
-                st.link_button("💳 REALIZAR PAGO ($10.000)", "https://mpago.la/27TKbMf", type="primary")
-            with col_v:
-                nro_operacion = st.text_input("Ingresá el # de Operación:")
-                if st.button("🔓 Validar y Descargar"):
-                    exito_pago, mensaje_pago = validar_comprobante_pago(nro_operacion, st.session_state["usuario_actual"])
-                    if exito_pago:
-                        st.session_state.pago_validado = True
-                        st.success(mensaje_pago)
-                        st.rerun()
-                    else:
-                        st.error(mensaje_pago)
-
-        # --- ENTORNO DE CONSTRUCCIÓN DE PDF ---
-        if st.session_state.pago_validado:
-            st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
-
-            fig_matt, ax_matt = plt.subplots(figsize=(10, 3))
-            fig_matt.patch.set_facecolor(bg_plot)
-            ax_matt.set_facecolor(bg_plot)
-            ax_matt.bar(fechas_reales, pesos_prog, color=accent_color)
-            ax_matt.tick_params(colors=accent_color)
-            for spine in ax_matt.spines.values():
-                spine.set_color(accent_color)
-            for i, v in enumerate(pesos_prog):
-                ax_matt.text(i, v + 0.5, f"{round(v,1)}kg", ha='center', fontsize=10, fontweight='bold', color='#ffffff')
-
-            buf = io.BytesIO()
-            fig_matt.savefig(buf, format="png", bbox_inches="tight", facecolor=bg_plot)
-            buf.seek(0)
-            grafico_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            plt.close(fig_matt)
-
-            payload = {
-                "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, "rfm": rfm, "k": cal_obj,
-                "p": p_g_total, "c": c_g_total, "g": g_g_total, "meta": tipo_objetivo, "nivel": nivel_experiencia,
-                "w": agua_total, "entreno": tipo_entreno, "m": diccionario_menus, "rutina": diccionario_rutinas
-            }
-
-            with st.container():
-                with st.spinner("⏳ Ensamblando tu PDF Ultra Elite..."):
+        if st.button("💬 ENVIAR CONSULTA AL TEAM EDDY", use_container_width=True):
+            if pregunta_atleta:
+                with st.spinner("Bancame un toque..."):
+                    prompt_eddy = f"Actuá como Eddy, un Personal Trainer de Élite argentino. Tu estilo es motivador, directo y profesional, usando modismos como 'Tanque', 'Dale con todo', 'viste', 'metele mecha'. Pregunta del atleta: {pregunta_atleta} Firmá siempre al final: Team Eddy - Software Elite."
                     try:
-                        from utils.pdf_generator_elite import build_pdf_ultra_elite
-                        pdf_elite = build_pdf_ultra_elite(data=payload, grafico_b64=grafico_base64, genero=genero)
-                        if pdf_elite:
-                            st.download_button(
-                                label="🏆 DESCARGAR PLAN ULTRA ELITE", data=pdf_elite,
-                                file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf", mime="application/pdf",
-                                type="primary", key="descarga_pdf"
-                            )
+                        # 🔥 AQUÍ LLAMAMOS A LA NUEVA FUNCIÓN ESPECIALIZADA
+                        respuesta_texto = generar_texto(prompt=prompt_eddy)
+                        st.markdown("### 📢 Respuesta de Eddy:")
+                        st.write(respuesta_texto)
+                        descontar_credito(st.session_state['usuario_actual'], total_creditos)
                     except Exception as e:
-                        st.error(f"❌ Error técnico al generar PDF: {e}")
+                        st.error(f"Se cortó la conexión, Tanque: {e}")
+            else:
+                st.warning("Escribime algo antes de enviar, Tanque.")
+    else:
+        st.error("🚫 Ya agotaste tus consultas de prueba.")
+
+    # --- ENTRENAMIENTO VIA SERVICE ---
+    st.subheader(f"🏋️‍♂️ Plan de Entrenamiento ({nivel_experiencia})")
+    diccionario_rutinas = generar_rutina_entrenamiento(tipo_entreno, nivel_experiencia, dias_entreno)
+    st.button("› 👁️ VER RUTINA GENERADA", use_container_width=True, disabled=True)
+    for k, v in diccionario_rutinas.items():
+        st.markdown(f"**{k}**")
+        for ex in v: st.write(ex)
+
+    # --- PASARELA DE MERCADO PAGO VIA SERVICE ---
+    st.divider()
+    st.markdown("### 🔒 Descarga Protegida")
+
+    if "pago_validado" not in st.session_state:
+        st.session_state.pago_validado = False
+
+    if not st.session_state.pago_validado:
+        st.info("Para descargar tu Plan Elite, ingresa el número de operation de tu pago.")
+        col_p, col_v = st.columns(2)
+        with col_p:
+            st.link_button("💳 REALIZAR PAGO ($10.000)", "https://mpago.la/27TKbMf", type="primary")
+        with col_v:
+            nro_operacion = st.text_input("Ingresá el # de Operación:")
+            if st.button("🔓 Validar y Descargar"):
+                exito_pago, mensaje_pago = validar_comprobante_pago(nro_operacion, st.session_state["usuario_actual"])
+                if exito_pago:
+                    st.session_state.pago_validado = True
+                    st.success(mensaje_pago)
+                    st.rerun()
+                else:
+                    st.error(mensaje_pago)
+
+    # --- ENTORNO DE CONSTRUCCIÓN DE PDF ---
+    if st.session_state.pago_validado:
+        st.success("✅ ¡Pago validado! Tu Plan Elite ha sido desbloqueado.")
+        
+        fig_matt, ax_matt = plt.subplots(figsize=(10, 3))
+        fig_matt.patch.set_facecolor(bg_plot)
+        ax_matt.set_facecolor(bg_plot)
+        ax_matt.bar(fechas_reales, pesos_prog, color=accent_color)
+        ax_matt.tick_params(colors=accent_color)
+        for spine in ax_matt.spines.values(): spine.set_color(accent_color)
+        for i, v in enumerate(pesos_prog): ax_matt.text(i, v + 0.5, f"{round(v,1)}kg", ha='center', fontsize=10, fontweight='bold', color='#ffffff')
+
+        buf = io.BytesIO()
+        fig_matt.savefig(buf, format="png", bbox_inches="tight", facecolor=bg_plot)
+        buf.seek(0)
+        grafico_base64 = base64.b64encode(buf.read()).decode("utf-8")
+        plt.close(fig_matt)
+
+        payload = {
+            "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, "rfm": rfm, "k": cal_obj,
+            "p": p_g_total, "c": c_g_total, "g": g_g_total, "meta": tipo_objetivo, "nivel": nivel_experiencia,
+            "w": agua_total, "entreno": tipo_entreno, "m": diccionario_menus, "rutina": diccionario_rutinas
+        }
+
+        with st.container():
+            with st.spinner("⏳ Ensamblando tu PDF Ultra Elite..."):
+                try:
+                    from utils.pdf_generator_elite import build_pdf_ultra_elite
+                    pdf_elite = build_pdf_ultra_elite(data=payload, grafico_b64=grafico_base64, genero=genero)
+                    if pdf_elite:
+                        st.download_button(
+                            label="🏆 DESCARGAR PLAN ULTRA ELITE", data=pdf_elite,
+                            file_name=f"Plan_Elite_{nombre.replace(' ', '_')}.pdf", mime="application/pdf",
+                            type="primary", key="descarga_pdf"
+                        )
+                except Exception as e:
+                    st.error(f"❌ Error técnico al generar PDF: {e}")
