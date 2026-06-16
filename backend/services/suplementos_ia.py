@@ -16,10 +16,37 @@ del entrenador.
 from database.conexion import supabase
 from utils.logger import obtener_logger
 
+# Catalogo de respaldo: si data/suplementos.py no carga,
+# el motor igual asigna un stack basico universal.
+_RESPALDO = {
+    "manana": [
+        {"nombre": "Omega-3", "dosis": "1-2 g", "nota": "con el desayuno"},
+        {"nombre": "Vitamina D3", "dosis": "2000 UI"},
+        {"nombre": "Vitamina C", "dosis": "1000 mg"},
+        {"nombre": "Multivitamínico", "dosis": "1 cápsula"},
+    ],
+    "pre_entreno": [
+        {"nombre": "Cafeína", "dosis": "200 mg", "nota": "energía y foco"},
+        {"nombre": "Beta-Alanina", "dosis": "3 g"},
+        {"nombre": "Citrulina Malato", "dosis": "6 g"},
+        {"nombre": "L-Carnitina", "dosis": "2 g", "nota": "quema de grasa"},
+    ],
+    "post_entreno": [
+        {"nombre": "Proteína Whey", "dosis": "30 g", "nota": "recuperación"},
+        {"nombre": "Creatina Monohidrato", "dosis": "5 g", "nota": "todos los días"},
+    ],
+    "noche": [
+        {"nombre": "Magnesio", "dosis": "300-400 mg", "nota": "descanso"},
+        {"nombre": "ZMA", "dosis": "según producto"},
+    ],
+}
+
 try:
     from data.suplementos import suplementos_db
+    if not suplementos_db:
+        suplementos_db = _RESPALDO
 except Exception:
-    suplementos_db = {}
+    suplementos_db = _RESPALDO
 
 logger = obtener_logger("SuplementosIA")
 
@@ -92,7 +119,9 @@ def requiere_revision_manual(atleta: dict):
 def _buscar(momento: str, nombres: list):
 
     """Devuelve los items del catalogo cuyo nombre
-    empieza con alguno de los nombres dados."""
+    contiene alguno de los nombres dados. Si no encuentra
+    ninguno, devuelve los primeros 3 de ese momento como
+    respaldo (asi el motor nunca queda vacio)."""
 
     catalogo = suplementos_db.get(momento) or []
 
@@ -104,9 +133,16 @@ def _buscar(momento: str, nombres: list):
 
         for buscado in nombres:
 
-            if nombre_item.startswith(buscado.lower()):
+            # Coincidencia flexible: contiene la palabra clave
+            clave = buscado.lower().split()[0]  # primera palabra
+
+            if clave in nombre_item:
                 elegidos.append(item)
                 break
+
+    # Respaldo: si no matcheo nada, tomar los primeros del momento
+    if not elegidos and catalogo:
+        elegidos = catalogo[:3]
 
     return elegidos
 

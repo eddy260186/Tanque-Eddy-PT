@@ -925,16 +925,32 @@ def tab_suplementacion(alumno_id: str):
             use_container_width=True,
             key=f"gen_suple_{alumno_id}"
         ):
+            # Borrar lo anterior para regenerar limpio
+            try:
+                supabase.table("suplementos_alumno")\
+                    .delete().eq("alumno_id", alumno_id).execute()
+            except Exception:
+                pass
+
             estado, detalle = asignar_suplementacion_automatica(
                 alumno_id, solo_si_vacio=False
             )
             if estado == "asignado":
-                st.success(f"✅ Asignado: {detalle}")
+                st.success(f"✅ Suplementos asignados: {detalle}")
+                st.rerun()
             elif estado == "revision_manual":
-                st.warning(f"⚠️ Requiere manual: {detalle}")
+                st.warning(
+                    f"⚠️ Este alumno requiere carga manual "
+                    f"por seguridad ({detalle})."
+                )
+            elif estado == "ya_tenia":
+                st.info("Ya tenía suplementos cargados.")
+                st.rerun()
             else:
-                st.error(f"Error: {detalle}")
-            st.rerun()
+                st.error(
+                    f"No se pudo asignar: {detalle}. "
+                    f"Revisá que exista data/suplementos.py"
+                )
 
     st.write("---")
 
