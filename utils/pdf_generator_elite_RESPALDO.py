@@ -137,7 +137,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     <html>
     <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
     @page {{
         size: A4;
@@ -153,7 +153,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         background: {BLACK};
         color: white;
         font-family: 'Montserrat', sans-serif;
-        -webkit-font-smoothing: antialiased;
     }}
     .page {{
         width: 210mm;
@@ -161,7 +160,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         position: relative;
         page-break-after: always;
         background: {BLACK};
-        background-image: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.06) 0%, transparent 45%);
     }}
     .fluid-page {{
         width: 210mm;
@@ -174,14 +172,6 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         z-index: 2;
         padding: 55px;
     }}
-    /* Línea decorativa dorada superior en cada página */
-    .gold-line-top {{
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, transparent 0%, {ACCENT} 25%, {ACCENT} 75%, transparent 100%);
-        z-index: 3;
-    }}
     .qr-corner {{
         position: absolute;
         top: 45px;
@@ -191,63 +181,51 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         padding: 6px;
         border-radius: 10px;
         border: 2px solid {ACCENT};
-        z-index: 5;
     }}
     .hero-logo {{
-        width: 240px;
-        margin-bottom: 10px;
+        width: 260px;
+        margin-bottom: 15px;
     }}
     .hero-title {{
-        font-family: 'Playfair Display', serif;
-        font-size: 58px;
+        font-size: 54px;
         font-weight: 900;
-        letter-spacing: 2px;
+        letter-spacing: 4px;
         margin-top: 10px;
         margin-bottom: 0px;
         color: {ACCENT};
         text-transform: uppercase;
-        line-height: 1.1;
     }}
     .hero-sub {{
-        color: #9a9a9a;
-        letter-spacing: 4px;
-        font-size: 11px;
-        margin-top: 10px;
+        color: #888;
+        letter-spacing: 3px;
+        font-size: 12px;
+        margin-top: 5px;
         font-weight: 700;
-        text-transform: uppercase;
-    }}
-    /* Adorno: pequeña línea dorada centrada bajo el subtítulo */
-    .hero-divider {{
-        width: 60px;
-        height: 2px;
-        background: {ACCENT};
-        margin: 22px auto 0;
     }}
     .premium-card {{
-        background: linear-gradient(160deg, #161616 0%, #0d0d0d 100%);
+        background: {CARD};
         border: 1px solid {BORDER};
         border-top: 3px solid {ACCENT};
-        border-radius: 14px;
-        padding: 26px;
-        margin-bottom: 24px;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
         page-break-inside: avoid;
     }}
     .section-title {{
-        font-family: 'Playfair Display', serif;
-        font-size: 30px;
+        font-size: 24px;
         font-weight: 900;
         color: white;
         margin-top: 10px;
-        margin-bottom: 28px;
-        letter-spacing: 0.5px;
+        margin-bottom: 25px;
+        letter-spacing: 1px;
         text-transform: uppercase;
         border-left: 4px solid {ACCENT};
-        padding-left: 18px;
+        padding-left: 15px;
     }}
     .label {{
         color: {ACCENT};
         font-size: 11px;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
         text-transform: uppercase;
         font-weight: 700;
     }}
@@ -255,36 +233,35 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         font-size: 26px;
         font-weight: 900;
         color: white;
-        margin-top: 6px;
+        margin-top: 5px;
     }}
     .macro-bar {{
         width: 100%;
-        height: 12px;
-        background: #1e1e1e;
+        height: 10px;
+        background: #222;
         border-radius: 10px;
-        margin-top: 10px;
-        overflow: hidden;
+        margin-top: 8px;
     }}
     .macro-fill {{
         height: 100%;
         border-radius: 10px;
     }}
     .exercise {{
-        padding: 13px 16px;
+        padding: 12px 15px;
         border-left: 3px solid {ACCENT};
-        background: linear-gradient(90deg, #1c1c1c 0%, #141414 100%);
-        margin-bottom: 9px;
+        background: #1A1A1A;
+        margin-bottom: 8px;
         border-radius: 6px;
         font-size: 13px;
         color: #eee;
         font-weight: bold;
     }}
     .contract-box {{
-        border: 2px solid {ACCENT};
-        padding: 45px;
+        border: 2px dashed {ACCENT};
+        padding: 40px;
         text-align: center;
-        border-radius: 16px;
-        background: linear-gradient(160deg, rgba(212,175,55,0.05) 0%, rgba(255,255,255,0.01) 100%);
+        border-radius: 15px;
+        background: rgba(255,255,255,0.02);
         margin-top: 20px;
     }}
     .graphics-table {{
@@ -296,12 +273,13 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         padding: 0;
         vertical-align: middle;
     }}
+    
     .checklist-table {{
         width: 100%;
         border-collapse: collapse;
-        background: linear-gradient(90deg, #161616 0%, #101010 100%);
+        background: rgba(255,255,255,0.03);
         border: 1px solid {BORDER};
-        margin-bottom: 9px;
+        margin-bottom: 10px;
         border-radius: 8px;
     }}
     .checklist-td-box {{
@@ -327,14 +305,12 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     <body>
 
     <div class="page">
-        <div class="gold-line-top"></div>
         <img src="data:image/png;base64,{qr_b64}" class="qr-corner">
         
         <div class="content" style="text-align:center; padding-top:120px;">
             <img src="data:image/png;base64,{logo_b64}" class="hero-logo">
             <div class="hero-title">Elite System</div>
-            <div class="hero-sub">Ingeniería Corporal de Alto Rendimiento</div>
-            <div class="hero-divider"></div>
+            <div class="hero-sub">INGENIERÍA CORPORAL DE ALTO RENDIMIENTO</div>
 
             <div class="premium-card" style="margin-top:60px; text-align: left;">
                 <div class="label">ATLETA AUTORIZADO</div>
