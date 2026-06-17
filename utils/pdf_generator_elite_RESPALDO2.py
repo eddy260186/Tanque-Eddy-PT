@@ -37,14 +37,11 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     if not os.path.exists(logo_path):
         logo_path = "logo_tanque.png"
 
-    # Paleta MINIMALISTA CLARA (estilo coach premium)
-    WHITE = "#1a1a1a"            # texto principal oscuro (sobre fondo claro)
-    BLACK = "#faf8f3"           # fondo crema (era el fondo negro, ahora claro)
-    CARD = "#ffffff"            # tarjetas blancas
-    BORDER = "#e8e4d8"          # bordes suaves crema
-    CYAN = "#5b8a72"            # verde sobrio para el segundo macro
-    INK = "#1a1a1a"             # tinta oscura
-    MUTED = "#999990"           # gris texto secundario
+    WHITE = "#FFFFFF"
+    BLACK = "#050505"
+    CARD = "#111111"
+    BORDER = "rgba(255,255,255,0.15)"
+    CYAN = "#00D9FF"
 
     logo_b64 = img_to_b64(logo_path)
     qr_b64 = img_to_b64("qr_code.png")
@@ -140,7 +137,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     <html>
     <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
     <style>
     @page {{
         size: A4;
@@ -154,7 +151,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         margin: 0;
         padding: 0;
         background: {BLACK};
-        color: {INK};
+        color: white;
         font-family: 'Montserrat', sans-serif;
         -webkit-font-smoothing: antialiased;
     }}
@@ -164,6 +161,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         position: relative;
         page-break-after: always;
         background: {BLACK};
+        background-image: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.06) 0%, transparent 45%);
     }}
     .fluid-page {{
         width: 210mm;
@@ -176,6 +174,14 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         z-index: 2;
         padding: 55px;
     }}
+    /* Línea decorativa dorada superior en cada página */
+    .gold-line-top {{
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, transparent 0%, {ACCENT} 25%, {ACCENT} 75%, transparent 100%);
+        z-index: 3;
+    }}
     .qr-corner {{
         position: absolute;
         top: 45px;
@@ -183,74 +189,78 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         width: 80px;
         background: white;
         padding: 6px;
-        border-radius: 8px;
-        border: 1px solid {BORDER};
+        border-radius: 10px;
+        border: 2px solid {ACCENT};
         z-index: 5;
     }}
     .hero-logo {{
-        width: 200px;
+        width: 240px;
         margin-bottom: 10px;
     }}
     .hero-title {{
         font-family: 'Playfair Display', serif;
-        font-size: 52px;
-        font-weight: 700;
-        letter-spacing: -1px;
+        font-size: 58px;
+        font-weight: 900;
+        letter-spacing: 2px;
         margin-top: 10px;
         margin-bottom: 0px;
-        color: {INK};
-        line-height: 1.05;
+        color: {ACCENT};
+        text-transform: uppercase;
+        line-height: 1.1;
     }}
     .hero-sub {{
-        color: {ACCENT};
-        letter-spacing: 3px;
+        color: #9a9a9a;
+        letter-spacing: 4px;
         font-size: 11px;
-        margin-top: 16px;
-        font-weight: 600;
+        margin-top: 10px;
+        font-weight: 700;
         text-transform: uppercase;
     }}
+    /* Adorno: pequeña línea dorada centrada bajo el subtítulo */
     .hero-divider {{
-        width: 56px;
-        height: 3px;
+        width: 60px;
+        height: 2px;
         background: {ACCENT};
-        margin: 20px auto 0;
+        margin: 22px auto 0;
     }}
     .premium-card {{
-        background: {CARD};
+        background: linear-gradient(160deg, #161616 0%, #0d0d0d 100%);
         border: 1px solid {BORDER};
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 20px;
+        border-top: 3px solid {ACCENT};
+        border-radius: 14px;
+        padding: 26px;
+        margin-bottom: 24px;
         page-break-inside: avoid;
     }}
     .section-title {{
         font-family: 'Playfair Display', serif;
         font-size: 30px;
-        font-weight: 700;
-        color: {INK};
+        font-weight: 900;
+        color: white;
         margin-top: 10px;
-        margin-bottom: 26px;
-        letter-spacing: -0.5px;
-        border-left: 3px solid {ACCENT};
-        padding-left: 16px;
+        margin-bottom: 28px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        border-left: 4px solid {ACCENT};
+        padding-left: 18px;
     }}
     .label {{
-        color: {MUTED};
-        font-size: 10px;
+        color: {ACCENT};
+        font-size: 11px;
         letter-spacing: 2px;
         text-transform: uppercase;
-        font-weight: 600;
+        font-weight: 700;
     }}
     .value {{
-        font-size: 24px;
-        font-weight: 700;
-        color: {INK};
+        font-size: 26px;
+        font-weight: 900;
+        color: white;
         margin-top: 6px;
     }}
     .macro-bar {{
         width: 100%;
-        height: 10px;
-        background: #efece3;
+        height: 12px;
+        background: #1e1e1e;
         border-radius: 10px;
         margin-top: 10px;
         overflow: hidden;
@@ -262,19 +272,19 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     .exercise {{
         padding: 13px 16px;
         border-left: 3px solid {ACCENT};
-        background: #f5f2ea;
-        margin-bottom: 8px;
-        border-radius: 0 6px 6px 0;
+        background: linear-gradient(90deg, #1c1c1c 0%, #141414 100%);
+        margin-bottom: 9px;
+        border-radius: 6px;
         font-size: 13px;
-        color: {INK};
-        font-weight: 600;
+        color: #eee;
+        font-weight: bold;
     }}
     .contract-box {{
-        border: 1px solid {ACCENT};
-        padding: 42px;
+        border: 2px solid {ACCENT};
+        padding: 45px;
         text-align: center;
-        border-radius: 14px;
-        background: #fffdf8;
+        border-radius: 16px;
+        background: linear-gradient(160deg, rgba(212,175,55,0.05) 0%, rgba(255,255,255,0.01) 100%);
         margin-top: 20px;
     }}
     .graphics-table {{
@@ -289,9 +299,9 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     .checklist-table {{
         width: 100%;
         border-collapse: collapse;
-        background: {CARD};
+        background: linear-gradient(90deg, #161616 0%, #101010 100%);
         border: 1px solid {BORDER};
-        margin-bottom: 8px;
+        margin-bottom: 9px;
         border-radius: 8px;
     }}
     .checklist-td-box {{
@@ -303,8 +313,8 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         padding: 14px 18px 14px 0;
         vertical-align: middle;
         font-size: 14px;
-        font-weight: 600;
-        color: {INK};
+        font-weight: bold;
+        color: #ddd;
     }}
     .checkbox-indicator {{
         width: 16px;
@@ -317,18 +327,19 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     <body>
 
     <div class="page">
+        <div class="gold-line-top"></div>
         <img src="data:image/png;base64,{qr_b64}" class="qr-corner">
         
         <div class="content" style="text-align:center; padding-top:120px;">
             <img src="data:image/png;base64,{logo_b64}" class="hero-logo">
-            <div class="hero-title">Tu Plan Elite</div>
+            <div class="hero-title">Elite System</div>
             <div class="hero-sub">Ingeniería Corporal de Alto Rendimiento</div>
             <div class="hero-divider"></div>
 
             <div class="premium-card" style="margin-top:60px; text-align: left;">
                 <div class="label">ATLETA AUTORIZADO</div>
                 <div class="value" style="font-size: 32px;">{nombre.upper()}</div>
-                <div style="margin-top:5px; color:#999990; letter-spacing:2px; font-size:12px; font-weight: bold;">
+                <div style="margin-top:5px; color:#aaa; letter-spacing:2px; font-size:12px; font-weight: bold;">
                     NIVEL {nivel.upper()}
                 </div>
 
@@ -369,11 +380,11 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                     </td>
                     <td class="premium-card" style="margin-bottom:0; text-align: center;">
                         <div class="label">ESTATURA</div>
-                        <div class="value">{estatura} <span style="font-size:14px; color:#999990;">CM</span></div>
+                        <div class="value">{estatura} <span style="font-size:14px; color:#aaa;">CM</span></div>
                     </td>
                     <td class="premium-card" style="margin-bottom:0; text-align: center;">
                         <div class="label">PESO</div>
-                        <div class="value">{peso} <span style="font-size:14px; color:#999990;">KG</span></div>
+                        <div class="value">{peso} <span style="font-size:14px; color:#aaa;">KG</span></div>
                     </td>
                 </tr>
             </table>
@@ -385,7 +396,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
 
             <div class="premium-card">
                 <div class="label">AGUA / GRASA CORPORAL ESPERADA</div>
-                <div class="value">{agua}L <span style="font-size:16px; color:#999990;">Hidratación</span> &nbsp;|&nbsp; {rfm}% <span style="font-size:16px; color:#999990;">RFM</span></div>
+                <div class="value">{agua}L <span style="font-size:16px; color:#888;">Hidratación</span> &nbsp;|&nbsp; {rfm}% <span style="font-size:16px; color:#888;">RFM</span></div>
             </div>
 
             <div class="premium-card">
@@ -394,14 +405,14 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                     <tr>
                         <td style="width: 38%; text-align: center; border-right: 1px solid rgba(255,255,255,0.08); padding-right: 15px;">
                             <svg viewBox="0 0 42 42" style="width: 125px; height: 125px; margin: 0 auto; display: block;">
-                                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e8e4d8" stroke-width="5" />
+                                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#222" stroke-width="5" />
                                 <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{ACCENT}" stroke-width="5" stroke-dasharray="{pct_p} {100-pct_p}" stroke-dashoffset="{offset_p}" />
                                 <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{CYAN}" stroke-width="5" stroke-dasharray="{pct_c} {100-pct_c}" stroke-dashoffset="{offset_c}" />
                                 <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#FF9800" stroke-width="5" stroke-dasharray="{pct_g} {100-pct_g}" stroke-dashoffset="{offset_g}" />
-                                <text x="21" y="20" fill="#1a1a1a" font-size="6" font-weight="900" text-anchor="middle">AI</text>
+                                <text x="21" y="20" fill="white" font-size="6" font-weight="900" text-anchor="middle">AI</text>
                                 <text x="21" y="25" fill="{ACCENT}" font-size="3.5" font-weight="bold" text-anchor="middle">MACROS</text>
                             </svg>
-                            <div style="margin-top: 15px; font-size: 11px; font-weight: bold; line-height: 1.5; text-align: center; color: #999990; white-space: nowrap;">
+                            <div style="margin-top: 15px; font-size: 11px; font-weight: bold; line-height: 1.5; text-align: center; color: #aaa; white-space: nowrap;">
                                 <span style="color:{ACCENT};">■</span> {pct_p:.0f}% P &nbsp;&nbsp;&nbsp;&nbsp;
                                 <span style="color:{CYAN};">■</span> {pct_c:.0f}% C &nbsp;&nbsp;&nbsp;&nbsp;
                                 <span style="color:#FF9800;">■</span> {pct_g:.0f}% G
@@ -432,7 +443,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
                 <div class="macro-bar"><div class="macro-fill" style="width:55%; background:#FF9800;"></div></div>
                 <div class="value">{grasas}G</div>
             </div>
-            <div style="margin-top: 30px; margin-bottom: 20px; font-weight: 900; letter-spacing: 1px; color: #999990; font-size: 14px; text-transform: uppercase;">
+            <div style="margin-top: 30px; margin-bottom: 20px; font-weight: 900; letter-spacing: 1px; color: #aaa; font-size: 14px; text-transform: uppercase;">
                 Distribución de Menús Dinámicos
             </div>
     """
@@ -442,7 +453,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         html += f"""
             <div class="premium-card">
                 <div class="label">{comida.upper()}</div>
-                <div style="margin-top:12px; color:#3a3a36; line-height:1.8; font-size:14px; font-weight: bold;">
+                <div style="margin-top:12px; color:#ccc; line-height:1.8; font-size:14px; font-weight: bold;">
                     {opcion}
                 </div>
             </div>
@@ -455,7 +466,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     <div class="fluid-page" style="page-break-after: always; padding-bottom: 60px;">
         <div class="content">
             <div class="section-title">Protocolo de Abastecimiento</div>
-            <div style="margin-bottom: 25px; color: #999990; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">
+            <div style="margin-bottom: 25px; color: #888; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">
                 Lista Completa y Detallada para el Mes Completo (30 Días)
             </div>
     """
@@ -508,12 +519,12 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
             
             <div class="contract-box">
                 <h2 style="color:{ACCENT}; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 30px;">Contrato de Disciplina</h2>
-                <p style="color:#3a3a36; font-size: 16px; line-height: 2; font-style: italic; margin-bottom: 50px;">
+                <p style="color:#ddd; font-size: 16px; line-height: 2; font-style: italic; margin-bottom: 50px;">
                     "Yo, <strong>{nombre.upper()}</strong>, me comprometo a seguir este protocolo con disciplina inquebrantable. Entiendo que los resultados excepcionales requieren un esfuerzo excepcional. No hay excusas, solo ejecución. Mi transformación física y mental empieza hoy."
                 </p>
                 
-                <div style="border-bottom: 1px solid #cfcabb; width: 70%; margin: 0 auto;"></div>
-                <div style="margin-top: 15px; color: #999990; font-size: 12px; letter-spacing: 3px; font-weight: bold;">FIRMA DEL ATLETA</div>
+                <div style="border-bottom: 1px solid #555; width: 70%; margin: 0 auto;"></div>
+                <div style="margin-top: 15px; color: #888; font-size: 12px; letter-spacing: 3px; font-weight: bold;">FIRMA DEL ATLETA</div>
                 
                 <div style="margin-top: 50px;">
                     <img src="data:image/png;base64,{logo_b64}" style="width: 120px; opacity: 0.3;">
