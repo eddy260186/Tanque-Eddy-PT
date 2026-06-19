@@ -86,27 +86,11 @@ def obtener_rutina_del_dia(alumno_id: str):
         return None
 
 
-# Numeritos bonitos para los ejercicios (1️⃣ 2️⃣ 3️⃣ ...)
-_NUMEROS = [
-    "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣",
-    "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"
-]
-
-
-def _numero_bonito(i: int) -> str:
-    """Devuelve el emoji-numero para la posicion i (0-based)."""
-    if i < len(_NUMEROS):
-        return _NUMEROS[i]
-    return f"{i + 1}."
-
-
 def formatear_ejercicios(rutina: dict):
 
     """
-    Convierte el jsonb de ejercicios en texto numerado bonito:
-
-    1️⃣ Jalón al pecho
-       📊 4 series × 12 reps
+    Convierte el jsonb de ejercicios en texto:
+    Jalon al pecho - 4 x 12
     """
 
     ejercicios = rutina.get("ejercicios") or []
@@ -116,13 +100,11 @@ def formatear_ejercicios(rutina: dict):
 
     lineas = []
 
-    for i, ej in enumerate(ejercicios):
-
-        numero = _numero_bonito(i)
+    for ej in ejercicios:
 
         if isinstance(ej, str):
 
-            lineas.append(f"{numero} {ej}")
+            lineas.append(f"• {ej}")
 
             continue
 
@@ -145,15 +127,14 @@ def formatear_ejercicios(rutina: dict):
         if series and reps:
 
             lineas.append(
-                f"{numero} *{nombre}*\n"
-                f"     📊 {series} series × {reps} reps"
+                f"• {nombre} — {series} x {reps}"
             )
 
         else:
 
-            lineas.append(f"{numero} *{nombre}*")
+            lineas.append(f"• {nombre}")
 
-    return "\n\n".join(lineas)
+    return "\n".join(lineas)
 
 
 # =========================================================
@@ -163,8 +144,7 @@ def formatear_ejercicios(rutina: dict):
 def obtener_macros(alumno_id: str):
 
     """
-    Devuelve texto con kcal y macros del plan vigente,
-    con iconos por cada macro.
+    Devuelve texto con kcal y macros del plan vigente.
     """
 
     try:
@@ -195,7 +175,7 @@ def obtener_macros(alumno_id: str):
         )
 
         if kcal:
-            partes.append(f"🔥 {kcal} kcal")
+            partes.append(f"• {kcal} kcal")
 
         proteina = (
             macros.get("proteina")
@@ -203,15 +183,7 @@ def obtener_macros(alumno_id: str):
         )
 
         if proteina:
-            partes.append(f"🥩 {proteina} g proteína")
-
-        carbos = (
-            macros.get("carbohidratos")
-            or macros.get("carbos")
-        )
-
-        if carbos:
-            partes.append(f"🍚 {carbos} g carbohidratos")
+            partes.append(f"• {proteina} g proteína")
 
         grasa = (
             macros.get("grasa")
@@ -219,7 +191,15 @@ def obtener_macros(alumno_id: str):
         )
 
         if grasa:
-            partes.append(f"🥑 {grasa} g grasa")
+            partes.append(f"• {grasa} g grasa")
+
+        carbos = (
+            macros.get("carbohidratos")
+            or macros.get("carbos")
+        )
+
+        if carbos:
+            partes.append(f"• {carbos} g carbohidratos")
 
         return "\n".join(partes) if partes else None
 
@@ -339,7 +319,7 @@ def obtener_resumen_calorico(alumno_id: str):
             else:
                 partes.append(tipo)
 
-        desglose = "  ·  ".join(partes)
+        desglose = " · ".join(partes)
 
         return total, desglose
 
@@ -382,10 +362,8 @@ def componer_resumen_matutino(
 
     hoy = dia_semana_hoy().capitalize()
 
-    msg = "━━━━━━━━━━━━━━━\n"
-    msg += f"☀️ *BUENOS DÍAS, {nombre.upper()}* 💪\n"
-    msg += "━━━━━━━━━━━━━━━\n\n"
-    msg += f"📅 Hoy es *{hoy}*"
+    msg = f"Buenos días, {nombre} 💪\n"
+    msg += f"Hoy es {hoy}"
 
     rutina = obtener_rutina_del_dia(alumno_id)
 
@@ -396,27 +374,27 @@ def componer_resumen_matutino(
             "Entrenamiento"
         )
 
-        msg += f" y toca:\n\n🏋️ *{grupo}*"
+        msg += f" y toca:\n\n🏋️ {grupo}"
 
         if rutina.get("objetivo"):
-            msg += f"\n🎯 Objetivo: {rutina['objetivo']}"
+            msg += f"\nObjetivo: {rutina['objetivo']}"
 
     else:
 
-        msg += ".\n\n😌 Hoy es *día de descanso*.\n" \
-               "Aprovechá para recuperar bien."
+        msg += ".\n\n😌 Hoy es día de descanso. " \
+               "Aprovechá para recuperar."
 
     macros = obtener_macros(alumno_id)
 
     if macros:
 
-        msg += f"\n\n🍽️ *Tu objetivo nutricional de hoy:*\n{macros}"
+        msg += f"\n\nObjetivo nutricional del día:\n{macros}"
 
     # Total calorico y reparto de comidas
     total_kcal, desglose = obtener_resumen_calorico(alumno_id)
 
     if total_kcal:
-        msg += f"\n\n📊 *Hoy comés {total_kcal} kcal* repartidas en:"
+        msg += f"\n\n📊 Hoy comés {total_kcal} kcal repartidas en:"
         if desglose:
             msg += f"\n{desglose}"
 
@@ -439,7 +417,7 @@ def componer_resumen_matutino(
             if lista.data:
 
                 msg += (
-                    "\n\n🛒 *¡ARRANCA EL MES!*\n"
+                    "\n\n🛒 ARRANCA EL MES — "
                     "Tu lista de compras:\n"
                 )
 
@@ -449,7 +427,7 @@ def componer_resumen_matutino(
 
             pass
 
-    msg += "\n\n🔥 _¡Vamos por un gran día, Tanque!_"
+    msg += "\n\n¡Vamos por un gran día! 🔥"
 
     return msg
 
@@ -483,8 +461,8 @@ def componer_mensaje_comida(
         detalle = opciones[indice]
 
         extra = (
-            f"\n\n🔄 _Opción {indice + 1} de {len(opciones)} "
-            f"de tu plan_"
+            f"\n\n(Opción {indice + 1} de {len(opciones)} "
+            f"de tu plan)"
         )
 
     else:
@@ -492,35 +470,33 @@ def componer_mensaje_comida(
         detalle = comida.get("detalle", "")
         extra = ""
 
-    msg = "━━━━━━━━━━━━━━━\n"
-    msg += f"{emoji} *{titulo.upper()}*\n"
-    msg += "━━━━━━━━━━━━━━━\n\n"
-    msg += "👉 Hoy te toca:\n\n"
-    msg += f"🍽️ {detalle}" + extra
+    msg = f"{titulo} {emoji}\n"
+    msg += "Hoy corresponde:\n\n"
+    msg += detalle + extra
 
     if comida.get("kcal"):
-        msg += f"\n\n🔥 *Esta comida:* ~{comida['kcal']} kcal"
+        msg += f"\n\n🔥 Esta comida: ~{comida['kcal']} kcal"
 
     # Macros del plato (proteína / carbos / grasa)
     macros_plato = []
 
     if comida.get("proteina_g"):
-        macros_plato.append(f"🥩 P: {comida['proteina_g']}g")
+        macros_plato.append(f"P: {comida['proteina_g']}g")
 
     if comida.get("carbos_g"):
-        macros_plato.append(f"🍚 C: {comida['carbos_g']}g")
+        macros_plato.append(f"C: {comida['carbos_g']}g")
 
     if comida.get("grasa_g"):
-        macros_plato.append(f"🥑 G: {comida['grasa_g']}g")
+        macros_plato.append(f"G: {comida['grasa_g']}g")
 
     if macros_plato:
-        msg += "\n" + "   ".join(macros_plato)
+        msg += "\n💪 " + " · ".join(macros_plato)
 
     # Desglose del dia completo
     total, desglose = obtener_resumen_calorico(alumno_id)
 
     if total:
-        msg += f"\n\n📊 *Meta del día:* {total} kcal"
+        msg += f"\n\n📊 Meta del día: {total} kcal"
         if desglose:
             msg += f"\n{desglose}"
 
@@ -542,11 +518,7 @@ def componer_mensaje_entrenamiento(
         "Entrenamiento"
     )
 
-    msg = "━━━━━━━━━━━━━━━\n"
-    msg += f"🏋️ *RUTINA DE HOY*\n"
-    msg += f"🔥 {grupo.upper()}\n"
-    msg += "━━━━━━━━━━━━━━━\n\n"
-    msg += f"Dale {nombre}, hoy rompemos todo 💪\n\n"
+    msg = f"🏋️ ENTRENAMIENTO DEL DÍA — {grupo}\n\n"
 
     ejercicios_txt = formatear_ejercicios(rutina)
 
@@ -555,15 +527,11 @@ def componer_mensaje_entrenamiento(
     else:
         msg += "Consultá tu rutina con tu entrenador."
 
-    msg += "\n\n━━━━━━━━━━━━━━━\n"
-    msg += "⏱️ Descanso: 60-90 seg entre series\n"
-    msg += "💧 Llevá agua e hidratate"
-
     if rutina.get("duracion_minutos"):
-        msg += f"\n⏰ Duración estimada: " \
+        msg += f"\n\n⏱️ Duración estimada: " \
                f"{rutina['duracion_minutos']} min"
 
-    msg += f"\n\n👊 _Cuando termines, avisame \"listo\"_"
+    msg += f"\n\n¡A darle con todo, {nombre}! 🔥"
 
     return msg
 
@@ -575,23 +543,16 @@ def componer_pre_entrenamiento(
 
     rutina = obtener_rutina_del_dia(alumno_id)
 
-    msg = "━━━━━━━━━━━━━━━\n"
-    msg += f"⏰ *FALTA 1 HORA, {nombre.upper()}*\n"
-    msg += "━━━━━━━━━━━━━━━\n\n"
-    msg += "Prepará todo para entrenar:\n\n"
-    msg += "💧 Agua\n"
-    msg += "🧴 Toalla\n"
-    msg += "💊 Creatina\n"
-    msg += "🎧 Tu música"
+    msg = f"⏰ {nombre}, en 60 minutos comienza " \
+          f"tu entrenamiento.\n\nPrepará:\n" \
+          f"• Agua\n• Toalla\n• Creatina"
 
     if rutina:
 
         grupo = rutina.get("grupo_muscular", "")
 
         if grupo:
-            msg += f"\n\n🏋️ Hoy toca: *{grupo}* 💪"
-
-    msg += "\n\n🔥 _A romperla en un rato, Tanque!_"
+            msg += f"\n\nHoy toca: {grupo} 💪"
 
     return msg
 
@@ -601,9 +562,7 @@ def componer_post_entrenamiento(
     nombre: str
 ):
 
-    msg = "━━━━━━━━━━━━━━━\n"
-    msg += f"💪 *¿CÓMO TE FUE, {nombre.upper()}?*\n"
-    msg += "━━━━━━━━━━━━━━━\n\n"
+    msg = f"💪 ¿Cómo te fue el entrenamiento, {nombre}?\n\n"
 
     comida = obtener_comida(
         alumno_id,
@@ -611,12 +570,12 @@ def componer_post_entrenamiento(
     )
 
     if comida:
-        msg += f"🥤 *Recordá tu post-entreno:*\n" \
+        msg += f"Recordá tu post entreno:\n" \
                f"{comida.get('detalle', '')}\n\n"
 
-    msg += "📈 Contame qué hiciste y con cuánto peso\n" \
-           "_(ej: sentadilla 60kg 4x10)_\n\n" \
-           "Así registro tu progreso 💪"
+    msg += "Contame qué ejercicios hiciste y con " \
+           "cuánto peso (ej: sentadilla 60kg 4x10) " \
+           "así registro tu progreso 📈"
 
     return msg
 
@@ -626,18 +585,15 @@ def componer_checkin_nocturno(
 ):
 
     return (
-        "━━━━━━━━━━━━━━━\n"
-        f"🌙 *CIERRE DEL DÍA, {nombre.upper()}*\n"
-        "━━━━━━━━━━━━━━━\n\n"
-        "¿Cómo te fue hoy?\n\n"
-        "✅ Dieta\n"
-        "✅ Entrenamiento\n"
-        "✅ Agua\n\n"
-        "👉 *Respondé con un número:*\n\n"
-        "1️⃣ Sí, cumplí todo 🔥\n"
-        "2️⃣ Parcial, algo me faltó\n"
-        "3️⃣ Hoy no pude\n\n"
-        "_Mañana es otra oportunidad para darle 💪_"
+        f"📋 Cierre del día, {nombre}\n\n"
+        f"¿Cumpliste hoy?\n"
+        f"✅ Dieta\n"
+        f"✅ Entrenamiento\n"
+        f"✅ Agua\n\n"
+        f"Respondé:\n"
+        f"1 = Sí, todo\n"
+        f"2 = Parcial\n"
+        f"3 = No pude"
     )
 
 
@@ -709,21 +665,19 @@ def componer_suplementacion(
     emoji = EMOJIS_SUPLE.get(momento, "💊")
     titulo = TITULOS_SUPLE.get(momento, "Suplementos")
 
-    msg = "━━━━━━━━━━━━━━━\n"
-    msg += f"{emoji} *{titulo.upper()}*\n"
-    msg += "━━━━━━━━━━━━━━━\n\n"
+    msg = f"{emoji} {titulo}\n\n"
 
     for sup in items:
 
-        linea = f"💊 *{sup.get('nombre', '')}*"
+        linea = f"• {sup.get('nombre', '')}"
 
         if sup.get("dosis"):
             linea += f" — {sup['dosis']}"
 
         if sup.get("nota"):
-            linea += f"\n     _{sup['nota']}_"
+            linea += f" ({sup['nota']})"
 
-        msg += linea + "\n\n"
+        msg += linea + "\n"
 
     return msg.strip()
 
