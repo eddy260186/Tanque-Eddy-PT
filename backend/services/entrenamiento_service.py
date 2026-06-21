@@ -9,6 +9,12 @@ from utils.logger import obtener_logger
 
 logger = obtener_logger("EntrenamientoService")
 
+# Sistema de logros / medallas (opcional, no rompe si falta)
+try:
+    from automation.logros import revisar_logros
+except Exception:
+    revisar_logros = None
+
 # =========================================================
 # CONFIGURAR GEMINI
 # =========================================================
@@ -298,3 +304,48 @@ def obtener_historial_entrenamientos(
         )
 
         return "Sin datos de entrenamiento."
+
+
+# =========================================================
+# GUARDAR ENTRENO + REVISAR MEDALLAS (todo junto)
+# =========================================================
+
+def procesar_entreno_con_logros(
+    alumno_id: str,
+    mensaje_alumno: str,
+    nombre: str = ""
+):
+    """
+    Guarda el entreno del alumno Y revisa si desbloqueó
+    medallas nuevas.
+
+    Devuelve un dict:
+      {
+        "ejercicios_guardados": int,
+        "mensajes_medalla": [str, ...]   # mensajes para enviar por WhatsApp
+      }
+
+    Usar esta función al procesar la respuesta del alumno
+    cuando reporta su entreno por WhatsApp.
+    """
+
+    resultado = {
+        "ejercicios_guardados": 0,
+        "mensajes_medalla": []
+    }
+
+    # 1. Guardar el entreno (función existente, intacta)
+    cantidad = guardar_entrenamiento_estructurado(
+        alumno_id, mensaje_alumno
+    )
+    resultado["ejercicios_guardados"] = cantidad
+
+    # 2. Si se guardó algo, revisar medallas
+    if cantidad > 0 and revisar_logros is not None:
+        try:
+            mensajes = revisar_logros(alumno_id, nombre)
+            resultado["mensajes_medalla"] = mensajes or []
+        except Exception as e:
+            logger.error(f"❌ Error revisando logros: {str(e)}")
+
+    return resultado
