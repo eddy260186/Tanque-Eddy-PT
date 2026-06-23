@@ -4,18 +4,6 @@ from utils.logger import obtener_logger
 from database.conexion import supabase
 from backend.services.entrenamiento_service import guardar_entrenamiento_estructurado
 
-# Sistema de logros / medallas (opcional, no rompe si falta)
-try:
-    from automation.logros import revisar_logros
-except Exception:
-    revisar_logros = None
-
-# Envio por WhatsApp (para mandar la medalla al alumno)
-try:
-    from backend.services.whatsapp_service import enviar_mensaje_texto_evolution
-except Exception:
-    enviar_mensaje_texto_evolution = None
-
 logger = obtener_logger("WhatsAppMessageProcessor")
 
 
@@ -48,6 +36,8 @@ def detectar_intencion_mensaje(
 
     # =====================================================
     # ENTRENAMIENTO
+    # (se evalúa ANTES que el peso corporal, porque
+    # "sentadilla 60kg" tiene kg pero es entrenamiento)
     # =====================================================
 
     palabras_entreno = [
@@ -154,61 +144,14 @@ def detectar_intencion_mensaje(
     }
 
 
-def _enviar_medallas(alumno_id: str, mensajes_medalla: list):
-    """
-    Envia por WhatsApp las medallas que el alumno gano.
-    Busca su telefono y entrenador para mandar el mensaje.
-    """
-    if not mensajes_medalla or enviar_mensaje_texto_evolution is None:
-        return
-
-    try:
-        res = (
-            supabase
-            .table("perfiles_atletas")
-            .select("nombre_completo, telefono, entrenador_id")
-            .eq("id", alumno_id)
-            .execute()
-        )
-
-        if not res.data:
-            return
-
-        alumno = res.data[0]
-        telefono = str(alumno.get("telefono", "")).strip()
-        entrenador_id = alumno.get("entrenador_id")
-
-        if not telefono or not entrenador_id:
-            logger.warning("No se pudo enviar medalla: falta telefono o entrenador.")
-            return
-
-        instancia_nombre = f"coach_{str(entrenador_id)[:8]}"
-
-        for mensaje_medalla in mensajes_medalla:
-            try:
-                enviar_mensaje_texto_evolution(
-                    nombre_instancia=instancia_nombre,
-                    alumno_id=alumno_id,
-                    entrenador_id=entrenador_id,
-                    telefono=telefono,
-                    mensaje=mensaje_medalla
-                )
-                logger.info(f"🏅 Medalla enviada al alumno {str(alumno_id)[:8]}.")
-            except Exception as e:
-                logger.error(f"❌ Error enviando medalla: {str(e)}")
-
-    except Exception as e:
-        logger.error(f"❌ Error buscando datos para medalla: {str(e)}")
-
-
 def guardar_interaccion_atleta(
     alumno_id: str,
     mensaje: str
 ):
 
     """
-    Guarda automaticamente
-    informacion importante del atleta.
+    Guarda automáticamente
+    información importante del atleta.
     """
 
     try:
@@ -267,7 +210,9 @@ def guardar_interaccion_atleta(
             )
 
         # =====================================================
-        # GUARDAR ENTRENAMIENTO + REVISAR MEDALLAS
+        # GUARDAR ENTRENAMIENTO
+        # (extrae con IA: ejercicio, peso, series, reps
+        # y los guarda en ejercicios_realizados)
         # =====================================================
 
         elif tipo == "entrenamiento":
@@ -282,33 +227,9 @@ def guardar_interaccion_atleta(
                 f"({cantidad} ejercicios)."
             )
 
-            # 🏅 REVISAR MEDALLAS POR ENTRENOS
-            if cantidad > 0 and revisar_logros is not None:
-
-                try:
-
-                    perfil = (
-                        supabase
-                        .table("perfiles_atletas")
-                        .select("nombre_completo")
-                        .eq("id", alumno_id)
-                        .execute()
-                    )
-
-                    nombre = ""
-                    if perfil.data:
-                        nombre = perfil.data[0].get("nombre_completo", "")
-
-                    mensajes_medalla = revisar_logros(alumno_id, nombre)
-
-                    if mensajes_medalla:
-                        _enviar_medallas(alumno_id, mensajes_medalla)
-
-                except Exception as e:
-                    logger.error(f"❌ Error revisando medallas: {str(e)}")
-
         # =====================================================
         # REGISTRAR MENSAJE ENTRANTE
+        # (en tu tabla mensajes_whatsapp existente)
         # =====================================================
 
         supabase.table(
