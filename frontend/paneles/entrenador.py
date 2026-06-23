@@ -205,7 +205,8 @@ def panel_entrenador(entrenador_uuid):
     # Variables biométricas seguras
     edad = _calcular_edad(alumno.get("fecha_nacimiento"))
     genero = "Masculino" if str(alumno.get("genero", "m")).strip().lower() == "m" else "Femenino"
-    peso_actual = alumno.get("peso", 0.0)
+    # El alumno guarda en 'peso_actual'; mantenemos 'peso' como respaldo por compatibilidad
+    peso_actual = alumno.get("peso_actual") or alumno.get("peso") or 0.0
     
     peso_objetivo = alumno.get("peso_objetivo", 0.0) if alumno.get("peso_objetivo") else (peso_actual - 5.0 if peso_actual else 70.0)
     plazo_meses = alumno.get("plazo_meses", 4) if alumno.get("plazo_meses") else 3
@@ -435,13 +436,28 @@ def panel_entrenador(entrenador_uuid):
             st.line_chart(data=curva_proyeccion, use_container_width=True)
             st.caption("Eje X: Línea temporal del proceso // Eje Y: Peso registrado en Kg.")
         else:
-            pesos_historicos = [log.get("peso") for log in logs_evolucion if log.get("peso")]
-            st.line_chart(data=pesos_historicos, use_container_width=True)
-            
+            import pandas as pd
+
+            # Armar serie con fecha real en el eje X
+            filas_grafico = []
+            for log in logs_evolucion:
+                peso_log = log.get("peso")
+                fecha_log = str(log.get("fecha_evaluacion") or "")[:10]
+                if peso_log and fecha_log:
+                    filas_grafico.append({"Fecha": fecha_log, "Peso (Kg)": float(peso_log)})
+
+            if filas_grafico:
+                df_peso = pd.DataFrame(filas_grafico)
+                df_peso = df_peso.set_index("Fecha")
+                st.line_chart(df_peso, use_container_width=True)
+                st.caption(f"🎯 Peso objetivo: {peso_objetivo} kg  ·  Cada punto es un control registrado.")
+            else:
+                st.info("Todavía no hay registros de peso con fecha.")
+
             tabla_historial = []
             for log in reversed(logs_evolucion):
                 tabla_historial.append({
-                    "Fecha de Control": log.get("fecha_evaluacion"),
+                    "Fecha de Control": str(log.get("fecha_evaluacion") or "")[:10],
                     "Peso Registrado (Kg)": log.get("peso"),
                     "% Grasa Corporal": log.get("porcentaje_grasa", "S/D"),
                     "Observaciones del Ajuste": log.get("observaciones", "Sin anotaciones")

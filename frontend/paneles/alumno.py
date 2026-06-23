@@ -270,7 +270,8 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                     supabase.table("evaluaciones_biometricas").insert({
                         "perfil_id": perfil_id, "edad": edad, "estatura": estatura, "peso": peso_actual, "cintura": cintura, "cadera": cadera, "cuello": cuello,
                         "torso": torso, "brazos": brazos, "gluteos": gluteos, "piernas": piernas, "pantorrillas": pantorrillas, "rfm": rfm, "nivel_experiencia": nivel_experiencia, 
-                        "meta": tipo_objetivo, "kcal_objetivo": int(cal_obj), "tipo_entrenamiento": tipo_entreno, "dias_entreno": dias_entreno, "fecha_registro": str(date.today())
+                        "meta": tipo_objetivo, "kcal_objetivo": int(cal_obj), "tipo_entrenamiento": tipo_entreno, "dias_entreno": dias_entreno, "fecha_registro": str(date.today()),
+                        "fecha_evaluacion": str(date.today()), "porcentaje_grasa": rfm
                     }).execute()
                     
                     info_extra_json = {
