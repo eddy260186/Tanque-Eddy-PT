@@ -94,58 +94,6 @@ def _mostrar_imagen_login():
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-def _obtener_profesionales():
-    """
-    Devuelve la lista de entrenadores y nutricionistas activos
-    para que el alumno elija al registrarse.
-
-    Cada item: {id, etiqueta} donde id es el perfil_id del profesional
-    y etiqueta es "Nombre (Especialidad)".
-    """
-    try:
-        # 1. Traer el staff (entrenadores y nutricionistas)
-        staff_resp = (
-            supabase
-            .table("roles_staff")
-            .select("perfil_id, rol")
-            .in_("rol", ["entrenador", "nutricionista"])
-            .execute()
-        )
-        staff = staff_resp.data or []
-
-        if not staff:
-            return []
-
-        # 2. Traer los nombres de esos profesionales
-        ids = [s["perfil_id"] for s in staff if s.get("perfil_id")]
-
-        perfiles_resp = (
-            supabase
-            .table("perfiles_atletas")
-            .select("id, nombre_completo")
-            .in_("id", ids)
-            .execute()
-        )
-        perfiles = {p["id"]: p.get("nombre_completo", "Profesional") for p in (perfiles_resp.data or [])}
-
-        # 3. Armar la lista con nombre + especialidad
-        profesionales = []
-        for s in staff:
-            pid = s.get("perfil_id")
-            rol = s.get("rol", "")
-            nombre = perfiles.get(pid, "Profesional")
-            especialidad = "Entrenador" if rol == "entrenador" else "Nutricionista"
-            profesionales.append({
-                "id": pid,
-                "etiqueta": f"{nombre} ({especialidad})"
-            })
-
-        return profesionales
-
-    except Exception:
-        return []
-
-
 def renderizar_login():
     """
     Sistema de autenticacion con Supabase Auth.
@@ -247,26 +195,6 @@ def renderizar_login():
                 label_visibility="collapsed",
             )
 
-            # =========================================================
-            # SELECTOR DE PROFESIONAL (entrenador o nutricionista)
-            # El alumno se vincula solo al registrarse.
-            # =========================================================
-            st.markdown('<p class="login-field-label">¿Quién es tu profesional?</p>', unsafe_allow_html=True)
-
-            profesionales = _obtener_profesionales()
-
-            if profesionales:
-                opciones_prof = ["— Elegí tu entrenador o nutricionista —"] + [p["etiqueta"] for p in profesionales]
-                prof_elegido = st.selectbox(
-                    "Profesional",
-                    opciones_prof,
-                    key="reg_profesional",
-                    label_visibility="collapsed",
-                )
-            else:
-                prof_elegido = None
-                st.caption("Todavía no hay profesionales disponibles. Podés registrarte igual y te asignan luego.")
-
             # Botón validado para arquitectura en la nube
             if st.button("Crear mi cuenta", type="primary", use_container_width=True):
                 if not nombre_reg or not email_reg or not pass_reg:
@@ -275,28 +203,12 @@ def renderizar_login():
                     try:
                         email_final = email_reg.lower().strip()
                         supabase.auth.sign_up({"email": email_final, "password": pass_reg})
-
-                        # Armar el perfil base
-                        nuevo_perfil = {
+                        supabase.table("perfiles_atletas").insert({
                             "email": email_final,
                             "nombre_completo": nombre_reg.strip(),
                             "genero": "m" if genero == "Masculino" else "f",
-                        }
-
-                        # Si eligió un profesional, vincularlo automáticamente
-                        if profesionales and prof_elegido and prof_elegido != "— Elegí tu entrenador o nutricionista —":
-                            for p in profesionales:
-                                if p["etiqueta"] == prof_elegido:
-                                    nuevo_perfil["entrenador_id"] = p["id"]
-                                    break
-
-                        supabase.table("perfiles_atletas").insert(nuevo_perfil).execute()
-
-                        if nuevo_perfil.get("entrenador_id"):
-                            st.success("✅ Cuenta creada y vinculada a tu profesional. Ahora inicia sesion para entrar.")
-                        else:
-                            st.success("Cuenta creada correctamente. Ahora inicia sesion para entrar.")
-
+                        }).execute()
+                        st.success("Cuenta creada correctamente. Ahora inicia sesion para entrar.")
                     except Exception as e:
                         st.error(f"Error en el registro: {e}")
 
