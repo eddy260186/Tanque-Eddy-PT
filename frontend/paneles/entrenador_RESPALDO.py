@@ -304,59 +304,6 @@ def panel_entrenador(entrenador_uuid):
             st.metric("Muslo Der.", f"{alumno.get('medida_muslo_der', '—')} cm")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # ============================================================
-        # CARGA MANUAL DE MEDIDAS POR EL ENTRENADOR
-        # (las medidas del alumno aparecen solas, pero el entrenador
-        #  también puede cargarlas o corregirlas a mano acá)
-        # ============================================================
-        st.divider()
-        with st.expander("✏️ Cargar / Editar medidas manualmente"):
-            st.caption("Si tomaste las medidas vos mismo, cargalas acá. Se guardan al instante.")
-
-            def _med(campo, etiqueta):
-                valor = alumno.get(campo)
-                try:
-                    valor = float(valor) if valor is not None else 0.0
-                except Exception:
-                    valor = 0.0
-                return st.number_input(etiqueta, value=valor, min_value=0.0, step=0.5,
-                                       key=f"edit_{campo}_{alumno.get('id')}")
-
-            e1, e2, e3 = st.columns(3)
-            with e1:
-                ed_cuello = _med("medida_cuello", "Cuello (cm)")
-                ed_pecho = _med("medida_pecho", "Pecho (cm)")
-                ed_cintura = _med("medida_cintura", "Cintura (cm)")
-                ed_cadera = _med("medida_cadera", "Cadera (cm)")
-            with e2:
-                ed_brazo_izq = _med("medida_brazo_izq", "Brazo Izq. (cm)")
-                ed_brazo_der = _med("medida_brazo_der", "Brazo Der. (cm)")
-                ed_muslo_izq = _med("medida_muslo_izq", "Muslo Izq. (cm)")
-            with e3:
-                ed_muslo_der = _med("medida_muslo_der", "Muslo Der. (cm)")
-                ed_gluteos = _med("medida_gluteos", "Glúteos (cm)")
-                ed_pantorrillas = _med("medida_pantorrillas", "Pantorrillas (cm)")
-
-            if st.button("💾 Guardar medidas", type="primary", use_container_width=True,
-                         key=f"btn_guardar_medidas_{alumno.get('id')}"):
-                try:
-                    supabase.table("perfiles_atletas").update({
-                        "medida_cuello": ed_cuello,
-                        "medida_pecho": ed_pecho,
-                        "medida_cintura": ed_cintura,
-                        "medida_cadera": ed_cadera,
-                        "medida_brazo_izq": ed_brazo_izq,
-                        "medida_brazo_der": ed_brazo_der,
-                        "medida_muslo_izq": ed_muslo_izq,
-                        "medida_muslo_der": ed_muslo_der,
-                        "medida_gluteos": ed_gluteos,
-                        "medida_pantorrillas": ed_pantorrillas,
-                    }).eq("id", alumno.get("id")).execute()
-                    st.success("✅ Medidas actualizadas correctamente.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"No se pudieron guardar las medidas: {e}")
-
     # TAB 3: ACCIONES DE PRESCRIPCIÓN DIRECTA (ARQUITECTURA LIMPIA)
     with tab_prescripcion:
         st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)

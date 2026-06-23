@@ -306,17 +306,6 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                             else peso_actual
                         ),
                         "plazo_meses": int(meses_plazo),
-                        # 📏 MEDIDAS CORPORALES (para que el entrenador las vea en su panel)
-                        "medida_cuello": cuello,
-                        "medida_pecho": torso,
-                        "medida_brazo_izq": brazos,
-                        "medida_brazo_der": brazos,
-                        "medida_cintura": cintura,
-                        "medida_cadera": cadera,
-                        "medida_muslo_izq": piernas,
-                        "medida_muslo_der": piernas,
-                        "medida_gluteos": gluteos,
-                        "medida_pantorrillas": pantorrillas,
                         "ultima_actualizacion": datetime.now().isoformat()
                     }).eq("id", perfil_id).execute()
 
