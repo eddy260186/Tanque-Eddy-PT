@@ -6,7 +6,6 @@ from database.conexion import supabase
 # 🔥 IMPORTAMOS EL CASO DE USO DE NUESTRA NUEVA CAPA DE APLICACIÓN
 from application.actualizar_plan import ejecutar_actualizacion_plan
 from frontend.paneles.gestion_agente import tab_rutina_semanal, tab_plan_comidas, tab_actividad_alumno, tab_suplementacion
-from frontend.paneles.gestion_grupos import tab_gestion_grupos
 
 def _calcular_edad(fecha_nac):
     if not fecha_nac:
@@ -181,10 +180,6 @@ def panel_entrenador(entrenador_uuid):
             <p style='color: #aaa; margin: 0;'>Su cuenta corporativa no tiene atletas vinculados por el Administrador General.</p>
         </div>
         """, unsafe_allow_html=True)
-        # Aunque no tenga alumnos, igual puede ver/crear grupos
-        st.divider()
-        with st.expander("👥 Mis Grupos / Clases", expanded=True):
-            tab_gestion_grupos(entrenador_uuid)
         return
 
     st.markdown("<h3 style='color: #ffffff; font-weight: 700; margin-bottom: 10px;'>📊 Centro de Control de Atletas</h3>", unsafe_allow_html=True)
@@ -254,10 +249,8 @@ def panel_entrenador(entrenador_uuid):
 
     # =========================================================================
     # ÁREA DE EXPEDIENTE 360 GRADOS
-    # (se agregó "👥 Grupos / Clases" como primera pestaña)
     # =========================================================================
-    tab_grupos, tab_diagnostico, tab_antropometria, tab_prescripcion, tab_rutina_sem, tab_comidas, tab_suple, tab_actividad, tab_seguimiento, tab_whatsapp_saas = st.tabs([
-        "👥 Grupos / Clases",
+    tab_diagnostico, tab_antropometria, tab_prescripcion, tab_rutina_sem, tab_comidas, tab_suple, tab_actividad, tab_seguimiento, tab_whatsapp_saas = st.tabs([
         "🔍 Diagnóstico Funcional", 
         "📏 Anatomía y Medidas", 
         "📝 Modificar Planificación (Rutina/Dieta)", 
@@ -268,12 +261,6 @@ def panel_entrenador(entrenador_uuid):
         "📈 Gráfica de Progreso Real",
         "📲 Vinculación WhatsApp QR"
     ])
-
-    # TAB GRUPOS: gestión de grupos/clases (CrossFit)
-    with tab_grupos:
-        st.markdown("<div class='ficha-container'>", unsafe_allow_html=True)
-        tab_gestion_grupos(entrenador_uuid)
-        st.markdown("</div>", unsafe_allow_html=True)
 
     # TAB 1: DIAGNÓSTICO FUNCIONAL
     with tab_diagnostico:
@@ -320,6 +307,8 @@ def panel_entrenador(entrenador_uuid):
 
         # ============================================================
         # CARGA MANUAL DE MEDIDAS POR EL ENTRENADOR
+        # (las medidas del alumno aparecen solas, pero el entrenador
+        #  también puede cargarlas o corregirlas a mano acá)
         # ============================================================
         st.divider()
         with st.expander("✏️ Cargar / Editar medidas manualmente"):
