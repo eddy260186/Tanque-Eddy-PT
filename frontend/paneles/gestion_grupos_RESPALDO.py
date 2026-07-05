@@ -9,16 +9,7 @@ Se usa en el panel del entrenador como una pestaña nueva.
 """
 
 import streamlit as st
-from datetime import datetime
 from database.conexion import supabase
-
-# Envío por WhatsApp (para mandar el WOD a los alumnos del grupo)
-try:
-    from backend.services.whatsapp_service import enviar_mensaje_texto_evolution
-except Exception:
-    enviar_mensaje_texto_evolution = None
-
-DIAS_SEMANA = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
 
 
 # =========================================================
@@ -49,7 +40,7 @@ def _obtener_alumnos_del_entrenador(entrenador_id: str):
         res = (
             supabase
             .table("perfiles_atletas")
-            .select("id, nombre_completo, email, telefono")
+            .select("id, nombre_completo, email")
             .eq("entrenador_id", entrenador_id)
             .execute()
         )
@@ -76,80 +67,6 @@ def _obtener_miembros(grupo_id: str):
 # =========================================================
 # PANTALLA PRINCIPAL
 # =========================================================
-
-
-# =========================================================
-# CARGAR WOD Y ENVIARLO A TODO EL GRUPO
-# =========================================================
-
-def _enviar_wod_al_grupo(entrenador_id, grupo, miembros_ids, dict_alumnos_full, dia_sel, nombre_wod, texto_wod):
-    """
-    Guarda el WOD como rutina de cada alumno del grupo y se lo
-    manda por WhatsApp. Devuelve (guardados, enviados).
-    """
-    # Convertir el texto en lista de bloques (una línea por bloque)
-    ejercicios_json = [linea.strip() for linea in texto_wod.split("\n") if linea.strip()]
-
-    guardados = 0
-    enviados = 0
-
-    instancia_nombre = f"coach_{str(entrenador_id)[:8]}"
-
-    # Armar el mensaje de WhatsApp (con iconos)
-    mensaje_wa = "━━━━━━━━━━━━━━━\n"
-    mensaje_wa += f"🏋️ *{nombre_wod.upper()}*\n"
-    mensaje_wa += f"📅 {dia_sel.capitalize()}\n"
-    mensaje_wa += "━━━━━━━━━━━━━━━\n\n"
-    mensaje_wa += texto_wod.strip()
-    mensaje_wa += "\n\n👊 _Dale con todo, equipo!_"
-
-    for aid in miembros_ids:
-
-        alumno = dict_alumnos_full.get(aid, {})
-
-        # 1. Guardar el WOD como rutina del alumno para ese día
-        try:
-            datos = {
-                "alumno_id": aid,
-                "dia_semana": dia_sel,
-                "grupo_muscular": nombre_wod.strip(),
-                "ejercicios": ejercicios_json,
-                "activa": True
-            }
-            # Buscar si ya tiene rutina ese día
-            existente = (
-                supabase.table("rutinas_programadas")
-                .select("id")
-                .eq("alumno_id", aid)
-                .eq("dia_semana", dia_sel)
-                .execute()
-            )
-            if existente.data:
-                supabase.table("rutinas_programadas").update(datos)\
-                    .eq("id", existente.data[0]["id"]).execute()
-            else:
-                supabase.table("rutinas_programadas").insert(datos).execute()
-            guardados += 1
-        except Exception:
-            pass
-
-        # 2. Enviar por WhatsApp
-        telefono = str(alumno.get("telefono", "")).strip()
-        if telefono and enviar_mensaje_texto_evolution is not None:
-            try:
-                enviar_mensaje_texto_evolution(
-                    nombre_instancia=instancia_nombre,
-                    alumno_id=aid,
-                    entrenador_id=entrenador_id,
-                    telefono=telefono,
-                    mensaje=mensaje_wa
-                )
-                enviados += 1
-            except Exception:
-                pass
-
-    return guardados, enviados
-
 
 def tab_gestion_grupos(entrenador_id: str):
     """
@@ -217,7 +134,6 @@ def tab_gestion_grupos(entrenador_id: str):
 
     alumnos = _obtener_alumnos_del_entrenador(entrenador_id)
     dict_alumnos = {a["id"]: a.get("nombre_completo", "Sin nombre") for a in alumnos}
-    dict_alumnos_full = {a["id"]: a for a in alumnos}
 
     for grupo in grupos:
 
@@ -288,65 +204,6 @@ def tab_gestion_grupos(entrenador_id: str):
                         st.warning("Elegí al menos un alumno.")
             else:
                 st.caption("Todos tus alumnos ya están en este grupo.")
-
-            st.divider()
-
-            # --- CARGAR WOD Y ENVIAR A TODO EL GRUPO ---
-            st.markdown("**🏋️ Cargar entrenamiento (WOD) para todo el grupo:**")
-
-            if not miembros_ids:
-                st.caption("Agregá alumnos al grupo antes de mandar un WOD.")
-            else:
-                col_dia, col_nom = st.columns(2)
-                with col_dia:
-                    dia_wod = st.selectbox(
-                        "Día",
-                        DIAS_SEMANA,
-                        format_func=lambda x: x.capitalize(),
-                        key=f"dia_wod_{grupo_id}"
-                    )
-                with col_nom:
-                    nombre_wod = st.text_input(
-                        "Nombre del WOD",
-                        value="WOD del día",
-                        key=f"nombre_wod_{grupo_id}"
-                    )
-
-                texto_wod = st.text_area(
-                    "Entrenamiento (escribí libre, como CrossFit):",
-                    height=200,
-                    placeholder=(
-                        "Ej:\n"
-                        "🔥 Calentamiento\n"
-                        "Remo 500m suave\n\n"
-                        "💪 Fuerza\n"
-                        "Back Squat 5x5\n\n"
-                        "⏱️ WOD 'For Time' (15 min)\n"
-                        "40 cal Remo\n"
-                        "30 Toes to Bar\n"
-                        "20 Clean & Jerks (80/55kg)"
-                    ),
-                    key=f"texto_wod_{grupo_id}"
-                )
-
-                if st.button(
-                    f"📤 Enviar WOD a los {len(miembros_ids)} alumnos del grupo",
-                    type="primary",
-                    use_container_width=True,
-                    key=f"enviar_wod_{grupo_id}"
-                ):
-                    if not texto_wod.strip():
-                        st.error("Escribí el entrenamiento antes de enviar.")
-                    else:
-                        with st.spinner("Guardando y enviando el WOD al grupo..."):
-                            guardados, enviados = _enviar_wod_al_grupo(
-                                entrenador_id, grupo, miembros_ids,
-                                dict_alumnos_full, dia_wod, nombre_wod, texto_wod
-                            )
-                        st.success(
-                            f"✅ WOD cargado a {guardados} alumnos "
-                            f"y enviado por WhatsApp a {enviados}."
-                        )
 
             st.divider()
 
