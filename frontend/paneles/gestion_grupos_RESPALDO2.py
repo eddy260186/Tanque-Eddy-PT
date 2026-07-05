@@ -82,53 +82,13 @@ def _obtener_miembros(grupo_id: str):
 # CARGAR WOD Y ENVIARLO A TODO EL GRUPO
 # =========================================================
 
-def _enviar_wod_al_grupo(entrenador_id, grupo, miembros_ids, dict_alumnos_full, dia_sel, nombre_wod, filas_wod):
+def _enviar_wod_al_grupo(entrenador_id, grupo, miembros_ids, dict_alumnos_full, dia_sel, nombre_wod, texto_wod):
     """
-    Guarda el WOD (tabla de ejercicios) como rutina de cada alumno
-    del grupo y se lo manda por WhatsApp. Devuelve (guardados, enviados).
-
-    filas_wod: lista de dicts con claves:
-      ejercicio, series_reps, peso, descanso, notas
+    Guarda el WOD como rutina de cada alumno del grupo y se lo
+    manda por WhatsApp. Devuelve (guardados, enviados).
     """
-    # Convertir la tabla en lista de bloques de texto (para guardar y enviar)
-    ejercicios_json = []
-    numeros = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
-
-    lineas_wa = []
-    for i, fila in enumerate(filas_wod):
-        ejercicio = str(fila.get("ejercicio", "")).strip()
-        if not ejercicio:
-            continue
-
-        series = str(fila.get("series_reps", "")).strip()
-        peso = str(fila.get("peso", "")).strip()
-        descanso = str(fila.get("descanso", "")).strip()
-        notas = str(fila.get("notas", "")).strip()
-
-        # Bloque para guardar en la BD (texto plano)
-        partes_guardar = [ejercicio]
-        if series:
-            partes_guardar.append(series)
-        if peso:
-            partes_guardar.append(peso)
-        bloque_texto = " - ".join(partes_guardar)
-        ejercicios_json.append(bloque_texto)
-
-        # Línea bonita para WhatsApp
-        num = numeros[i] if i < len(numeros) else f"{i+1}."
-        linea = f"{num} *{ejercicio}*"
-        detalles = []
-        if series:
-            detalles.append(f"📊 {series}")
-        if peso:
-            detalles.append(f"🏋️ {peso}")
-        if descanso:
-            detalles.append(f"⏱️ {descanso}")
-        if detalles:
-            linea += "\n     " + "  ·  ".join(detalles)
-        if notas:
-            linea += f"\n     💡 _{notas}_"
-        lineas_wa.append(linea)
+    # Convertir el texto en lista de bloques (una línea por bloque)
+    ejercicios_json = [linea.strip() for linea in texto_wod.split("\n") if linea.strip()]
 
     guardados = 0
     enviados = 0
@@ -140,7 +100,7 @@ def _enviar_wod_al_grupo(entrenador_id, grupo, miembros_ids, dict_alumnos_full, 
     mensaje_wa += f"🏋️ *{nombre_wod.upper()}*\n"
     mensaje_wa += f"📅 {dia_sel.capitalize()}\n"
     mensaje_wa += "━━━━━━━━━━━━━━━\n\n"
-    mensaje_wa += "\n\n".join(lineas_wa)
+    mensaje_wa += texto_wod.strip()
     mensaje_wa += "\n\n👊 _Dale con todo, equipo!_"
 
     for aid in miembros_ids:
@@ -352,31 +312,21 @@ def tab_gestion_grupos(entrenador_id: str):
                         key=f"nombre_wod_{grupo_id}"
                     )
 
-                st.caption(
-                    "Completá los casilleros (no hace falta escribir párrafos). "
-                    "Podés agregar filas con el botón + de la tabla."
-                )
-
-                import pandas as pd
-
-                # Tabla base vacía para cargar el WOD
-                tabla_base = pd.DataFrame([
-                    {"Ejercicio": "", "Series×Reps": "", "Peso/Int.": "", "Descanso": "", "Notas": ""}
-                    for _ in range(4)
-                ])
-
-                tabla_editada = st.data_editor(
-                    tabla_base,
-                    num_rows="dynamic",
-                    use_container_width=True,
-                    key=f"tabla_wod_{grupo_id}",
-                    column_config={
-                        "Ejercicio": st.column_config.TextColumn("Ejercicio", width="medium"),
-                        "Series×Reps": st.column_config.TextColumn("Series×Reps", help="Ej: 5 × 5"),
-                        "Peso/Int.": st.column_config.TextColumn("Peso/Int.", help="Ej: 75% o 80kg"),
-                        "Descanso": st.column_config.TextColumn("Descanso", help="Ej: 2 min"),
-                        "Notas": st.column_config.TextColumn("Notas", help="Ej: técnica controlada", width="medium"),
-                    }
+                texto_wod = st.text_area(
+                    "Entrenamiento (escribí libre, como CrossFit):",
+                    height=200,
+                    placeholder=(
+                        "Ej:\n"
+                        "🔥 Calentamiento\n"
+                        "Remo 500m suave\n\n"
+                        "💪 Fuerza\n"
+                        "Back Squat 5x5\n\n"
+                        "⏱️ WOD 'For Time' (15 min)\n"
+                        "40 cal Remo\n"
+                        "30 Toes to Bar\n"
+                        "20 Clean & Jerks (80/55kg)"
+                    ),
+                    key=f"texto_wod_{grupo_id}"
                 )
 
                 if st.button(
@@ -385,27 +335,13 @@ def tab_gestion_grupos(entrenador_id: str):
                     use_container_width=True,
                     key=f"enviar_wod_{grupo_id}"
                 ):
-                    # Convertir la tabla en filas (solo las que tienen ejercicio)
-                    filas_wod = []
-                    for _, fila in tabla_editada.iterrows():
-                        ejercicio = str(fila.get("Ejercicio", "")).strip()
-                        if not ejercicio:
-                            continue
-                        filas_wod.append({
-                            "ejercicio": ejercicio,
-                            "series_reps": str(fila.get("Series×Reps", "")).strip(),
-                            "peso": str(fila.get("Peso/Int.", "")).strip(),
-                            "descanso": str(fila.get("Descanso", "")).strip(),
-                            "notas": str(fila.get("Notas", "")).strip(),
-                        })
-
-                    if not filas_wod:
-                        st.error("Cargá al menos un ejercicio antes de enviar.")
+                    if not texto_wod.strip():
+                        st.error("Escribí el entrenamiento antes de enviar.")
                     else:
                         with st.spinner("Guardando y enviando el WOD al grupo..."):
                             guardados, enviados = _enviar_wod_al_grupo(
                                 entrenador_id, grupo, miembros_ids,
-                                dict_alumnos_full, dia_wod, nombre_wod, filas_wod
+                                dict_alumnos_full, dia_wod, nombre_wod, texto_wod
                             )
                         st.success(
                             f"✅ WOD cargado a {guardados} alumnos "
