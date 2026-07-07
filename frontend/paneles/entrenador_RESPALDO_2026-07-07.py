@@ -253,42 +253,21 @@ def panel_entrenador(entrenador_uuid):
     st.write("")
 
     # =========================================================================
-    # ÁREA DE EXPEDIENTE 360 GRADOS — ORGANIZADA EN 5 SECCIONES
-    # Antes eran 10 pestañas amontonadas. Ahora se agrupan para dar aire.
-    # (No se cambió NADA del contenido: solo cómo se agrupan las pestañas)
+    # ÁREA DE EXPEDIENTE 360 GRADOS
+    # (se agregó "👥 Grupos / Clases" como primera pestaña)
     # =========================================================================
-    sec_alumno, sec_planificacion, sec_progreso, sec_grupos, sec_vinculacion = st.tabs([
-        "👤 Alumno",
-        "📋 Planificación",
-        "📊 Progreso",
+    tab_grupos, tab_diagnostico, tab_antropometria, tab_prescripcion, tab_rutina_sem, tab_comidas, tab_suple, tab_actividad, tab_seguimiento, tab_whatsapp_saas = st.tabs([
         "👥 Grupos / Clases",
-        "🔗 Vinculación QR"
+        "🔍 Diagnóstico Funcional", 
+        "📏 Anatomía y Medidas", 
+        "📝 Modificar Planificación (Rutina/Dieta)", 
+        "📅 Rutina Semanal",
+        "🍽️ Plan de Comidas",
+        "💊 Suplementación",
+        "🏋️ Actividad WhatsApp",
+        "📈 Gráfica de Progreso Real",
+        "📲 Vinculación WhatsApp QR"
     ])
-
-    # --- Sub-pestañas dentro de cada sección grande ---
-    with sec_alumno:
-        tab_diagnostico, tab_antropometria = st.tabs([
-            "🔍 Diagnóstico Funcional",
-            "📏 Anatomía y Medidas"
-        ])
-
-    with sec_planificacion:
-        tab_prescripcion, tab_rutina_sem, tab_comidas, tab_suple = st.tabs([
-            "📝 Modificar Planificación (Rutina/Dieta)",
-            "📅 Rutina Semanal",
-            "🍽️ Plan de Comidas",
-            "💊 Suplementación"
-        ])
-
-    with sec_progreso:
-        tab_seguimiento, tab_actividad = st.tabs([
-            "📈 Gráfica de Progreso Real",
-            "🏋️ Actividad WhatsApp"
-        ])
-
-    # Grupos y Vinculación no llevan sub-pestañas: usan su sección directamente
-    tab_grupos = sec_grupos
-    tab_whatsapp_saas = sec_vinculacion
 
     # TAB GRUPOS: gestión de grupos/clases (CrossFit)
     with tab_grupos:
