@@ -22,8 +22,11 @@ from datetime import datetime, timedelta
 from database.conexion import supabase
 from utils.logger import obtener_logger
 from backend.services.plan_service import (
-    generar_menu_dinamico,
     generar_rutina_entrenamiento
+)
+
+from backend.services.nutrition_service import (
+    generar_menu_nutricional, formatear_opcion, validar_objetivo_energia
 )
 
 logger = obtener_logger("OnboardingService")
@@ -224,11 +227,12 @@ def generar_comidas_iniciales(
     cal_objetivo: float,
     hora_despertar: str = "06:30",
     num_opciones: int = 3,
-    solo_si_vacio: bool = True
+    solo_si_vacio: bool = True,
+    restricciones_alimentarias: str = None
 ):
 
     """
-    Genera el plan de comidas desde data/alimentos.py
+    Genera el plan de comidas desde el catálogo nutricional auditado
     (segun tipo de dieta) y lo guarda en
     comidas_programadas con horarios reales.
 
@@ -257,45 +261,15 @@ def generar_comidas_iniciales(
 
                 return 0
 
-        num_opciones = max(1, min(10, int(num_opciones or 3)))
-
-        menus, lista_compras = generar_menu_dinamico(
-            p_g_total,
-            c_g_total,
-            g_g_total,
-            num_comidas,
-            num_opciones,
-            dieta_tipo,
-            pais
-        )
-
-        if not menus:
-            return 0
-
-        # Guardar la lista de compras mensual del alumno
-        try:
-            _guardar_lista_compras(alumno_id, lista_compras)
-        except Exception as e:
-            logger.warning(
-                f"⚠️ No pude guardar lista de compras: {str(e)}"
-            )
-
-        kcal_por_comida = int(
-            (cal_objetivo or 0) / max(1, num_comidas)
-        ) or None
-
-        # Macros por comida = total / cantidad de comidas
-        prote_por_comida = int(
-            (p_g_total or 0) / max(1, num_comidas)
-        ) or None
-
-        carbos_por_comida = int(
-            (c_g_total or 0) / max(1, num_comidas)
-        ) or None
-
-        grasa_por_comida = int(
-            (g_g_total or 0) / max(1, num_comidas)
-        ) or None
+        validar_objetivo_energia(cal_objetivo, p_g_total, c_g_total, g_g_total)
+        if restricciones_alimentarias is None:
+            perfil = supabase.table("perfiles_atletas").select(
+                "restricciones_alimentarias").eq("id", alumno_id).limit(1).execute()
+            restricciones_alimentarias = (perfil.data[0].get("restricciones_alimentarias")
+                                         if perfil.data else "")
+        menus, lista_compras = generar_menu_nutricional(
+            p_g_total, c_g_total, g_g_total, num_comidas, num_opciones,
+            dieta_tipo, pais, restricciones_alimentarias)
 
         filas = []
 
@@ -314,16 +288,10 @@ def generar_comidas_iniciales(
                 else:
                     hora = _sumar_horas(hora_despertar, 3.5)
 
-            import re as _re
-
-            opciones_limpias = [
-                _re.sub(r"^Opcion \d+: ", "", str(op)).strip()
-                for op in (opciones or [])
-                if str(op).strip()
-            ]
-
-            if not opciones_limpias:
-                continue
+            opciones_limpias = [formatear_opcion(op) for op in opciones]
+            # Columnas históricas enteras: referencia de la primera opción.
+            # Cada alternativa incluye su propio resumen con precisión decimal.
+            primera = opciones[0]
 
             filas.append({
                 "alumno_id": alumno_id,
@@ -332,10 +300,10 @@ def generar_comidas_iniciales(
                 "dia_semana": None,   # todos los dias
                 "detalle": opciones_limpias[0],
                 "opciones": opciones_limpias,
-                "kcal": kcal_por_comida,
-                "proteina_g": prote_por_comida,
-                "carbos_g": carbos_por_comida,
-                "grasa_g": grasa_por_comida,
+                "kcal": int(round(primera["kcal"])),
+                "proteina_g": int(round(primera["proteina_g"])),
+                "carbos_g": int(round(primera["carbos_g"])),
+                "grasa_g": int(round(primera["grasa_g"])),
                 "activa": True
             })
 
@@ -344,6 +312,10 @@ def generar_comidas_iniciales(
             supabase.table(
                 "comidas_programadas"
             ).insert(filas).execute()
+            try:
+                _guardar_lista_compras(alumno_id, lista_compras)
+            except Exception as e:
+                logger.warning(f"No se pudo guardar la proyección de compras: {e}")
 
         logger.info(
             f"✅ Plan de comidas inicial generado: "
@@ -357,8 +329,7 @@ def generar_comidas_iniciales(
         logger.error(
             f"❌ Error generando comidas: {str(e)}"
         )
-
-        return 0
+        raise
 
 
 # =========================================================
@@ -393,14 +364,8 @@ def _guardar_lista_compras(
             lineas.append(
                 f"• {alimento}: {round(cantidad / 1000, 1)} kg"
             )
-        elif cantidad >= 50:
-            lineas.append(
-                f"• {alimento}: {int(round(cantidad))} g"
-            )
         else:
-            lineas.append(
-                f"• {alimento}: {int(round(cantidad))} unidades/porciones"
-            )
+            lineas.append(f"• {alimento}: {cantidad:g} g")
 
     if not lineas:
         return
@@ -447,7 +412,8 @@ def generar_plan_inicial_completo(
     pais: str,
     cal_objetivo: float,
     hora_despertar: str = "06:30",
-    num_opciones: int = 3
+    num_opciones: int = 3,
+    restricciones_alimentarias: str = None
 ):
 
     """
@@ -475,7 +441,8 @@ def generar_plan_inicial_completo(
         pais,
         cal_objetivo,
         hora_despertar,
-        num_opciones
+        num_opciones,
+        restricciones_alimentarias=restricciones_alimentarias
     )
 
     return dias_creados, comidas_creadas

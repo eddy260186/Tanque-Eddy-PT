@@ -6,6 +6,7 @@ rutina del dia, dieta, macros, suplementos, checkin.
 La IA no espera mensajes: dirige al alumno todo el dia.
 """
 
+from backend.services.nutrition_service import nutrientes_opcion_texto
 from datetime import datetime
 
 from database.conexion import supabase
@@ -498,20 +499,21 @@ def componer_mensaje_comida(
     msg += "👉 Hoy te toca:\n\n"
     msg += f"🍽️ {detalle}" + extra
 
-    if comida.get("kcal"):
-        msg += f"\n\n🔥 *Esta comida:* ~{comida['kcal']} kcal"
+    nutrientes = nutrientes_opcion_texto(detalle) or comida
+    if nutrientes.get("kcal"):
+        msg += f"\n\n🔥 *Esta comida:* ~{nutrientes['kcal']} kcal"
 
     # Macros del plato (proteína / carbos / grasa)
     macros_plato = []
 
-    if comida.get("proteina_g"):
-        macros_plato.append(f"🥩 P: {comida['proteina_g']}g")
+    if nutrientes.get("proteina_g"):
+        macros_plato.append(f"🥩 P: {nutrientes['proteina_g']}g")
 
-    if comida.get("carbos_g"):
-        macros_plato.append(f"🍚 C: {comida['carbos_g']}g")
+    if nutrientes.get("carbos_g"):
+        macros_plato.append(f"🍚 C: {nutrientes['carbos_g']}g")
 
-    if comida.get("grasa_g"):
-        macros_plato.append(f"🥑 G: {comida['grasa_g']}g")
+    if nutrientes.get("grasa_g"):
+        macros_plato.append(f"🥑 G: {nutrientes['grasa_g']}g")
 
     if macros_plato:
         msg += "\n" + "   ".join(macros_plato)
