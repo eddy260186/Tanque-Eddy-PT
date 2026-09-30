@@ -1,3 +1,4 @@
+from backend.services.nutrition_service import compras_desde_menus_texto
 # =========================================================
 # 🔥 EDDY ULTRA ELITE PDF ENGINE v100.8 - MINIMALIST EDITION
 # COMPRAS MENSUALES EN KG • GRÁFICOS PARALELOS • SIN FOOTERS
@@ -82,48 +83,14 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     # =====================================================
     # 🧠 ALGORITMO DE EXTRACCIÓN TOTAL DE COMPRAS
     # =====================================================
-    compras_mensuales_gramos = {}
-    articulos_consumo_libre = set()
-
-    if isinstance(menus, dict):
-        for opciones in menus.values():
-            if opciones and isinstance(opciones, list):
-                texto_dia = str(opciones[0]).replace('\n', ' ')
-                componentes = re.split(r'[\+|]', texto_dia)
-                
-                for comp in componentes:
-                    comp = comp.strip()
-                    comp = re.sub(r'(?i)^Opcion\s*\d+:\s*', '', comp)
-                    comp = re.sub(r'(?i)^Infusion\s*:\s*', '', comp)
-                    comp = re.sub(r'(?i)^Infusión\s*:\s*', '', comp)
-                    comp = comp.strip()
-                    
-                    if not comp:
-                        continue
-                    
-                    match = re.search(r'(\d+)\s*g', comp)
-                    if match:
-                        gramos_diarios = int(match.group(1))
-                        nombre_item = re.sub(r'\d+\s*g\s*', '', comp).strip().capitalize()
-                        if nombre_item:
-                            compras_mensuales_gramos[nombre_item] = compras_mensuales_gramos.get(nombre_item, 0) + gramos_diarios
-                    else:
-                        nombre_libre = comp.capitalize()
-                        if nombre_libre and len(nombre_libre) > 2:
-                            articulos_consumo_libre.add(nombre_libre)
-
+    compras_mensuales_gramos = compras_desde_menus_texto(menus)
     lista_compras_final = []
-    for alimento, gramos_totales in compras_mensuales_gramos.items():
-        total_mes = gramos_totales * 30
+    for alimento, total_mes in compras_mensuales_gramos.items():
         if total_mes >= 1000:
             lista_compras_final.append(f"{alimento} ({total_mes/1000:.1f} KG)")
         else:
-            lista_compras_final.append(f"{alimento} ({total_mes} Gramos)")
-            
-    for articulo in articulos_consumo_libre:
-        if articulo.lower() not in [k.lower() for k in compras_mensuales_gramos.keys()]:
-            lista_compras_final.append(f"{articulo} (Cantidad al gusto / Mes)")
-            
+            lista_compras_final.append(f"{alimento} ({total_mes:g} Gramos)")
+
     lista_compras_final.sort()
     
     if not lista_compras_final:
@@ -449,8 +416,8 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
     """
 
     for comida, opciones in menus.items():
-        opcion = str(opciones[0]) if opciones else "Planificación Nutricional Elite Personalizada."
-        html += f"""
+        for opcion in opciones or ["Planificación Nutricional Elite Personalizada."]:
+            html += f"""
             <div class="premium-card">
                 <div class="label">{comida.upper()}</div>
                 <div style="margin-top:12px; color:#ccc; line-height:1.8; font-size:14px; font-weight: bold;">
@@ -467,7 +434,7 @@ def build_pdf_ultra_elite(data, grafico_b64="", genero="m"):
         <div class="content">
             <div class="section-title">Protocolo de Abastecimiento</div>
             <div style="margin-bottom: 25px; color: #888; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">
-                Lista Completa y Detallada para el Mes Completo (30 Días)
+                Proyección de 30 días: una opción por comida, rotadas por igual. Pesos en el estado indicado; no son equivalencias en crudo.
             </div>
     """
 

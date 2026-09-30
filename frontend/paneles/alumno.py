@@ -20,7 +20,11 @@ from frontend.components.graficos import (
     renderizar_evolucion_historica
 )
 from backend.services.payment_service import validar_comprobante_pago
-from backend.services.plan_service import generar_menu_dinamico, generar_rutina_entrenamiento
+from backend.services.plan_service import generar_rutina_entrenamiento
+from backend.services.nutrition_service import (
+    ErrorPlanNutricional, calcular_macros_objetivo, generar_menu_nutricional,
+    formatear_opcion, resumen_energia
+)
 from backend.services.ia_service import gestionar_ia_con_creditos, descontar_credito
 from automation.generador_automatizaciones import generar_automatizaciones_alumno
 from backend.services.onboarding_service import generar_plan_inicial_completo
@@ -253,13 +257,22 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
             else: dif = 0
             cal_obj = cal_mant + dif
 
-        p_g_total = peso_actual * (2.2 if "Hiper" in dieta_tipo else 1.8)
-        if "Keto" in dieta_tipo:
-            c_g_total = 30.0
-            g_g_total = (cal_obj - (p_g_total * 4) - 120) / 9
-        else:
-            g_g_total = (cal_obj * 0.30) / 9
-            c_g_total = (cal_obj - (p_g_total * 4) - (g_g_total * 9)) / 4
+        # Validar y generar ANTES de escribir en Supabase.
+        try:
+            p_g_total, c_g_total, g_g_total = calcular_macros_objetivo(
+                peso_actual, cal_obj, dieta_tipo)
+            menus_nutricionales, lista_compras = generar_menu_nutricional(
+                p_g_total, c_g_total, g_g_total, num_comidas, num_opciones,
+                dieta_tipo, pais, restricciones_txt)
+            diccionario_menus = {
+                nombre_comida: [formatear_opcion(op, i + 1) for i, op in enumerate(opciones)]
+                for nombre_comida, opciones in menus_nutricionales.items()
+            }
+            energia_min, energia_max = resumen_energia(menus_nutricionales)
+        except ErrorPlanNutricional as e:
+            st.error(str(e))
+            st.info("Tu profesional debe revisar el plan antes de generarlo o guardarlo.")
+            st.stop()
 
         agua_total = round((peso_actual * 0.035) + 0.75 + (0.5 if dias_entreno > 0 else 0), 1)
 
@@ -338,10 +351,11 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                             pais=pais,
                             cal_objetivo=cal_obj,
                             hora_despertar=hora_despertar.strftime("%H:%M"),
-                            num_opciones=num_opciones
+                            num_opciones=num_opciones,
+                            restricciones_alimentarias=restricciones_txt
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        st.warning(f"Tus datos se guardaron, pero no se pudo generar el plan inicial: {e}")
 
                     # 💊 SUPLEMENTACIÓN AUTOMÁTICA (invisible para el alumno)
                     # Solo asigna si es un caso seguro; embarazo/enfermedad
@@ -359,9 +373,10 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
                         pass
 
                     if dias_creados or comidas_creadas:
-                        st.success(f"✅ ¡Datos guardados! Te generamos tu plan inicial: {dias_creados} días de rutina y {comidas_creadas} comidas. Tu seguimiento por WhatsApp ya está activo. 🎉")
+                        st.success(f"✅ Datos guardados. Plan inicial: {dias_creados} días de rutina y {comidas_creadas} comidas generados.")
                     else:
-                        st.success("✅ ¡Evolución y Plan guardados al 100%! Tu seguimiento por WhatsApp ya usa tus nuevos horarios.")
+                        st.success("✅ Datos de evolución guardados.")
+                        st.info("Si ya tenías comidas asignadas, se conservaron. Pedile a tu profesional que revise el plan guardado si cambiaste dieta, restricciones o macros; la vista previa no reemplaza ese plan.")
                 except Exception as e:
                     st.error(f"❌ Error al guardar: {e}")
 
@@ -375,9 +390,6 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
     fechas_reales = [(datetime.now() + pd.DateOffset(months=i)).strftime("%d/%m/%Y") for i in range(int(meses_plazo) + 1)]
     pesos_prog = [peso_actual + (kg_mes_real * i) for i in range(len(fechas_reales))]
 
-    diccionario_menus, lista_compras = generar_menu_dinamico(
-        p_g_total, c_g_total, g_g_total, num_comidas, num_opciones, dieta_tipo, pais
-    )
     diccionario_rutinas = generar_rutina_entrenamiento(tipo_entreno, nivel_experiencia, dias_entreno)
 
     # ==========================================================
@@ -424,7 +436,9 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
     # ==========================================================
     with tab_dieta:
         st.subheader(f"🍽️ Plan de {num_comidas} Comidas ({int(cal_obj)} kcal)")
-        st.caption(f"Dieta {dieta_tipo} · {num_opciones} opciones por comida")
+        st.caption(f"Dieta {dieta_tipo} · {num_opciones} opciones por comida · Elegí una opción por comida")
+        st.caption(f"Energía estimada de los alimentos: {energia_min:.0f}–{energia_max:.0f} kcal/día según las opciones elegidas. Meta calculada: {cal_obj:.0f} kcal.")
+        st.caption("Pesá cada ingrediente en el estado indicado. Los valores son referencias; verificá etiquetas y productos certificados si evitás gluten o tenés alergias.")
 
         for nombre_base, opciones in diccionario_menus.items():
             st.button(f"› ✨ {nombre_base}", use_container_width=True, disabled=True)
@@ -510,7 +524,7 @@ def app_alumno_original(perfil_id: str, nombre_default: str, pais_default: str, 
             payload = {
                 "n": nombre, "edad": edad, "estatura": estatura, "peso": peso_actual, "rfm": rfm, "k": cal_obj,
                 "p": p_g_total, "c": c_g_total, "g": g_g_total, "meta": tipo_objetivo, "nivel": nivel_experiencia,
-                "w": agua_total, "entreno": tipo_entreno, "m": diccionario_menus, "rutina": diccionario_rutinas
+                "w": agua_total, "entreno": tipo_entreno, "m": diccionario_menus, "rutina": diccionario_rutinas, "lista_compras": lista_compras
             }
 
             with st.container():
